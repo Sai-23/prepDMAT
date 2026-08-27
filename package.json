@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --maxWorkers=1 --minWorkers=1",
+    "test": "vitest run --maxWorkers=1 --minWorkers=1 --pool=threads",
     "test:generation:equations:stress": "node scripts/run-equation-stress.mjs",
     "audit:equation-quality": "node scripts/run-equation-quality-audit.mjs",
     "audit:q1": "node scripts/run-q1-integrity-audit.mjs",

@@ -7,16 +7,13 @@ import {
   rateLimitActionError,
 } from "@/lib/security/rate-limit";
 import {
-  advanceDiagnosticQuestion,
-  completeInitialDiagnostic,
   completeOnboardingWithoutDiagnostic,
-  saveDiagnosticAnswer,
+  continueInitialDiagnostic,
   showDiagnosticQuestion,
   startInitialDiagnostic,
 } from "@/lib/onboarding/data";
 import {
   answerSubmissionSchema,
-  completePracticeSchema,
   practiceQuestionIdentitySchema,
 } from "@/lib/practice/schemas";
 
@@ -60,37 +57,17 @@ export async function showDiagnosticQuestionAction(input: unknown) {
   }
 }
 
-export async function submitDiagnosticAnswerAction(input: unknown) {
+export async function continueDiagnosticAction(input: unknown) {
   const user = await requireUser();
   const parsed = answerSubmissionSchema.safeParse(input);
   if (!parsed.success) return { error: "The diagnostic answer is invalid." };
   try {
-    await saveDiagnosticAnswer(user.id, parsed.data);
-    return { error: null, saved: true as const };
+    return { error: null, ...(await continueInitialDiagnostic(user.id, parsed.data)) };
   } catch (error) {
-    return safeActionFailure(error, "Unable to save this answer.");
-  }
-}
-
-export async function nextDiagnosticQuestionAction(input: unknown) {
-  const user = await requireUser();
-  const parsed = completePracticeSchema.safeParse(input);
-  if (!parsed.success) return { error: "The diagnostic session is invalid." };
-  try {
-    return { error: null, session: await advanceDiagnosticQuestion(user.id, parsed.data.sessionId) };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to load the next question.");
-  }
-}
-
-export async function completeDiagnosticAction(input: unknown) {
-  const user = await requireUser();
-  const parsed = completePracticeSchema.safeParse(input);
-  if (!parsed.success) return { error: "The diagnostic session is invalid." };
-  try {
-    await completeInitialDiagnostic(user.id, parsed.data.sessionId);
-    return { error: null };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to complete the diagnostic.");
+    return {
+      ...safeActionFailure(error, "Unable to continue the diagnostic."),
+      status: "error" as const,
+      answerSaved: false,
+    };
   }
 }

@@ -2,8 +2,9 @@
 
 import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, LogOut } from "lucide-react";
 import type { Route } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 import {
   abandonPracticeAction,
@@ -30,10 +31,23 @@ import type {
 import { PRACTICE_TIMING_MODES } from "@/lib/practice/timing";
 import { coreSkill } from "@/lib/progress/skills";
 
-import { FigureSequencePracticeFeedback } from "./figure-sequence-practice-feedback";
-import { LatinSquarePracticeFeedback } from "./latin-square-practice-feedback";
-import { MathematicalEquationPracticeFeedback } from "./mathematical-equation-practice-feedback";
 import { NativePracticeResponse } from "./native-practice-response";
+
+const FigureSequencePracticeFeedback = dynamic(
+  () => import("./figure-sequence-practice-feedback")
+    .then((module) => module.FigureSequencePracticeFeedback),
+  { loading: () => <p className="text-sm text-muted-foreground">Preparing worked explanation…</p> },
+);
+const LatinSquarePracticeFeedback = dynamic(
+  () => import("./latin-square-practice-feedback")
+    .then((module) => module.LatinSquarePracticeFeedback),
+  { loading: () => <p className="text-sm text-muted-foreground">Preparing worked explanation…</p> },
+);
+const MathematicalEquationPracticeFeedback = dynamic(
+  () => import("./mathematical-equation-practice-feedback")
+    .then((module) => module.MathematicalEquationPracticeFeedback),
+  { loading: () => <p className="text-sm text-muted-foreground">Preparing worked explanation…</p> },
+);
 
 const MODULES: Array<{ value: PracticeModule; title: string; description: string; motif: string }> = [
   { value: "figure_sequence", title: "Figure Sequences", description: "Continue visual patterns", motif: "◇ →" },
@@ -60,6 +74,46 @@ function formatSeconds(seconds: number) {
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
 }
 
+const PracticeTimer = memo(function PracticeTimer({
+  expiresAt,
+  onExpire,
+}: {
+  expiresAt: string;
+  onExpire(): void;
+}) {
+  const secondsAt = useCallback(
+    () => Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)),
+    [expiresAt],
+  );
+  const [remaining, setRemaining] = useState(secondsAt);
+
+  useEffect(() => {
+    let expired = false;
+    const tick = () => {
+      const next = secondsAt();
+      setRemaining(next);
+      if (next === 0 && !expired) {
+        expired = true;
+        onExpire();
+      }
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [onExpire, secondsAt]);
+
+  return (
+    <span
+      aria-live="polite"
+      className={remaining <= 60 ? "font-mono font-semibold text-error" : "font-mono font-semibold"}
+      data-testid="isolated-practice-timer"
+    >
+      <Clock3 className="mr-1 inline h-4 w-4" />
+      {formatSeconds(remaining)}
+    </span>
+  );
+});
+
 export function PracticeExperience({
   performance,
   initialSession,
@@ -78,8 +132,9 @@ export function PracticeExperience({
   const [feedback, setFeedback] = useState<PracticeFeedback | null>(initialSession?.feedback ?? null);
   const [summary, setSummary] = useState<PracticeSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [remaining, setRemaining] = useState<number | null>(null);
+  const [expired, setExpired] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const handleExpire = useCallback(() => setExpired(true), []);
 
   useEffect(() => {
     if (!session || feedback || session.answer) return;
@@ -92,14 +147,6 @@ export function PracticeExperience({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [session]);
-
-  useEffect(() => {
-    if (!session?.expiresAt) return;
-    const tick = () => setRemaining(Math.max(0, Math.ceil((new Date(session.expiresAt!).getTime() - Date.now()) / 1000)));
-    const initialTimer = window.setTimeout(tick, 0);
-    const timer = window.setInterval(tick, 1000);
-    return () => { window.clearTimeout(initialTimer); window.clearInterval(timer); };
-  }, [session?.expiresAt]);
 
   const canSubmit = useMemo(() => session ? validAnswer(answer, session) : false, [answer, session]);
 
@@ -127,6 +174,7 @@ export function PracticeExperience({
       const result = await nextPracticeQuestionAction({ sessionId: session.sessionId });
       if (result.error || !result.session) { setError(result.error ?? "Unable to load the next question."); return; }
       setSession(result.session);
+      setExpired(false);
       setAnswer(result.session.answer);
       setFeedback(result.session.feedback);
     });
@@ -161,7 +209,8 @@ export function PracticeExperience({
           setSession(null); setAnswer(null); setFeedback(null); setSelectedModule(null);
         })}
         onSubmit={submit}
-        remaining={session.expiresAt ? remaining : null}
+        expired={expired}
+        onExpire={handleExpire}
         session={session}
       />
     );
@@ -211,7 +260,7 @@ export function PracticeExperience({
                   : { module: selectedModule, difficulty, questionCount, timingMode, focusFamilies: initialConfig?.focusFamilies, sourceAttemptId: initialConfig?.sourceAttemptId };
                 const result = await startPracticeAction(config);
                 if (result.error || !result.session) { setError(result.error ?? "Unable to start practice."); return; }
-                setSession(result.session); setAnswer(result.session.answer); setFeedback(result.session.feedback);
+                setSession(result.session); setExpired(false); setAnswer(result.session.answer); setFeedback(result.session.feedback);
               })} size="lg">{isPending ? "Preparing questions…" : "Start practice"}<ArrowRight className="h-4 w-4" /></Button>
             </>
         </CardContent>
@@ -224,9 +273,9 @@ function ChoiceGroup({ label, options, selected, onSelect }: { label: string; op
   return <div><p className="mb-2 text-sm font-semibold">{label}</p><div className="flex flex-wrap gap-2">{options.map((option) => <button aria-pressed={selected === option} className={`min-w-20 rounded-md border px-4 py-2 text-sm font-semibold capitalize ${selected === option ? "border-primary bg-primary text-primary-foreground" : "border-workspace-border"}`} key={option} onClick={() => onSelect(option)} type="button">{option}</button>)}</div></div>;
 }
 
-function PracticeSession({ session, answer, feedback, canSubmit, remaining, error, isPending, onAnswer, onSubmit, onAdvance, onExplanation, onExit }: {
-  session: PracticeSessionState; answer: PracticeAnswer | null; feedback: PracticeFeedback | null; canSubmit: boolean; remaining: number | null; error: string | null; isPending: boolean;
-  onAnswer(answer: PracticeAnswer): void; onSubmit(): void; onAdvance(): void; onExplanation(): void; onExit(): void;
+function PracticeSession({ session, answer, feedback, canSubmit, expired, error, isPending, onAnswer, onSubmit, onAdvance, onExplanation, onExit, onExpire }: {
+  session: PracticeSessionState; answer: PracticeAnswer | null; feedback: PracticeFeedback | null; canSubmit: boolean; expired: boolean; error: string | null; isPending: boolean;
+  onAnswer(answer: PracticeAnswer): void; onSubmit(): void; onAdvance(): void; onExplanation(): void; onExit(): void; onExpire(): void;
 }) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("unclear_explanation");
@@ -236,12 +285,12 @@ function PracticeSession({ session, answer, feedback, canSubmit, remaining, erro
   const progress = (session.currentPosition / session.questionCount) * 100;
   return <div className="mx-auto max-w-5xl space-y-5">
     <header className="sticky top-0 z-10 rounded-xl border border-workspace-border bg-surface-lowest/95 p-4 shadow-sm backdrop-blur">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">{moduleTitle(session.module)}</p><p className="font-semibold">Question {session.currentPosition} of {session.questionCount}</p></div><div className="flex items-center gap-3">{remaining !== null ? <span aria-live="polite" className={remaining <= 60 ? "font-mono font-semibold text-error" : "font-mono font-semibold"}><Clock3 className="mr-1 inline h-4 w-4" />{formatSeconds(remaining)}</span> : <span className="text-sm text-muted-foreground">Untimed</span>}<Button disabled={isPending} onClick={onExit} size="sm" variant="ghost"><LogOut className="h-4 w-4" />Exit</Button></div></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">{moduleTitle(session.module)}</p><p className="font-semibold">Question {session.currentPosition} of {session.questionCount}</p></div><div className="flex items-center gap-3">{session.expiresAt ? <PracticeTimer expiresAt={session.expiresAt} onExpire={onExpire} /> : <span className="text-sm text-muted-foreground">Untimed</span>}<Button disabled={isPending} onClick={onExit} size="sm" variant="ghost"><LogOut className="h-4 w-4" />Exit</Button></div></div>
       <div aria-label={`${Math.round(progress)} percent complete`} className="mt-3 h-2 overflow-hidden rounded-full bg-surface-high" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}><div className="h-full bg-primary transition-[width] motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
     </header>
     <Card><CardHeader><CardTitle className="text-xl">{session.question.questionText}</CardTitle><CardDescription>{session.question.topic} · {session.question.difficulty} · Target pace {formatSeconds(session.targetPaceSeconds)}</CardDescription></CardHeader><CardContent className="space-y-5">
       <NativePracticeResponse answer={answer} correctAnswer={feedback?.correctAnswer} disabled={Boolean(feedback) || isPending} onChange={onAnswer} question={session.question} />
-      {!feedback ? <div className="flex flex-wrap items-center gap-3"><Button disabled={!canSubmit || isPending || remaining === 0} onClick={onSubmit} size="lg">{isPending ? "Checking…" : "Check answer"}</Button><span className="text-xs text-muted-foreground">Ctrl/⌘ + Enter</span></div> : null}
+      {!feedback ? <div className="flex flex-wrap items-center gap-3"><Button disabled={!canSubmit || isPending || expired} onClick={onSubmit} size="lg">{isPending ? "Checking…" : "Check answer"}</Button><span className="text-xs text-muted-foreground">Ctrl/⌘ + Enter</span></div> : null}
       {error ? <ErrorMessage message={error} /> : null}
     </CardContent></Card>
     {feedback ? <div className="space-y-4"><ModuleFeedback answer={answer!} feedback={feedback} onExplanation={onExplanation} session={session} /><div className="flex flex-wrap justify-between gap-3"><Button onClick={() => setReportOpen((value) => !value)} variant="ghost"><Flag className="h-4 w-4" />Report question</Button><Button disabled={isPending} onClick={onAdvance} size="lg">{session.currentPosition === session.questionCount ? "Complete session" : "Next question"}<ArrowRight className="h-4 w-4" /></Button></div>{reportOpen ? <form className="rounded-md border border-workspace-border bg-surface-lowest p-4" onSubmit={(event) => { event.preventDefault(); startReporting(async () => { const result = await reportPracticeQuestionAction({ sessionId: session.sessionId, questionId: session.question.id, reason: reportReason, details: reportDetails }); setReportStatus(result.error ?? "Report submitted. Thank you."); if (!result.error) setReportOpen(false); }); }}><label className="block text-sm font-semibold">Reason<select className="mt-2 h-10 w-full rounded-md border border-workspace-border bg-surface-lowest px-3 font-normal" onChange={(event) => setReportReason(event.target.value)} value={reportReason}><option value="incorrect_answer">Incorrect answer</option><option value="ambiguous_wording">Ambiguous wording</option><option value="unclear_explanation">Unclear explanation</option><option value="formatting_problem">Formatting problem</option><option value="technical_issue">Technical issue</option></select></label><label className="mt-3 block text-sm font-semibold">Details (optional)<textarea className="mt-2 min-h-24 w-full rounded-md border border-workspace-border bg-surface-lowest p-3 font-normal" maxLength={2000} onChange={(event) => setReportDetails(event.target.value)} value={reportDetails} /></label><div className="mt-3 flex justify-end"><Button disabled={isReporting} type="submit" variant="secondary">{isReporting ? "Submitting…" : "Submit report"}</Button></div></form> : null}{reportStatus ? <p aria-live="polite" className="text-sm text-muted-foreground">{reportStatus}</p> : null}</div> : null}

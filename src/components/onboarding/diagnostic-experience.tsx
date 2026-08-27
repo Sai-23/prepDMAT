@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent } from "react";
 
 import {
-  completeDiagnosticAction,
-  nextDiagnosticQuestionAction,
+  continueDiagnosticAction,
   showDiagnosticQuestionAction,
-  submitDiagnosticAnswerAction,
 } from "@/app/onboarding/actions";
 import { NativePracticeResponse } from "@/components/practice/native-practice-response";
 import { Button } from "@/components/ui/button";
@@ -16,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { DiagnosticSessionState } from "@/lib/onboarding/data";
 import {
   createDiagnosticSubmissionGuard,
-  saveAndAdvanceDiagnostic,
 } from "@/lib/onboarding/diagnostic-navigation";
 import type { PracticeAnswer, PracticeQuestion } from "@/lib/practice/schemas";
 
@@ -71,18 +68,15 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
     setError(null);
     startTransition(async () => {
       try {
-        const result = await saveAndAdvanceDiagnostic(
-          { session, answer, answerAlreadySaved: answered },
-          {
-            save: submitDiagnosticAnswerAction,
-            advance: nextDiagnosticQuestionAction,
-            complete: completeDiagnosticAction,
-          },
-        );
+        const result = await continueDiagnosticAction({
+          sessionId: session.sessionId,
+          questionId: session.question.id,
+          answer,
+        });
 
-        if (result.status === "error") {
-          setAnswered(result.answerSaved);
-          setError(result.error);
+        if (result.error || !("status" in result) || result.status === "error") {
+          setAnswered("answerSaved" in result && result.answerSaved === true);
+          setError(result.error ?? "Unable to continue the diagnostic.");
           return;
         }
         if (result.status === "completed") {

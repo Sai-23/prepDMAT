@@ -35,4 +35,13 @@ describe("practice UX contract", () => {
     expect(experience).toContain('aria-live="assertive"');
     expect(experience).toContain('aria-live="polite"');
   });
+
+  it("isolates the one-second timer and defers feedback implementations", () => {
+    expect(experience).toContain("const PracticeTimer = memo");
+    expect(experience).toContain('data-testid="isolated-practice-timer"');
+    expect(experience.indexOf("const [remaining, setRemaining]")).toBeLessThan(
+      experience.indexOf("export function PracticeExperience"),
+    );
+    expect(experience.match(/dynamic\(/g)).toHaveLength(3);
+  });
 });

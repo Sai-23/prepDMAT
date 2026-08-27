@@ -10,6 +10,9 @@ const migration = source("supabase/migrations/202608270022_security_remediation.
 const limiterFixMigration = source(
   "supabase/migrations/202608270023_fix_security_rate_limit_timestamp.sql",
 );
+const limiterBatchMigration = source(
+  "supabase/migrations/202608270024_batch_security_rate_limits.sql",
+);
 
 describe("database security remediation contract", () => {
   it("removes legacy broad grants and makes browser privileges explicit", () => {
@@ -68,6 +71,24 @@ describe("database security remediation contract", () => {
     expect(limiterFixMigration).toContain(
       "revoke all on function public.consume_security_rate_limit",
     );
+    expect(limiterBatchMigration).toContain(
+      "create or replace function public.consume_security_rate_limits",
+    );
+    expect(limiterBatchMigration).toContain(
+      "from public.consume_security_rate_limit(",
+    );
+    expect(limiterBatchMigration).toContain("check_count > 4");
+    expect(limiterBatchMigration).toContain(
+      "grant execute on function public.consume_security_rate_limits(jsonb)",
+    );
+    expect(limiterBatchMigration).toContain("to service_role");
+    expect(limiterBatchMigration).toContain(
+      "from public, anon, authenticated",
+    );
+
+    const limiter = source("src/lib/security/rate-limit.ts");
+    expect(limiter).toContain('admin.rpc("consume_security_rate_limits"');
+    expect(limiter).not.toContain('admin.rpc("consume_security_rate_limit"');
   });
 });
 

@@ -148,19 +148,23 @@ function logRateLimitFailure(
   });
 }
 
-async function consume(
+async function consumeBatch(
   operation: SecurityRateLimitOperation,
-  kind: "global" | "account" | "user" | "ip",
-  value: string,
-  rule: RateLimitRule,
+  checks: Array<{
+    kind: "global" | "account" | "user" | "ip";
+    value: string;
+    rule: RateLimitRule;
+  }>,
   secret: string,
 ) {
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin.rpc("consume_security_rate_limit", {
-    p_scope: `${operation}:${kind}`,
-    p_subject_hash: subjectHash(secret, operation, kind, value),
-    p_max_attempts: rule.maxAttempts,
-    p_window_seconds: rule.windowSeconds,
+  const { data, error } = await admin.rpc("consume_security_rate_limits", {
+    p_checks: checks.map(({ kind, value, rule }) => ({
+      scope: `${operation}:${kind}`,
+      subject_hash: subjectHash(secret, operation, kind, value),
+      max_attempts: rule.maxAttempts,
+      window_seconds: rule.windowSeconds,
+    })),
   });
 
   if (error) {
@@ -212,11 +216,10 @@ export async function enforceSecurityRateLimit(
     checks.push({ kind: "ip", value: clientIp, rule: policy.ip });
   }
 
-  // Keep calls sequential so a rejected account/IP bucket never races another
-  // database request from the same action.
-  for (const check of checks) {
-    await consume(operation, check.kind, check.value, check.rule, secret);
-  }
+  // The database wrapper consumes these checks in order within one transaction.
+  // Earlier buckets still consume capacity if a later bucket rejects, matching
+  // the previous sequential fail-closed contract without multiple round trips.
+  await consumeBatch(operation, checks, secret);
 }
 
 export function rateLimitActionState(error: unknown) {

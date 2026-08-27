@@ -30,4 +30,17 @@ describe("practice persistence architecture", () => {
     expect(migration).toContain("practice_session_item_id uuid");
     expect(source("src/lib/practice/data.ts")).toContain('.eq("status", "completed")');
   });
+
+  it("starts source-context and recent-history reads together and avoids a post-create readback", () => {
+    const data = source("src/lib/practice/data.ts");
+    const createStart = data.indexOf("export async function createPracticeSession");
+    const createEnd = data.indexOf("export async function getActivePracticeSession", createStart);
+    const createSession = data.slice(createStart, createEnd);
+
+    expect(createSession).toContain("const sourceContextPromise =");
+    expect(createSession).toContain("const [recentItemsResult, sourceContext] = await Promise.all([");
+    expect(createSession).toContain("sourceContextPromise");
+    expect(createSession).toContain("return state(");
+    expect(createSession).not.toContain("getActivePracticeSession(");
+  });
 });

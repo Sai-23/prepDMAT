@@ -5,7 +5,7 @@ import type { PrivatePracticeSnapshot } from "@/lib/practice/native";
 import type { PracticeAnswer, PracticeQuestion, PracticeReviewItem } from "@/lib/practice/schemas";
 import {
   markPracticeQuestionShown,
-  recordPracticeAnswer,
+  recordDiagnosticAnswer,
 } from "@/lib/practice/data";
 import { mapQuestionToSkills } from "@/lib/progress/skills";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -170,20 +170,28 @@ export async function startInitialDiagnostic(userId: string): Promise<string> {
   return sessionId;
 }
 
-async function diagnosticSessionRow(userId: string, status: "in_progress" | "completed") {
+async function diagnosticSessionRow(
+  userId: string,
+  status: "in_progress" | "completed",
+  knownSessionId?: string | null,
+) {
   const admin = createSupabaseAdminClient();
-  const state = await getOnboardingState(userId);
-  if (!state.diagnosticSessionId) return null;
+  const sessionId = knownSessionId
+    ?? (await getOnboardingState(userId)).diagnosticSessionId;
+  if (!sessionId) return null;
   const { data } = await admin.from("practice_sessions").select("id, user_id, status, current_position, question_count, completed_at")
-    .eq("id", state.diagnosticSessionId).eq("user_id", userId).eq("session_type", "diagnostic")
+    .eq("id", sessionId).eq("user_id", userId).eq("session_type", "diagnostic")
     .eq("status", status).maybeSingle()
     .overrideTypes<DiagnosticSessionRow | null, { merge: false }>();
   return data;
 }
 
-export async function getActiveDiagnosticSession(userId: string): Promise<DiagnosticSessionState | null> {
+export async function getActiveDiagnosticSession(
+  userId: string,
+  knownSessionId?: string | null,
+): Promise<DiagnosticSessionState | null> {
   const admin = createSupabaseAdminClient();
-  const session = await diagnosticSessionRow(userId, "in_progress");
+  const session = await diagnosticSessionRow(userId, "in_progress", knownSessionId);
   if (!session) return null;
   const position = Math.min(session.current_position, session.question_count);
   const { data, error } = await admin.from("practice_session_items")
@@ -219,7 +227,7 @@ export async function saveDiagnosticAnswer(
   if (state.diagnosticSessionId !== input.sessionId || state.diagnosticStatus !== "in_progress") {
     throw new Error("This diagnostic is unavailable.");
   }
-  await recordPracticeAnswer(userId, input);
+  await recordDiagnosticAnswer(userId, input);
   return { saved: true as const };
 }
 
@@ -228,15 +236,104 @@ export async function advanceDiagnosticQuestion(userId: string, sessionId: strin
   if (state.diagnosticSessionId !== sessionId || state.diagnosticStatus !== "in_progress") {
     throw new Error("This diagnostic is unavailable.");
   }
+  return advanceVerifiedDiagnosticQuestion(userId, sessionId);
+}
+
+async function advanceVerifiedDiagnosticQuestion(userId: string, sessionId: string) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.rpc("advance_practice_question", {
     p_user_id: userId,
     p_session_id: sessionId,
   });
   if (error) throw new Error("Save the current answer before continuing.");
-  const session = await getActiveDiagnosticSession(userId);
+  const session = await getActiveDiagnosticSession(userId, sessionId);
   if (!session) throw new Error("Unable to load the next diagnostic question.");
   return session;
+}
+
+export type DiagnosticContinuationResult =
+  | { status: "advanced"; session: DiagnosticSessionState }
+  | { status: "completed" }
+  | { status: "error"; error: string; answerSaved: boolean };
+
+export async function continueInitialDiagnostic(
+  userId: string,
+  input: { sessionId: string; questionId: string; answer: PracticeAnswer },
+): Promise<DiagnosticContinuationResult> {
+  const onboarding = await getOnboardingState(userId);
+  if (onboarding.diagnosticStatus === "completed") return { status: "completed" };
+  if (
+    onboarding.diagnosticStatus !== "in_progress"
+    || onboarding.diagnosticSessionId !== input.sessionId
+  ) {
+    return {
+      status: "error",
+      error: "This diagnostic is no longer available.",
+      answerSaved: false,
+    };
+  }
+
+  let currentPosition: number;
+  let questionCount: number;
+  let answerSaved = false;
+  try {
+    const saved = await recordDiagnosticAnswer(userId, input);
+    currentPosition = saved.currentPosition;
+    questionCount = saved.questionCount;
+    answerSaved = true;
+  } catch {
+    // A retry may arrive after persistence committed but its response was lost.
+    // Read the server-owned position instead of mutating a locked old answer.
+    const current = await getActiveDiagnosticSession(
+      userId,
+      onboarding.diagnosticSessionId,
+    );
+    if (current?.question.id !== input.questionId) {
+      return current
+        ? { status: "advanced", session: current }
+        : {
+            status: "error",
+            error: "Unable to restore the diagnostic question.",
+            answerSaved: false,
+          };
+    }
+    if (!current.answered) {
+      return {
+        status: "error",
+        error: "Unable to save this answer. Check your connection and try again.",
+        answerSaved: false,
+      };
+    }
+    currentPosition = current.currentPosition;
+    questionCount = current.questionCount;
+    answerSaved = true;
+  }
+
+  if (currentPosition === questionCount) {
+    try {
+      await completeVerifiedDiagnostic(userId, input.sessionId);
+      return { status: "completed" };
+    } catch {
+      return {
+        status: "error",
+        error: "The answer was saved, but the diagnostic could not finish. Try again.",
+        answerSaved,
+      };
+    }
+  }
+
+  try {
+    return {
+      status: "advanced",
+      session: await advanceVerifiedDiagnosticQuestion(userId, input.sessionId),
+    };
+  } catch {
+    return {
+      status: "error",
+      error: "The answer was saved, but the next question could not load. Try again.",
+      answerSaved,
+    };
+  }
 }
 
 export async function completeInitialDiagnostic(userId: string, sessionId: string) {
@@ -244,6 +341,10 @@ export async function completeInitialDiagnostic(userId: string, sessionId: strin
   if (state.diagnosticSessionId !== sessionId || state.diagnosticStatus !== "in_progress") {
     throw new Error("This diagnostic is unavailable.");
   }
+  await completeVerifiedDiagnostic(userId, sessionId);
+}
+
+async function completeVerifiedDiagnostic(userId: string, sessionId: string) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.rpc("complete_initial_core_diagnostic", {
     p_user_id: userId,

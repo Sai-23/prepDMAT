@@ -247,17 +247,21 @@ export async function createPracticeSession(userId: string, config: PracticeConf
   const sessionId = crypto.randomUUID();
   const masterSeed = crypto.randomUUID();
   const startedAt = new Date();
+  const sourceContextPromise = config.sourceAttemptId
+    ? getMockPracticeContext(userId, config.sourceAttemptId)
+    : Promise.resolve({ fingerprints: [], structuralProfiles: [] });
   const { data: recentSessionData } = config.questionId ? { data: [] } : await admin.from("practice_sessions")
     .select("id").eq("user_id", userId).eq("status", "completed").eq("source_mode", "generated")
     .order("completed_at", { ascending: false }).limit(20);
   const recentSessionIds = (recentSessionData ?? []).map((row) => row.id as string);
-  const { data: recentItemData } = recentSessionIds.length
-    ? await admin.from("practice_session_items").select("fingerprint, structural_profile")
-        .in("session_id", recentSessionIds).order("created_at", { ascending: true }).limit(400)
-    : { data: [] };
-  const sourceContext = config.sourceAttemptId
-    ? await getMockPracticeContext(userId, config.sourceAttemptId)
-    : { fingerprints: [], structuralProfiles: [] };
+  const [recentItemsResult, sourceContext] = await Promise.all([
+    recentSessionIds.length
+      ? admin.from("practice_session_items").select("fingerprint, structural_profile")
+          .in("session_id", recentSessionIds).order("created_at", { ascending: true }).limit(400)
+      : Promise.resolve({ data: [] }),
+    sourceContextPromise,
+  ]);
+  const recentItemData = recentItemsResult.data;
   const items = config.questionId
     ? [await exactQuestionManifest(config.questionId, config.module)]
     : generatePracticeManifest({
@@ -307,7 +311,34 @@ export async function createPracticeSession(userId: string, config: PracticeConf
     .update({ session_type: sessionType })
     .eq("id", sessionId).eq("user_id", userId);
   if (categoryError) throw new Error("Unable to classify this practice session.");
-  return getActivePracticeSession(userId, sessionId);
+  const firstItem = items[0];
+  if (!firstItem) throw new Error("Unable to restore the new practice session.");
+  return state(
+    {
+      id: sessionId,
+      module: config.module,
+      difficulty_mode: config.difficulty,
+      question_count: config.questionCount,
+      timing_mode: config.timingMode,
+      status: "in_progress",
+      expires_at: expiresAt,
+      current_position: 1,
+      correct_count: 0,
+      incorrect_count: 0,
+      total_time_seconds: 0,
+      completed_at: null,
+    },
+    {
+      ...firstItem,
+      id: "",
+      response_status: "unanswered",
+      response_payload: null,
+      is_correct: null,
+      time_spent_seconds: 0,
+      shown_at: startedAt.toISOString(),
+      answered_at: null,
+    },
+  );
 }
 
 export async function getPracticeLandingData(userId: string): Promise<PracticeModulePerformance[]> {
@@ -359,7 +390,7 @@ export async function markPracticeQuestionShown(userId: string, sessionId: strin
   if (error) throw new Error("Unable to start response timing.");
 }
 
-export async function recordPracticeAnswer(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }) {
+async function recordPracticeAnswerResult(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }) {
   const admin = createSupabaseAdminClient();
   const { data: session } = await admin.from("practice_sessions").select("*")
     .eq("id", input.sessionId).eq("user_id", userId).eq("status", "in_progress").maybeSingle();
@@ -384,7 +415,24 @@ export async function recordPracticeAnswer(userId: string, input: { sessionId: s
     throw new Error("Unable to save this answer.");
   }
   const question = item.public_snapshot as PracticeQuestion;
-  return { ...feedback({ ...item, response_status: "answered", response_payload: input.answer, is_correct: isCorrect }, question)!, timeSpentSeconds, targetPaceSeconds: practiceTargetPaceSeconds(question.estimatedTimeSeconds) };
+  return {
+    ...feedback({ ...item, response_status: "answered", response_payload: input.answer, is_correct: isCorrect }, question)!,
+    timeSpentSeconds,
+    targetPaceSeconds: practiceTargetPaceSeconds(question.estimatedTimeSeconds),
+    currentPosition: Number(session.current_position),
+    questionCount: Number(session.question_count),
+  };
+}
+
+export async function recordPracticeAnswer(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }) {
+  const { currentPosition: _currentPosition, questionCount: _questionCount, ...result } = await recordPracticeAnswerResult(userId, input);
+  void _currentPosition;
+  void _questionCount;
+  return result;
+}
+
+export async function recordDiagnosticAnswer(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }) {
+  return recordPracticeAnswerResult(userId, input);
 }
 
 export async function openPracticeExplanation(userId: string, sessionId: string, questionId: string) {

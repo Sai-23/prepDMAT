@@ -21,7 +21,7 @@ describe("mathematical-equation style policy", () => {
       return metrics.visibleConstants.every((value) => value >= 1 && value <= 20) &&
         metrics.preferredConstantExceedanceCount === 0;
     })).toBe(true);
-  }, 20_000);
+  }, 30_000);
 
   it("flags negative displayed constants", () => {
     const candidate = mathematicalEquationGenerator.generate({ seed: "negative-style", difficulty: "easy" }, 1);

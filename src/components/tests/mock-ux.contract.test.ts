@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const catalog = readFileSync(resolve(process.cwd(), "src/app/tests/page.tsx"), "utf8");
 const overview = readFileSync(resolve(process.cwd(), "src/app/tests/[testId]/page.tsx"), "utf8");
 const runner = readFileSync(resolve(process.cwd(), "src/components/tests/test-runner.tsx"), "utf8");
+const testData = readFileSync(resolve(process.cwd(), "src/lib/tests/data.ts"), "utf8");
 
 describe("Mock Test student experience contract", () => {
   it("distinguishes official-format full Core work from custom mocks", () => {
@@ -60,5 +61,16 @@ describe("Mock Test student experience contract", () => {
     expect(runner.indexOf("const [remainingSeconds")).toBeLessThan(
       runner.indexOf("export function TestRunner"),
     );
+  });
+
+  it("loads the attempt, existing response, and immutable item in one autosave read phase", () => {
+    const saveStart = testData.indexOf("export async function saveTestResponse");
+    const saveEnd = testData.indexOf("export async function gradeAndSubmitTest", saveStart);
+    const saveResponse = testData.slice(saveStart, saveEnd);
+
+    expect(saveResponse).toContain(
+      "const [{ data: attempt }, { data: response }, { data: item }] = await Promise.all([",
+    );
+    expect(saveResponse.match(/practice_attempt_items/g)).toHaveLength(1);
   });
 });

@@ -485,7 +485,7 @@ export async function saveTestResponse(
   },
 ) {
   const admin = createSupabaseAdminClient();
-  const [{ data: attempt }, { data: response }] = await Promise.all([
+  const [{ data: attempt }, { data: response }, { data: item }] = await Promise.all([
     admin
       .from("test_attempts")
       .select("id, user_id, status, current_section_key, section_started_at, section_expires_at, test_snapshot")
@@ -494,6 +494,11 @@ export async function saveTestResponse(
     admin
       .from("user_responses")
       .select("id, shown_at")
+      .eq("attempt_id", input.attemptId)
+      .eq("question_key", input.questionId)
+      .maybeSingle(),
+    admin.from("practice_attempt_items")
+      .select("section_key, public_snapshot")
       .eq("attempt_id", input.attemptId)
       .eq("question_key", input.questionId)
       .maybeSingle(),
@@ -513,9 +518,6 @@ export async function saveTestResponse(
     await gradeAndSubmitTest(userId, input.attemptId, true);
     throw new Error("Time expired and the test was submitted automatically.");
   }
-  const { data: item } = await admin.from("practice_attempt_items")
-    .select("section_key, public_snapshot").eq("attempt_id", input.attemptId)
-    .eq("question_key", input.questionId).maybeSingle();
   if (!item || item.section_key !== active.section.id) throw new Error("Only the current timed section can be changed.");
   const publicQuestion = item.public_snapshot as PracticeQuestion;
   if (input.answer) {

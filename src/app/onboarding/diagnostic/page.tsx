@@ -12,7 +12,10 @@ export default async function OnboardingDiagnosticPage() {
   if (state.diagnosticStatus === "completed") redirect("/onboarding/diagnostic/summary");
   if (state.diagnosticStatus !== "in_progress") redirect("/onboarding");
 
-  const session = await getActiveDiagnosticSession(user.id);
+  const session = await getActiveDiagnosticSession(
+    user.id,
+    state.diagnosticSessionId,
+  );
   if (!session) redirect("/onboarding");
 
   return (
