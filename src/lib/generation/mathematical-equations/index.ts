@@ -4,6 +4,7 @@ export * from "./generator";
 export * from "./pipeline";
 export * from "./presentation";
 export * from "./solver";
+export * from "./solve-trace";
 export * from "./style";
 export * from "./taxonomy";
 export * from "./types";

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   adminNavigation,
   navigationForRoles,
+  primaryNavigation,
   reviewerNavigation,
 } from "./navigation";
 
@@ -32,5 +33,17 @@ describe("navigationForRoles", () => {
 
   it("does not expose role-restricted administration links to students", () => {
     expect(navigationForRoles(adminNavigation, ["student"])).toEqual([]);
+  });
+
+  it("keeps the launch-stage public navigation free of pricing links", () => {
+    expect(primaryNavigation.map((item) => item.label)).toEqual([
+      "Dashboard",
+      "Practice",
+      "Mock Tests",
+      "Progress",
+      "Exam Format",
+      "Free Diagnostic",
+    ]);
+    expect(primaryNavigation.map((item) => item.href)).not.toContain("/pricing");
   });
 });

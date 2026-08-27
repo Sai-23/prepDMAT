@@ -68,6 +68,30 @@ describe("mathematical-equation fingerprints", () => {
     );
   });
 
+  it("recognizes sum-and-difference systems with different numbers as one structure", () => {
+    const first = mathematicalEquationGenerator.generate(
+      { seed: "explicit-structural-equivalence", difficulty: "easy" },
+      1,
+    );
+    const second = structuredClone(first);
+    const system = (sum: number, difference: number) => [
+      {
+        left: { kind: "operation" as const, operator: "add" as const, left: { kind: "variable" as const, symbol: "A" }, right: { kind: "variable" as const, symbol: "B" } },
+        right: { kind: "constant" as const, value: sum },
+      },
+      {
+        left: { kind: "operation" as const, operator: "subtract" as const, left: { kind: "variable" as const, symbol: "A" }, right: { kind: "variable" as const, symbol: "B" } },
+        right: { kind: "constant" as const, value: difference },
+      },
+    ];
+    first.structuredData.equations = system(12, 4);
+    second.structuredData.equations = system(14, 6);
+    expect(mathematicalEquationStructuralSignature(first)).toBe(
+      mathematicalEquationStructuralSignature(second),
+    );
+    expect(fingerprintMathematicalEquation(first)).not.toBe(fingerprintMathematicalEquation(second));
+  });
+
   it("retains the normalized solve path in the structural signature", () => {
     const candidate = mathematicalEquationGenerator.generate(
       { seed: "fingerprint-path", difficulty: "hard" },

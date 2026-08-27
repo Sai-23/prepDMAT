@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { hardenedSupabaseCookieOptions } from "@/lib/security/cookies";
 import type { Database } from "@/types/database";
 
 type CookieMutation = {
@@ -9,9 +10,9 @@ type CookieMutation = {
   options?: CookieOptions;
 };
 
-export function updateSupabaseSession(request: NextRequest) {
+export function updateSupabaseSession(request: NextRequest, requestHeaders = request.headers) {
   let response = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   });
 
   const supabase = createServerClient<Database>(
@@ -26,11 +27,11 @@ export function updateSupabaseSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
 
           response = NextResponse.next({
-            request,
+            request: { headers: requestHeaders },
           });
 
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
+            response.cookies.set(name, value, hardenedSupabaseCookieOptions(options)),
           );
         },
       },

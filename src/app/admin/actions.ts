@@ -10,6 +10,7 @@ import {
   getGeneratedEquationNoveltyHistory,
   getGeneratedLatinNoveltyHistory,
   getGeneratedFigureNoveltyHistory,
+  getGeneratedQuestionByFingerprint,
   reviewQuestion,
   softDeleteQuestion,
   updateQuestionLifecycle,
@@ -20,6 +21,9 @@ import {
   generatedEquationSaveSchema,
   generatedFigureSaveSchema,
   generatedLatinSaveSchema,
+  generatedQuestionBatchInputSchema,
+  generatedQuestionPublishItemSchema,
+  type GeneratedQuestionPublishItem,
   figureGenerationRequestSchema,
   latinGenerationRequestSchema,
 } from "@/lib/admin/generation-schemas";
@@ -47,6 +51,10 @@ import {
   updateAdminTestPublication,
 } from "@/lib/admin/test-data";
 import {
+  MockSaveError,
+  type MockSaveDiagnostic,
+} from "@/lib/admin/mock-persistence";
+import {
   questionAuthoringSchema,
   questionDeleteSchema,
   questionEditIdSchema,
@@ -59,6 +67,17 @@ import {
   adminTestLifecycleSchema,
 } from "@/lib/admin/test-schemas";
 import { requireRole } from "@/lib/auth/guards";
+import {
+  generatedPublishFailureMessage,
+  runGeneratedQuestionBatch,
+  type GeneratedBatchItemResult,
+  type GeneratedBatchResult,
+} from "@/lib/admin/generated-batch";
+import {
+  assessGeneratedQuestionEnvelope,
+  type PublishableGeneratedQuestion,
+} from "@/lib/admin/generated-publication";
+import { safeActionFailure } from "@/lib/security/public-errors";
 
 export type QuestionFormState = {
   status: "idle" | "error" | "success";
@@ -72,6 +91,7 @@ export type AdminTestFormState = {
   message?: string;
   testId?: string;
   errors?: Record<string, string[] | undefined>;
+  diagnostic?: MockSaveDiagnostic;
 };
 
 export type EquationPreviewResponse =
@@ -113,13 +133,8 @@ export async function generateEquationPreviewAction(
       questions.push(question);
     }
     return { error: null, baseSeed, questions };
-  } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to generate a validated equation preview.",
-    };
+  } catch {
+    return { error: "Unable to generate a validated equation preview." };
   }
 }
 
@@ -127,23 +142,10 @@ export async function publishGeneratedEquationAction(input: unknown) {
   const { user } = await requireRole(["admin"]);
   const parsed = generatedEquationSaveSchema.safeParse(input);
   if (!parsed.success) return { error: "The equation preview provenance is invalid." };
-
-  try {
-    const question = reproduceValidatedMathematicalEquation(
-      { seed: parsed.data.seed, difficulty: parsed.data.difficulty },
-      parsed.data.attemptCount,
-    );
-    if (question.metadata.fingerprint !== parsed.data.fingerprint) {
-      return { error: "The equation preview could not be reproduced exactly and was not published." };
-    }
-    const questionId = await createPublishedGeneratedEquation(user.id, question);
-    revalidateGeneratedQuestionPaths();
-    return { error: null, questionId };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Unable to publish this equation.",
-    };
-  }
+  return publishIndividualGeneratedQuestion(user.id, {
+    questionType: "mathematical_equation",
+    ...parsed.data,
+  });
 }
 
 export type LatinPreviewResponse =
@@ -177,13 +179,8 @@ export async function generateLatinPreviewAction(
       questions.push(question);
     }
     return { error: null, baseSeed, questions };
-  } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to generate a validated Latin-square preview.",
-    };
+  } catch {
+    return { error: "Unable to generate a validated Latin-square preview." };
   }
 }
 
@@ -192,22 +189,10 @@ export async function publishGeneratedLatinAction(input: unknown) {
   const parsed = generatedLatinSaveSchema.safeParse(input);
   if (!parsed.success) return { error: "The Latin-square preview provenance is invalid." };
 
-  try {
-    const question = reproduceValidatedLatinSquare(
-      { seed: parsed.data.seed, difficulty: parsed.data.difficulty },
-      parsed.data.attemptCount,
-    );
-    if (question.metadata.fingerprint !== parsed.data.fingerprint) {
-      return { error: "The Latin-square preview could not be reproduced exactly and was not published." };
-    }
-    const questionId = await createPublishedGeneratedLatin(user.id, question);
-    revalidateGeneratedQuestionPaths();
-    return { error: null, questionId };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Unable to publish this Latin square.",
-    };
-  }
+  return publishIndividualGeneratedQuestion(user.id, {
+    questionType: "latin_square",
+    ...parsed.data,
+  });
 }
 
 export type FigurePreviewResponse =
@@ -232,8 +217,8 @@ export async function generateFigurePreviewAction(input: unknown): Promise<Figur
       questions.push(question);
     }
     return { error: null, baseSeed, questions };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Unable to generate a validated figure-sequence preview." };
+  } catch {
+    return { error: "Unable to generate a validated figure-sequence preview." };
   }
 }
 
@@ -242,22 +227,206 @@ export async function publishGeneratedFigureAction(input: unknown) {
   const parsed = generatedFigureSaveSchema.safeParse(input);
   if (!parsed.success) return { error: "The figure-sequence preview provenance is invalid." };
 
+  return publishIndividualGeneratedQuestion(user.id, {
+    questionType: "figure_sequence",
+    ...parsed.data,
+  });
+}
+
+async function publishOneGeneratedQuestion(
+  actorId: string,
+  item: GeneratedQuestionPublishItem,
+): Promise<GeneratedBatchItemResult> {
+  const diagnostic = {
+    id: item.fingerprint,
+    questionType: item.questionType,
+    difficulty: item.difficulty,
+  } as const;
   try {
-    const question = reproduceValidatedFigureSequence(
-      { seed: parsed.data.seed, difficulty: parsed.data.difficulty },
-      parsed.data.attemptCount,
-    );
-    if (question.metadata.fingerprint !== parsed.data.fingerprint) {
-      return { error: "The figure-sequence preview could not be reproduced exactly and was not published." };
+    const existing = await getGeneratedQuestionByFingerprint(item.fingerprint);
+    if (existing) {
+      const currentStatus = existing.deletedAt
+        ? "deleted" as const
+        : existing.publicationStatus === "published"
+          ? "published" as const
+          : existing.publicationStatus === "draft"
+            ? "draft" as const
+            : "unknown" as const;
+      if (
+        currentStatus === "published" &&
+        existing.verificationStatus === "approved"
+      ) {
+        return {
+          ...diagnostic,
+          status: "already_published",
+          questionId: existing.id,
+          currentStatus,
+          validationState: "passed",
+          publishEligibility: "already_published",
+        };
+      }
+      return {
+        ...diagnostic,
+        status: "failed",
+        reason: "NOT_ELIGIBLE",
+        currentStatus,
+        validationState: existing.verificationStatus === "approved" ? "passed" : "not_checked",
+        publishEligibility: "not_eligible",
+      };
     }
-    const questionId = await createPublishedGeneratedFigure(user.id, question);
-    revalidateGeneratedQuestionPaths();
-    return { error: null, questionId };
+
+    if (item.questionType === "latin_square") {
+      const question = reproduceValidatedLatinSquare(
+          { seed: item.seed, difficulty: item.difficulty },
+          item.attemptCount,
+        );
+      return await publishValidatedReproduction(diagnostic, item.fingerprint, question, () =>
+        createPublishedGeneratedLatin(actorId, question));
+    }
+    if (item.questionType === "figure_sequence") {
+      const question = reproduceValidatedFigureSequence(
+        { seed: item.seed, difficulty: item.difficulty },
+        item.attemptCount,
+      );
+      return await publishValidatedReproduction(diagnostic, item.fingerprint, question, () =>
+        createPublishedGeneratedFigure(actorId, question));
+    }
+    const question = reproduceValidatedMathematicalEquation(
+      { seed: item.seed, difficulty: item.difficulty },
+      item.attemptCount,
+    );
+    return await publishValidatedReproduction(diagnostic, item.fingerprint, question, () =>
+      createPublishedGeneratedEquation(actorId, question));
   } catch (error) {
+    const raced = await getGeneratedQuestionByFingerprint(item.fingerprint).catch(() => null);
+    if (
+      raced && !raced.deletedAt && raced.publicationStatus === "published" &&
+      raced.verificationStatus === "approved"
+    ) {
+      return {
+        ...diagnostic,
+        status: "already_published",
+        questionId: raced.id,
+        currentStatus: "published",
+        validationState: "passed",
+        publishEligibility: "already_published",
+      };
+    }
     return {
-      error: error instanceof Error ? error.message : "Unable to publish this figure sequence.",
+      ...diagnostic,
+      status: "failed",
+      reason: "PUBLISH_FAILED",
+      currentStatus: "preview",
+      validationState: error instanceof GeneratedQuestionPersistenceError ? "passed" : "not_checked",
+      publishEligibility: error instanceof GeneratedQuestionPersistenceError ? "eligible" : "unknown",
     };
   }
+}
+
+class GeneratedQuestionPersistenceError extends Error {
+  constructor() {
+    super("Generated question persistence failed.");
+    this.name = "GeneratedQuestionPersistenceError";
+  }
+}
+
+async function publishValidatedReproduction(
+  diagnostic: Pick<GeneratedBatchItemResult, "id" | "questionType" | "difficulty">,
+  expectedFingerprint: string,
+  question: PublishableGeneratedQuestion,
+  persist: () => Promise<string>,
+): Promise<GeneratedBatchItemResult> {
+  const assessment = assessGeneratedQuestionEnvelope(
+    question,
+    diagnostic.questionType ?? question.questionType,
+    expectedFingerprint,
+  );
+  if (!assessment.eligible) {
+    return {
+      ...diagnostic,
+      status: "failed",
+      reason: assessment.reason,
+      currentStatus: "preview",
+      validationState: assessment.reason === "VALIDATION_FAILED" ? "failed" : "not_checked",
+      publishEligibility: "not_eligible",
+    };
+  }
+  let questionId: string;
+  try {
+    questionId = await persist();
+  } catch {
+    throw new GeneratedQuestionPersistenceError();
+  }
+  return {
+    ...diagnostic,
+    status: "published",
+    questionId,
+    currentStatus: "published",
+    validationState: "passed",
+    publishEligibility: "eligible",
+  };
+}
+
+async function publishIndividualGeneratedQuestion(
+  actorId: string,
+  item: GeneratedQuestionPublishItem,
+) {
+  const result = await publishOneGeneratedQuestion(actorId, item);
+  if (
+    (result.status === "published" || result.status === "already_published") &&
+    result.questionId
+  ) {
+    if (result.status === "published") revalidateGeneratedQuestionPaths();
+    return { error: null, questionId: result.questionId, result };
+  }
+  return { error: generatedPublishFailureMessage(result.reason), result };
+}
+
+export type PublishGeneratedQuestionsResponse = GeneratedBatchResult & {
+  error: string | null;
+};
+
+export async function publishGeneratedQuestionsAction(
+  input: unknown,
+): Promise<PublishGeneratedQuestionsResponse> {
+  const { user } = await requireRole(["admin"]);
+  const collection = generatedQuestionBatchInputSchema.safeParse(input);
+  if (!collection.success) {
+    return {
+      error: "The batch publication request is invalid.",
+      requested: 0,
+      published: 0,
+      alreadyPublished: 0,
+      failed: 0,
+      skipped: 0,
+      results: [],
+    };
+  }
+
+  const validItems: GeneratedQuestionPublishItem[] = [];
+  const invalidResults: GeneratedBatchItemResult[] = [];
+  collection.data.forEach((candidate, index) => {
+    const parsed = generatedQuestionPublishItemSchema.safeParse(candidate);
+    if (parsed.success) validItems.push(parsed.data);
+    else invalidResults.push({ id: `invalid-${index + 1}`, status: "failed", reason: "INVALID_INPUT" });
+  });
+
+  const batch = await runGeneratedQuestionBatch(
+    validItems,
+    (item) => publishOneGeneratedQuestion(user.id, item),
+  );
+  const results = [...batch.results, ...invalidResults];
+  const published = results.filter((result) => result.status === "published").length;
+  if (published > 0) revalidateGeneratedQuestionPaths();
+  return {
+    error: null,
+    requested: collection.data.length,
+    published,
+    alreadyPublished: results.filter((result) => result.status === "already_published").length,
+    failed: results.filter((result) => result.status === "failed").length,
+    skipped: results.filter((result) => result.status === "skipped").length,
+    results,
+  };
 }
 
 function revalidateGeneratedQuestionPaths() {
@@ -333,11 +502,10 @@ export async function createQuestionAction(
             : "Question draft created.",
       questionId: result.id,
     };
-  } catch (error) {
+  } catch {
     return {
       status: "error",
-      message:
-        error instanceof Error ? error.message : "Unable to create this question.",
+      message: "Unable to save this question.",
     };
   }
 }
@@ -353,10 +521,7 @@ export async function reviewQuestionAction(input: unknown) {
     revalidatePath("/admin/review");
     return { error: null, success: true };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Unable to save this review.",
-    };
+    return safeActionFailure(error, "Unable to save this review.");
   }
 }
 
@@ -376,12 +541,7 @@ export async function questionLifecycleAction(input: unknown) {
     revalidatePath("/practice");
     return { error: null, success: true };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to update the question lifecycle.",
-    };
+    return safeActionFailure(error, "Unable to update the question lifecycle.");
   }
 }
 
@@ -403,10 +563,9 @@ export async function deleteQuestionAction(input: unknown) {
     };
   } catch (error) {
     return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Could not delete this question. Try again.",
+      ...safeActionFailure(error, "Could not delete this question. Try again."),
+      status: undefined,
+      message: undefined,
     };
   }
 }
@@ -478,8 +637,8 @@ export async function saveAdminTestAction(
   } catch (error) {
     return {
       status: "error",
-      message:
-        error instanceof Error ? error.message : "Unable to save this mock.",
+      message: "Unable to save this mock.",
+      diagnostic: error instanceof MockSaveError ? error.diagnostic : undefined,
     };
   }
 }
@@ -500,11 +659,6 @@ export async function adminTestLifecycleAction(input: unknown) {
     revalidatePath("/tests");
     return { error: null, success: true };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to update the mock lifecycle.",
-    };
+    return safeActionFailure(error, "Unable to update the mock lifecycle.");
   }
 }

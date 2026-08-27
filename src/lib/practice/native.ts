@@ -8,6 +8,16 @@ import {
   buildLatinEducationalExplanation,
   type EducationalExplanation,
 } from "./educational-explanation";
+import { createVerifiedEquationExplanationTrace } from "./mathematical-equation-explanation-trace";
+import type { EquationExplanationTrace } from "./mathematical-equation-explanation";
+import {
+  createVerifiedFigureExplanationTrace,
+  type FigureExplanationTrace,
+} from "./figure-sequence-explanation-trace";
+import {
+  createVerifiedLatinExplanationTrace,
+  type LatinExplanationTrace,
+} from "./latin-square-explanation-trace";
 
 type Option = { id: string; label: string; content: string };
 type Source = Omit<PracticeQuestion, "structuredData" | "response" | "options"> & {
@@ -23,6 +33,9 @@ export type PrivatePracticeSnapshot = {
   correctAnswer: unknown;
   explanation: string;
   explanationTrace?: unknown;
+  figureExplanationTrace?: FigureExplanationTrace;
+  latinExplanationTrace?: LatinExplanationTrace;
+  mathematicalExplanationTrace?: EquationExplanationTrace;
   educationalExplanation?: EducationalExplanation;
   provenance: Record<string, unknown>;
 };
@@ -40,6 +53,9 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
   let correctAnswer: unknown;
   let explanationTrace: unknown;
   let explanationStructuredData: unknown;
+  let mathematicalExplanationTrace: EquationExplanationTrace | null = null;
+  let figureExplanationTrace: FigureExplanationTrace | null = null;
+  let latinExplanationTrace: LatinExplanationTrace | null = null;
 
   if (source.sourceType !== "generated") {
     response = { kind: "single_choice", options: source.options };
@@ -56,6 +72,11 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
     response = { kind: "symbol_assignment", symbols: Array.isArray(specification?.symbols) ? specification.symbols.filter((item): item is string => typeof item === "string") : [] };
     correctAnswer = metadata.correctAnswer;
     explanationTrace = structuredClone(stored.solutionPath);
+    mathematicalExplanationTrace = createVerifiedEquationExplanationTrace(
+      explanationStructuredData as MathematicalEquationStructuredData,
+      explanationTrace,
+      correctAnswer,
+    );
   } else if (source.questionType === "latin_square") {
     const specification = record(stored.response);
     const sourceOptions = Array.isArray(specification?.options) ? specification.options : [];
@@ -66,6 +87,12 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
     }) };
     correctAnswer = metadata.correctAnswer;
     explanationTrace = structuredClone(stored.deductionTrace);
+    latinExplanationTrace = createVerifiedLatinExplanationTrace(
+      structuredData as LatinSquareStructuredData,
+      explanationTrace,
+      correctAnswer,
+      stored.completedGrid,
+    );
   } else if (source.questionType === "figure_sequence") {
     const storedSequence = record(stored.sequence) ?? {};
     const sequence = {
@@ -84,6 +111,12 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
     response = { kind: "two_stage_single_choice" };
     correctAnswer = publicAnswers;
     explanationTrace = { rules: structuredClone(record(stored.task)?.rules) };
+    figureExplanationTrace = createVerifiedFigureExplanationTrace(
+      structuredData as FigureSequencePresentation,
+      explanationTrace,
+      correctAnswer,
+      stored.solutionFrames,
+    );
   } else {
     throw new Error("Unsupported generated practice response type.");
   }
@@ -108,11 +141,16 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
     };
   const educationalExplanation = source.sourceType === "generated"
     ? source.questionType === "figure_sequence"
-      ? buildFigureEducationalExplanation(structuredData as FigureSequencePresentation, explanationTrace, correctAnswer, source.difficulty)
+      ? buildFigureEducationalExplanation(structuredData as FigureSequencePresentation, figureExplanationTrace, correctAnswer, source.difficulty)
       : source.questionType === "mathematical_equation"
-        ? buildEquationEducationalExplanation(explanationStructuredData as MathematicalEquationStructuredData, explanationTrace, correctAnswer, source.difficulty)
+        ? buildEquationEducationalExplanation(
+            explanationStructuredData as MathematicalEquationStructuredData,
+            mathematicalExplanationTrace,
+            correctAnswer,
+            source.difficulty,
+          )
         : source.questionType === "latin_square"
-          ? buildLatinEducationalExplanation(structuredData as LatinSquareStructuredData, explanationTrace, correctAnswer, source.difficulty)
+          ? buildLatinEducationalExplanation(structuredData as LatinSquareStructuredData, latinExplanationTrace, correctAnswer, source.difficulty)
           : null
     : null;
   return {
@@ -121,6 +159,9 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
       correctAnswer,
       explanation: source.explanation,
       ...(explanationTrace === undefined ? {} : { explanationTrace }),
+      ...(figureExplanationTrace ? { figureExplanationTrace } : {}),
+      ...(latinExplanationTrace ? { latinExplanationTrace } : {}),
+      ...(mathematicalExplanationTrace ? { mathematicalExplanationTrace } : {}),
       ...(educationalExplanation ? { educationalExplanation } : {}),
       provenance: generation,
     },

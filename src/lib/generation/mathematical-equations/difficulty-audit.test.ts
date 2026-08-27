@@ -8,6 +8,7 @@ import {
 } from "./fingerprint";
 import { mathematicalEquationGenerator } from "./generator";
 import { generateValidatedMathematicalEquation } from "./pipeline";
+import { buildCanonicalSolveTrace, validateSolveTraceRange } from "./solve-trace";
 import type {
   EquationOperator,
   MathematicalEquationGenerationConfiguration,
@@ -26,10 +27,13 @@ type AuditRow = {
   accepted: number;
   candidatesAttempted: number;
   averageVariableCount: number;
+  medianVariableCount: number;
   averageEquationCount: number;
+  medianEquationCount: number;
   exactVariableCountPercent: number;
   dependencyDepthDistribution: Record<string, number>;
   averageDependencyDepth: number;
+  medianDependencyDepth: number;
   averageSolveSteps: number;
   averageSubstitutions: number;
   averageOperatorVariety: number;
@@ -55,11 +59,30 @@ type AuditRow = {
   canonicalStructuralDuplicateRate: number;
   withinSessionStructuralDuplicateRate: number;
   familyDistribution: Record<string, number>;
+  relationshipFamilyDistribution: Record<string, number>;
+  reasoningFamilyDistribution: Record<string, number>;
   dependencyGraphDistribution: Record<string, number>;
+  exactDuplicateRate: number;
+  structuralDuplicateRate: number;
+  presentationOnlyVariationRate: number;
+  maximumEvaluatedIntermediate: number;
+  minimumEvaluatedIntermediate: number;
+  fractionalTraceCount: number;
+  negativeTraceCount: number;
+  arithmeticRangeViolationCount: number;
+  rejectionReasonDistribution: Record<string, number>;
+  elapsedMilliseconds: number;
+  acceptedPerSecond: number;
+  averageCandidateAttempts: number;
 };
 
 const rounded = (value: number) => Number(value.toFixed(3));
 const average = (values: number[]) => values.reduce((total, value) => total + value, 0) / values.length;
+const median = (values: number[]) => {
+  const ordered = [...values].sort((first, second) => first - second);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 0 ? (ordered[middle - 1] + ordered[middle]) / 2 : ordered[middle];
+};
 
 function collectOperators(expression: MathematicalExpression, counts: Record<EquationOperator, number>) {
   if (expression.kind !== "operation") return;
@@ -69,6 +92,7 @@ function collectOperators(expression: MathematicalExpression, counts: Record<Equ
 }
 
 function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: MathematicalEquationQuestion[] } {
+  const startedAt = performance.now();
   const acceptedFingerprints = new Set<string>();
   let sessionStructuralSignatures = new Set<string>();
   const questions: MathematicalEquationQuestion[] = [];
@@ -77,6 +101,7 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
   let duplicateRejections = 0;
   let outOfDomainRejections = 0;
   let difficultyRejections = 0;
+  const rejectionReasons: Record<string, number> = {};
 
   for (let index = 0; index < SAMPLE_SIZE; index += 1) {
     if (index % STRUCTURAL_SESSION_SIZE === 0) sessionStructuralSignatures = new Set();
@@ -111,9 +136,19 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
     }
     candidatesAttempted += question.metadata.attemptCount;
     for (let attempt = 1; attempt < question.metadata.attemptCount; attempt += 1) {
-      const candidate = mathematicalEquationGenerator.generate(configuration, attempt);
+      let candidate: ReturnType<typeof mathematicalEquationGenerator.generate>;
+      try {
+        candidate = mathematicalEquationGenerator.generate(configuration, attempt);
+      } catch {
+        rejectionReasons.CONSTRUCTION_REJECTED = (rejectionReasons.CONSTRUCTION_REJECTED ?? 0) + 1;
+        solverRejections += 1;
+        continue;
+      }
       const validation = mathematicalEquationValidator.validate(candidate, difficulty);
       if (!validation.valid) {
+        validation.issues.forEach((entry) => {
+          rejectionReasons[entry.code] = (rejectionReasons[entry.code] ?? 0) + 1;
+        });
         if (validation.issues.some((issue) => issue.stage === "domain")) outOfDomainRejections += 1;
         else if (validation.issues.some((issue) => issue.stage === "difficulty")) difficultyRejections += 1;
         else solverRejections += 1;
@@ -122,6 +157,10 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
         sessionStructuralSignatures.has(mathematicalEquationStructuralSignature(candidate))
       ) {
         duplicateRejections += 1;
+        const code = acceptedFingerprints.has(fingerprintMathematicalEquation(candidate))
+          ? "duplicate_fingerprint"
+          : "duplicate_structural_signature";
+        rejectionReasons[code] = (rejectionReasons[code] ?? 0) + 1;
       }
     }
     acceptedFingerprints.add(question.metadata.fingerprint);
@@ -132,6 +171,8 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
   const metrics = questions.map((question) => calculateEquationDifficulty(question).metrics);
   const depths: Record<string, number> = {};
   const families: Record<string, number> = {};
+  const relationshipFamilies: Record<string, number> = {};
+  const reasoningFamilies: Record<string, number> = {};
   const dependencyGraphs: Record<string, number> = {};
   const operators: Record<EquationOperator, number> = { add: 0, subtract: 0, multiply: 0, divide: 0 };
   questions.forEach((question, index) => {
@@ -139,6 +180,12 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
     depths[depth] = (depths[depth] ?? 0) + 1;
     const family = question.structuredData.dependencyModel.family;
     families[family] = (families[family] ?? 0) + 1;
+    question.structuredData.dependencyModel.relationshipPrimitives?.forEach((relationship) => {
+      relationshipFamilies[relationship] = (relationshipFamilies[relationship] ?? 0) + 1;
+    });
+    question.structuredData.dependencyModel.reasoningFamilies?.forEach((reasoningFamily) => {
+      reasoningFamilies[reasoningFamily] = (reasoningFamilies[reasoningFamily] ?? 0) + 1;
+    });
     const graph = `depth-${metrics[index].dependencyDepth}/branch-${metrics[index].branchCount}/recombine-${metrics[index].recombinationCount}/indirect-${metrics[index].indirectCouplingCount}`;
     dependencyGraphs[graph] = (dependencyGraphs[graph] ?? 0) + 1;
     question.structuredData.equations.forEach((equation) => {
@@ -147,6 +194,17 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
     });
   });
   const signatures = new Set(questions.map(mathematicalEquationStructuralSignature));
+  const fingerprints = new Set(questions.map(fingerprintMathematicalEquation));
+  const signatureCounts = questions.reduce((counts, question) => {
+    const signature = mathematicalEquationStructuralSignature(question);
+    counts.set(signature, (counts.get(signature) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+  const presentationOnlyVariations = questions.filter((question) =>
+    (signatureCounts.get(mathematicalEquationStructuralSignature(question)) ?? 0) > 1,
+  ).length;
+  const traces = questions.map((question) => buildCanonicalSolveTrace(question, question.correctAnswer));
+  const traceRanges = traces.map((trace, index) => validateSolveTraceRange(trace, questionDomain(questions[index])));
   const withinSessionDuplicateCount = Array.from(
     { length: Math.ceil(questions.length / STRUCTURAL_SESSION_SIZE) },
     (_, sessionIndex) => questions.slice(
@@ -157,6 +215,7 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
     total + session.length - new Set(session.map(mathematicalEquationStructuralSignature)).size,
   0);
   const expectedCount = difficulty === "easy" ? 2 : difficulty === "medium" ? 3 : 4;
+  const elapsedMilliseconds = performance.now() - startedAt;
 
   return {
     row: {
@@ -164,12 +223,15 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
       accepted: questions.length,
       candidatesAttempted,
       averageVariableCount: rounded(average(metrics.map((metric) => metric.variableCount))),
+      medianVariableCount: rounded(median(metrics.map((metric) => metric.variableCount))),
       averageEquationCount: rounded(average(metrics.map((metric) => metric.equationCount))),
+      medianEquationCount: rounded(median(metrics.map((metric) => metric.equationCount))),
       exactVariableCountPercent: rounded(
         metrics.filter((metric) => metric.variableCount === expectedCount).length / metrics.length * 100,
       ),
       dependencyDepthDistribution: depths,
       averageDependencyDepth: rounded(average(metrics.map((metric) => metric.dependencyDepth))),
+      medianDependencyDepth: rounded(median(metrics.map((metric) => metric.dependencyDepth))),
       averageSolveSteps: rounded(average(metrics.map((metric) => metric.solveStepCount))),
       averageSubstitutions: rounded(average(metrics.map((metric) => metric.substitutionCount))),
       averageOperatorVariety: rounded(average(metrics.map((metric) => metric.operatorVariety))),
@@ -195,10 +257,28 @@ function auditDifficulty(difficulty: Difficulty): { row: AuditRow; samples: Math
       canonicalStructuralDuplicateRate: rounded(1 - signatures.size / questions.length),
       withinSessionStructuralDuplicateRate: rounded(withinSessionDuplicateCount / questions.length),
       familyDistribution: families,
+      relationshipFamilyDistribution: relationshipFamilies,
+      reasoningFamilyDistribution: reasoningFamilies,
       dependencyGraphDistribution: dependencyGraphs,
+      exactDuplicateRate: rounded(1 - fingerprints.size / questions.length),
+      structuralDuplicateRate: rounded(1 - signatures.size / questions.length),
+      presentationOnlyVariationRate: rounded(presentationOnlyVariations / questions.length),
+      maximumEvaluatedIntermediate: Math.max(...traces.map((trace) => trace.maximumEvaluatedIntermediate)),
+      minimumEvaluatedIntermediate: Math.min(...traces.map((trace) => trace.minimumEvaluatedIntermediate)),
+      fractionalTraceCount: traces.filter((trace) => trace.hasFractionalIntermediate).length,
+      negativeTraceCount: traces.filter((trace) => trace.hasNegativeIntermediate).length,
+      arithmeticRangeViolationCount: traceRanges.filter((range) => !range.valid).length,
+      rejectionReasonDistribution: rejectionReasons,
+      elapsedMilliseconds: rounded(elapsedMilliseconds),
+      acceptedPerSecond: rounded(questions.length / elapsedMilliseconds * 1000),
+      averageCandidateAttempts: rounded(candidatesAttempted / questions.length),
     },
     samples: questions.slice(0, 15),
   };
+}
+
+function questionDomain(question: MathematicalEquationQuestion) {
+  return question.structuredData.domain;
 }
 
 function escapeXml(value: string): string {
@@ -247,9 +327,27 @@ function writeArtifacts(rows: AuditRow[], samples: MathematicalEquationQuestion[
     "",
     ...rows.map((row) => `- ${row.difficulty}: ${Object.entries(row.familyDistribution).map(([family, count]) => `${family} ${count}`).join(", ")}`),
     "",
+    "## Relationship-family distribution",
+    "",
+    ...rows.map((row) => `- ${row.difficulty}: ${Object.entries(row.relationshipFamilyDistribution).map(([family, count]) => `${family} ${count}`).join(", ")}`),
+    "",
+    "## Reasoning-family distribution",
+    "",
+    ...rows.map((row) => `- ${row.difficulty}: ${Object.entries(row.reasoningFamilyDistribution).map(([family, count]) => `${family} ${count}`).join(", ")}`),
+    "",
     "## Dependency-graph distribution",
     "",
     ...rows.map((row) => `- ${row.difficulty}: ${Object.entries(row.dependencyGraphDistribution).map(([graph, count]) => `${graph} ${count}`).join(", ")}`),
+    "",
+    "## Arithmetic safety and performance",
+    "",
+    "| Difficulty | Max intermediate | Min intermediate | Fractions | Negatives | Range violations | Attempts / accepted | Accepted / sec |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ...rows.map((row) => `| ${row.difficulty} | ${row.maximumEvaluatedIntermediate} | ${row.minimumEvaluatedIntermediate} | ${row.fractionalTraceCount} | ${row.negativeTraceCount} | ${row.arithmeticRangeViolationCount} | ${row.averageCandidateAttempts} | ${row.acceptedPerSecond} |`),
+    "",
+    "## Duplicate and rejection analysis",
+    "",
+    ...rows.map((row) => `- ${row.difficulty}: exact duplicate rate ${row.exactDuplicateRate}; structural duplicate rate ${row.structuralDuplicateRate}; presentation-only variation rate ${row.presentationOnlyVariationRate}; rejection reasons ${JSON.stringify(row.rejectionReasonDistribution)}`),
     "",
     "## Diversity interpretation",
     "",
@@ -290,6 +388,12 @@ describe.skipIf(!ENABLED)("Mathematical Equations 200-per-difficulty audit", () 
     expect(rows.every((row) => row.outOfDomainRejections === 0)).toBe(true);
     expect(rows.every((row) => row.difficultyRejections === 0)).toBe(true);
     expect(rows.every((row) => row.withinSessionStructuralDuplicateRate === 0)).toBe(true);
+    expect(rows.every((row) => row.exactDuplicateRate === 0)).toBe(true);
+    expect(rows.every((row) => row.arithmeticRangeViolationCount === 0)).toBe(true);
+    expect(rows.every((row) => row.maximumEvaluatedIntermediate <= 20)).toBe(true);
+    expect(rows.every((row) => row.minimumEvaluatedIntermediate >= 1)).toBe(true);
+    expect(rows.every((row) => row.fractionalTraceCount === 0)).toBe(true);
+    expect(rows.every((row) => row.negativeTraceCount === 0)).toBe(true);
     expect(rows[0].canonicalStructuralDuplicateRate).toBeLessThanOrEqual(0.65);
     expect(rows[1].canonicalStructuralDuplicateRate).toBeLessThanOrEqual(0.4);
     expect(rows[2].canonicalStructuralDuplicateRate).toBeLessThanOrEqual(0.15);

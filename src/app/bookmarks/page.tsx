@@ -12,9 +12,8 @@ export default async function BookmarksPage() {
 
   try {
     bookmarks = await getBookmarks(user.id);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load your bookmarks.";
+  } catch {
+    loadError = "Unable to load your bookmarks.";
   }
 
   return (

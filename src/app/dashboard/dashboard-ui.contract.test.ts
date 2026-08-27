@@ -8,21 +8,20 @@ const loading = readFileSync(resolve(process.cwd(), "src/app/dashboard/loading.t
 const globalStyles = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
 const model = readFileSync(resolve(process.cwd(), "src/lib/dashboard/model.ts"), "utf8");
 
-describe("Phase 10 dashboard responsive and accessible UI contract", () => {
+describe("student dashboard responsive and accessible UI contract", () => {
   it("keeps the requested scan order in the server-rendered document", () => {
     const primary = page.indexOf("<ActionCard action={data.primaryAction}");
-    const quick = page.indexOf('id="quick-actions"');
     const progress = page.indexOf('id="core-progress"');
     const activity = page.indexOf('id="recent-activity"');
     expect(primary).toBeGreaterThan(0);
-    expect(primary).toBeLessThan(quick);
-    expect(quick).toBeLessThan(progress);
+    expect(primary).toBeLessThan(progress);
     expect(progress).toBeLessThan(activity);
+    expect(page).not.toContain('id="quick-actions"');
   });
 
   it("stacks primary content on mobile and adds columns progressively", () => {
     expect(page).toContain("flex flex-col gap-5 sm:flex-row");
-    expect(page).toContain("grid gap-3 sm:grid-cols-2");
+    expect(page).toContain("sm:grid-cols-[auto_1fr_auto]");
     expect(page).toContain("lg:grid-cols-3");
     expect(page).not.toContain("overflow-x-auto");
     expect(page).toContain("w-full shrink-0 sm:w-auto");

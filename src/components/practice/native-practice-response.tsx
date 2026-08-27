@@ -21,12 +21,7 @@ export function NativePracticeResponse({ question, answer, correctAnswer, disabl
     return <EquationResponse answer={answer} disabled={disabled} hideAnswerInputs={hideAnswerInputs} key={question.id} onChange={onChange} question={question} symbols={response.symbols} />;
   }
   if (response.kind === "two_stage_single_choice") {
-    const sequence = question.structuredData as FigureSequencePresentation;
-    const ids = answer?.kind === "two_stage_single_choice" ? answer.optionIds : ["", ""];
-    const selected = Object.fromEntries(sequence.missingMatrices.map((matrix, index) => [matrix.sequenceIndex, ids[index]]));
-    const correctIds = Array.isArray(correctAnswer) ? correctAnswer.map(String) : [];
-    const correct = Object.fromEntries(sequence.missingMatrices.map((matrix, index) => [matrix.sequenceIndex, correctIds[index]]));
-    return <FigureSequenceRenderer correct={correct} disabled={disabled} onSelect={(sequenceIndex, candidateId) => { const index = sequence.missingMatrices.findIndex((matrix) => matrix.sequenceIndex === sequenceIndex); const next: [string, string] = [ids[0], ids[1]]; next[index] = candidateId; onChange({ kind: "two_stage_single_choice", optionIds: next }); }} revealCorrectness={correctAnswer !== undefined} selected={selected} sequence={sequence} />;
+    return <TwoStageResponse answer={answer} correctAnswer={correctAnswer} disabled={disabled} key={question.id} onChange={onChange} question={question} />;
   }
   if (question.questionType === "latin_square" && question.structuredData) {
     const selected = answer?.kind === "single_choice" ? answer.optionId : null;
@@ -35,12 +30,69 @@ export function NativePracticeResponse({ question, answer, correctAnswer, disabl
   return <ChoiceButtons answer={answer} correctAnswer={correctAnswer} disabled={disabled} onChange={onChange} options={response.options} />;
 }
 
+function TwoStageResponse({ question, answer, correctAnswer, disabled, onChange }: {
+  question: PracticeQuestion;
+  answer: PracticeAnswer | null;
+  correctAnswer?: unknown;
+  disabled: boolean;
+  onChange(answer: PracticeAnswer): void;
+}) {
+  const sequence = question.structuredData as FigureSequencePresentation;
+  const initialIds = answer?.kind === "two_stage_single_choice"
+    ? answer.optionIds
+    : ["", ""] as [string, string];
+  const [draftIds, setDraftIds] = useState<[string, string]>(() => [initialIds[0], initialIds[1]]);
+  const selected = Object.fromEntries(
+    sequence.missingMatrices.map((matrix, index) => [matrix.sequenceIndex, draftIds[index]]),
+  );
+  const correctIds = Array.isArray(correctAnswer) ? correctAnswer.map(String) : [];
+  const correct = Object.fromEntries(
+    sequence.missingMatrices.map((matrix, index) => [matrix.sequenceIndex, correctIds[index]]),
+  );
+
+  return <FigureSequenceRenderer
+    correct={correct}
+    disabled={disabled}
+    onSelect={(sequenceIndex, candidateId) => {
+      const index = sequence.missingMatrices.findIndex(
+        (matrix) => matrix.sequenceIndex === sequenceIndex,
+      );
+      if (index < 0) return;
+      const next = updateTwoStageDraft(draftIds, index, candidateId);
+      setDraftIds(next);
+      const completeAnswer = completeTwoStageDraft(next);
+      if (completeAnswer) onChange(completeAnswer);
+    }}
+    revealCorrectness={correctAnswer !== undefined}
+    selected={selected}
+    sequence={sequence}
+  />;
+}
+
 export function normalizeEquationInput(value: string): { raw: string; value: number | null; valid: boolean } {
   if (value === "") return { raw: "", value: null, valid: true };
   if (!/^\d{1,2}$/.test(value)) return { raw: value, value: null, valid: false };
   const raw = value.length > 1 ? value.replace(/^0+/, "") || "0" : value;
   const parsed = Number(raw);
   return { raw, value: parsed >= 1 && parsed <= 20 ? parsed : null, valid: parsed >= 1 && parsed <= 20 };
+}
+
+export function updateTwoStageDraft(
+  current: [string, string],
+  index: number,
+  candidateId: string,
+): [string, string] {
+  const next: [string, string] = [current[0], current[1]];
+  if (index === 0 || index === 1) next[index] = candidateId;
+  return next;
+}
+
+export function completeTwoStageDraft(
+  draft: [string, string],
+): PracticeAnswer | null {
+  return draft.every(Boolean)
+    ? { kind: "two_stage_single_choice", optionIds: draft }
+    : null;
 }
 
 function EquationResponse({ question, symbols, answer, disabled, hideAnswerInputs, onChange }: { question: PracticeQuestion; symbols: string[]; answer: PracticeAnswer | null; disabled: boolean; hideAnswerInputs: boolean; onChange(answer: PracticeAnswer): void }) {

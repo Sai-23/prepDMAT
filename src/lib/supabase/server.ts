@@ -3,6 +3,7 @@ import "server-only";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import { hardenedSupabaseCookieOptions } from "@/lib/security/cookies";
 import { getEnv } from "@/lib/validators/env";
 import type { Database } from "@/types/database";
 
@@ -27,7 +28,7 @@ export async function createSupabaseServerClient() {
         setAll(cookiesToSet: CookieMutation[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, hardenedSupabaseCookieOptions(options));
             });
           } catch {
             // Server Components cannot persist cookies after rendering.

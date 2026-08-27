@@ -8,7 +8,7 @@ export default function DashboardLoading() {
     <PageShell
       eyebrow="Student dashboard"
       title="Loading your Core preparation hub"
-      description="Checking active work, recent activity, and Phase 8 progress."
+      description="Checking active work, recent activity, and Core progress."
     >
       <div className="h-48 animate-pulse rounded-lg border border-workspace-border bg-surface-lowest motion-reduce:animate-none" />
       <section aria-label="Loading quick actions" className="space-y-3">

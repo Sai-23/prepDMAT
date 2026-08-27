@@ -5,6 +5,7 @@ import type { DmatCoreSectionType } from "../protocol";
 import { DMAT_CURRENT_CORE_PROTOCOL } from "../protocol";
 import { createPracticeSnapshots } from "../practice/native";
 import { createSupabaseAdminClient } from "../supabase/admin";
+import { correlationReference } from "../security/logging";
 import { buildCoreAttemptSnapshot } from "./persistence";
 import {
   CORE_MOCK_ASSEMBLER_VERSION,
@@ -185,7 +186,10 @@ function defaultRepository(): OnDemandCoreMockRepository {
         p_protocol_version: DMAT_CURRENT_CORE_PROTOCOL.version,
         p_assembler_version: CORE_MOCK_ASSEMBLER_VERSION,
       });
-      if (error) console.error("Unable to persist generated Core mock failure telemetry", { mockId: input.mockId, reasonCode: input.reasonCode });
+      if (error) console.error("Unable to persist generated Core mock failure telemetry", {
+        mockRef: correlationReference(input.mockId),
+        reasonCode: input.reasonCode,
+      });
     },
   };
 }
@@ -208,7 +212,11 @@ function storedStructuredData(question: CoreMockQuestion): Record<string, unknow
       fastestMethod: question.fastestMethod,
     };
   }
-  return { ...base, deductionTrace: question.deductionTrace };
+  return {
+    ...base,
+    deductionTrace: question.deductionTrace,
+    completedGrid: question.completedGrid,
+  };
 }
 
 function buildAttempt(mock: CoreMock, createId: () => string, startedAt: Date) {
@@ -423,8 +431,8 @@ export async function generateOnDemandCoreMock(
     const reasonCode = failureReason(error, stage);
     const durationMs = Number((performance.now() - generationStarted).toFixed(3));
     console.error("Generated Core mock failed", {
-      mockId: reservation.mockId,
-      userId: options.userId,
+      mockRef: correlationReference(reservation.mockId),
+      userRef: correlationReference(options.userId),
       reasonCode,
       errorName: error instanceof Error ? error.name : "UnknownError",
     });

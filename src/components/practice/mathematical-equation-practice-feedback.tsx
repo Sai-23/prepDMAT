@@ -64,7 +64,6 @@ export function MathematicalEquationPracticeFeedback({
 
   return (
     <PracticeExplanationShell
-      answerConclusion={education?.answerConclusion}
       dataFeedbackInterface="mathematical-equation-guided"
       fallbackMessage={walkthrough.fallbackMessage}
       getStepKey={(step) => step.id}
@@ -209,35 +208,23 @@ function EquationStepCard({
   data: MathematicalEquationStructuredData;
   assignment: VariableAssignment;
 }) {
-  const substitutionChanged = step.originalEquation !== step.substitutedEquation;
   return (
     <article
       className="rounded-xl border border-workspace-border bg-surface-lowest p-5"
-      data-step-type={step.type}
+      data-step-type={step.operation.toLowerCase()}
     >
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
         {step.eyebrow} · Step {index + 1} of {total}
       </p>
       <h5 className="mt-2 text-lg font-semibold text-on-surface">{step.title}</h5>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.instruction}</p>
-      <div className="mt-4 space-y-2" aria-label={`Substitution for ${step.targetSymbol}`}>
-        <EquationLine label="Start" text={step.originalEquation} />
-        {substitutionChanged ? (
-          <>
-            <ArrowDown aria-hidden="true" className="mx-auto h-4 w-4 text-primary" />
-            <EquationLine
-              emphasized
-              label="Substitute known values"
-              text={step.substitutedEquation}
-            />
-          </>
-        ) : null}
-        <ArrowDown aria-hidden="true" className="mx-auto h-4 w-4 text-primary" />
-        <div className="rounded-md border border-success bg-success-container px-4 py-3 text-center font-mono text-lg font-semibold text-success-container-foreground">
-          {step.targetSymbol} = {step.solvedValue}
-          <Check aria-label={`${step.targetSymbol} solved`} className="ml-2 inline h-4 w-4" />
+      <EquationTransformation step={step} />
+      {step.resolvedVariable ? (
+        <div className="mt-4 rounded-md border border-success bg-success-container px-4 py-3 text-center font-mono text-lg font-semibold text-success-container-foreground">
+          {step.resolvedVariable} = {assignment[step.resolvedVariable]}
+          <Check aria-label={`${step.resolvedVariable} solved`} className="ml-2 inline h-4 w-4" />
         </div>
-      </div>
+      ) : null}
       {step.isFinal ? (
         <div className="mt-5 border-t border-workspace-separator pt-5">
           <h6 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -246,11 +233,72 @@ function EquationStepCard({
           <FinalAnswer assignment={assignment} variables={data.variables} />
         </div>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Keep {step.targetSymbol} = {step.solvedValue}; use it in the next highlighted equation.
-        </p>
+        step.resolvedVariable ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Keep {step.resolvedVariable} = {step.solvedValue}; it now appears in the solved-values panel and can be used in later equations.
+          </p>
+        ) : null
       )}
     </article>
+  );
+}
+
+function EquationTransformation({ step }: { step: EquationExplanationStep }) {
+  const elimination = step.supportingExpressions.length > 1 && [
+    "ADD_EQUATIONS",
+    "SUBTRACT_EQUATIONS",
+    "ELIMINATION",
+  ].includes(step.operation);
+  if (elimination) {
+    const operator = step.operation === "ADD_EQUATIONS" ? "+" : "−";
+    return (
+      <div
+        aria-label={`${step.operationLabel}: ${step.supportingExpressions.join("; ")} gives ${step.expressionAfter}`}
+        className="mt-4 overflow-x-auto rounded-lg border border-workspace-border bg-code-background p-4"
+        data-equation-transformation="elimination"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Line up the equations
+        </p>
+        <div className="mx-auto mt-3 w-max min-w-52 font-mono text-base font-semibold text-code-foreground sm:text-lg">
+          {step.supportingExpressions.map((expression, index) => (
+            <div className="grid grid-cols-[1.25rem_auto] gap-2 py-1" key={`${expression}:${index}`}>
+              <span aria-hidden="true" className="text-primary">{index === 0 ? "" : operator}</span>
+              <span className="whitespace-nowrap">{expression}</span>
+            </div>
+          ))}
+          <div aria-hidden="true" className="my-1 border-t-2 border-primary" />
+          <div className="grid grid-cols-[1.25rem_auto] gap-2 py-1 text-primary">
+            <span aria-hidden="true">=</span>
+            <span className="whitespace-nowrap">{step.expressionAfter}</span>
+          </div>
+        </div>
+        <p className="mt-3 text-center text-xs font-semibold text-primary">{step.operationLabel}</p>
+      </div>
+    );
+  }
+  const beforeTerms = step.replacements.map((replacement) => replacement.before);
+  const afterTerms = step.replacements.map((replacement) => replacement.after);
+  return (
+    <div className="mt-4 space-y-2" data-equation-transformation={step.operation.toLowerCase()}>
+      <EquationLine highlightTerms={beforeTerms} label="Before" text={step.expressionBefore} />
+      <div className="flex flex-col items-center gap-1 py-1">
+        <ArrowDown aria-hidden="true" className="h-4 w-4 text-primary" />
+        <span className="rounded-full border border-primary/40 bg-primary-muted px-3 py-1 text-center text-xs font-semibold text-primary">
+          {step.operationLabel}
+        </span>
+      </div>
+      <EquationLine emphasized highlightTerms={afterTerms} label="After" text={step.expressionAfter} />
+      {step.replacements.length ? (
+        <div className="flex flex-wrap justify-center gap-2 pt-1" aria-label="Substitution key">
+          {step.replacements.map((replacement) => (
+            <span className="rounded-md border border-primary bg-primary-muted px-2.5 py-1 text-xs font-semibold text-on-surface" key={replacement.before}>
+              Replace {replacement.before} with {replacement.after}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -258,22 +306,42 @@ function EquationLine({
   label,
   text,
   emphasized = false,
+  highlightTerms = [],
 }: {
   label: string;
   text: string;
   emphasized?: boolean;
+  highlightTerms?: readonly string[];
 }) {
   return (
     <div className={cn(
-      "rounded-md border px-4 py-3",
+      "overflow-x-auto rounded-md border px-4 py-3",
       emphasized
         ? "border-primary bg-primary-muted"
         : "border-workspace-border bg-code-background",
     )}>
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-center font-mono text-lg font-semibold text-on-surface">{text}</p>
+      <p className="mt-1 min-w-max text-center font-mono text-base font-semibold text-on-surface sm:text-lg">
+        <HighlightedEquation terms={highlightTerms} text={text} />
+      </p>
     </div>
   );
+}
+
+function HighlightedEquation({ text, terms }: { text: string; terms: readonly string[] }) {
+  const unique = [...new Set(terms.filter(Boolean))].sort((first, second) => second.length - first.length);
+  if (!unique.length) return text;
+  const escaped = unique.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const parts = text.split(new RegExp(`(${escaped.join("|")})`, "g"));
+  const highlighted = new Set(unique);
+  return parts.map((part, index) => highlighted.has(part) ? (
+    <mark
+      className="rounded border border-primary bg-primary-muted px-1 text-on-surface"
+      key={`${part}:${index}`}
+    >
+      {part}
+    </mark>
+  ) : part);
 }
 
 function FinalAnswer({

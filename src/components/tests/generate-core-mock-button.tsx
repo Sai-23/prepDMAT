@@ -44,16 +44,16 @@ export function GenerateCoreMockButton() {
     <div className="space-y-3">
       <Button className="w-full sm:w-auto" disabled={pending || state === "ready"} onClick={generate}>
         {state === "generating" || pending
-          ? "Generating your Core mock…"
+          ? "Preparing your Core mock…"
           : state === "ready"
             ? "Mock ready — opening…"
             : state === "failed"
-              ? "Retry generation"
-              : "Generate New Core Mock"}
+              ? "Try again"
+              : "Start a new full Core mock"}
       </Button>
       {state === "generating" ? (
         <p className="text-sm text-slate-600" role="status">
-          This normally takes several seconds. You can keep this page open while the validated mock is assembled.
+          This normally takes several seconds. Keep this page open while your mock is prepared.
         </p>
       ) : null}
       {error ? <p className="text-sm text-red-700" role="alert">{error}</p> : null}

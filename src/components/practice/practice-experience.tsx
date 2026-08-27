@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, BarChart3, CheckCircle2, Clock3, Flag, LogOut } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, LogOut } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -35,10 +35,10 @@ import { LatinSquarePracticeFeedback } from "./latin-square-practice-feedback";
 import { MathematicalEquationPracticeFeedback } from "./mathematical-equation-practice-feedback";
 import { NativePracticeResponse } from "./native-practice-response";
 
-const MODULES: Array<{ value: PracticeModule; title: string; description: string; format: string; purpose: string }> = [
-  { value: "figure_sequence", title: "Figure Sequences", description: "Trace changing shapes, positions, rotations, and attributes.", format: "Two missing matrices", purpose: "Build visual rule recognition" },
-  { value: "mathematical_equation", title: "Mathematical Equations", description: "Infer symbol values from a compact system of equations.", format: "Enter each symbol value", purpose: "Build relational arithmetic" },
-  { value: "latin_square", title: "Latin Squares", description: "Use row and column constraints to find a missing symbol.", format: "Select one symbol", purpose: "Build constraint deduction" },
+const MODULES: Array<{ value: PracticeModule; title: string; description: string; motif: string }> = [
+  { value: "figure_sequence", title: "Figure Sequences", description: "Continue visual patterns", motif: "◇ →" },
+  { value: "mathematical_equation", title: "Mathematical Equations", description: "Solve for each letter", motif: "A =" },
+  { value: "latin_square", title: "Latin Squares", description: "Complete the 5 × 5 grid", motif: "A–E" },
 ];
 
 function moduleTitle(module: PracticeModule) {
@@ -109,7 +109,7 @@ export function PracticeExperience({
     startTransition(async () => {
       const result = await submitPracticeAnswerAction({ sessionId: session.sessionId, questionId: session.question.id, answer });
       if (result.error || !("isCorrect" in result) || typeof result.isCorrect !== "boolean") { setError(result.error ?? "Unable to check this answer."); return; }
-      setFeedback({ isCorrect: result.isCorrect, correctAnswer: result.correctAnswer, explanation: result.explanation ?? "", explanationTrace: result.explanationTrace, educationalExplanation: result.educationalExplanation });
+      setFeedback({ isCorrect: result.isCorrect, correctAnswer: result.correctAnswer, explanation: result.explanation ?? "", explanationTrace: result.explanationTrace, figureExplanationTrace: result.figureExplanationTrace, latinExplanationTrace: result.latinExplanationTrace, mathematicalExplanationTrace: result.mathematicalExplanationTrace, educationalExplanation: result.educationalExplanation });
     });
   };
 
@@ -170,32 +170,32 @@ export function PracticeExperience({
   return (
     <div className="space-y-8">
       <section aria-labelledby="choose-module">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div><h2 className="text-2xl font-semibold" id="choose-module">Choose what to practise</h2><p className="mt-1 text-sm text-muted-foreground">One module per session keeps feedback focused and progress easy to interpret.</p></div>
-          <p className="rounded-full bg-primary-muted px-3 py-1 text-xs font-semibold text-primary">Learning mode · immediate feedback</p>
+        <div className="mb-5">
+          <h2 className="text-2xl font-semibold" id="choose-module">What do you want to practise?</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Choose one Core module to begin.</p>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           {MODULES.map((item) => {
-            const recent = performance.find((entry) => entry.module === item.value);
             const selected = selectedModule === item.value;
             return (
-              <button aria-pressed={selected} className={`rounded-xl border p-5 text-left transition ${selected ? "border-primary bg-primary-muted ring-2 ring-primary" : "border-workspace-border bg-surface-lowest hover:border-primary"}`} key={item.value} onClick={() => setSelectedModule(item.value)} type="button">
-                <span className="text-lg font-semibold">{item.title}</span>
-                <span className="mt-2 block text-sm leading-6 text-muted-foreground">{item.description}</span>
-                <span className="mt-4 block text-xs font-semibold uppercase tracking-wide text-primary">{item.format}</span>
-                <span className="mt-1 block text-sm">{item.purpose}</span>
-                <span className="mt-4 flex items-center gap-2 border-t border-workspace-separator pt-3 text-xs text-muted-foreground"><BarChart3 className="h-4 w-4" />{recent?.accuracy == null ? "No completed sessions yet" : `${Math.round(recent.accuracy)}% recent accuracy · ${recent.completedSessions} sessions`}</span>
+              <button aria-pressed={selected} className={`group min-h-40 rounded-xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${selected ? "border-primary bg-primary-muted ring-2 ring-primary" : "border-workspace-border bg-surface-lowest hover:border-primary hover:bg-surface-low"}`} key={item.value} onClick={() => setSelectedModule(item.value)} type="button">
+                <span className="flex items-start justify-between gap-4">
+                  <span className="text-lg font-semibold">{item.title}</span>
+                  <span aria-hidden="true" className="font-mono text-xl font-semibold text-primary">{item.motif}</span>
+                </span>
+                <span className="mt-8 block text-sm text-muted-foreground">{item.description}</span>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary">Choose module <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
               </button>
             );
           })}
         </div>
       </section>
 
-      <Card>
+      {selectedModule ? <Card>
         <CardHeader><CardTitle>Configure your session</CardTitle><CardDescription>Practice is for learning: answers lock after checking and a worked explanation is available immediately. Mock tests remain assessment-only and are stored separately.</CardDescription></CardHeader>
         <CardContent className="space-y-6">
-          {!selectedModule ? <p className="rounded-md bg-surface-low p-4 text-sm">Select a module above to continue.</p> : (
-            <>
+          <>
+              {performance.find((entry) => entry.module === selectedModule)?.accuracy != null ? <p className="text-sm text-muted-foreground">Recent accuracy: {Math.round(performance.find((entry) => entry.module === selectedModule)!.accuracy!)}%</p> : null}
               {initialConfig?.questionId ? (
                 <p className="rounded-md border border-primary bg-primary-muted p-4 text-sm"><strong>Exact-question review:</strong> this approved question will open as a one-question, untimed learning session.</p>
               ) : <>
@@ -212,11 +212,10 @@ export function PracticeExperience({
                 const result = await startPracticeAction(config);
                 if (result.error || !result.session) { setError(result.error ?? "Unable to start practice."); return; }
                 setSession(result.session); setAnswer(result.session.answer); setFeedback(result.session.feedback);
-              })} size="lg">{isPending ? "Generating validated questions…" : "Start practice"}<ArrowRight className="h-4 w-4" /></Button>
+              })} size="lg">{isPending ? "Preparing questions…" : "Start practice"}<ArrowRight className="h-4 w-4" /></Button>
             </>
-          )}
         </CardContent>
-      </Card>
+      </Card> : null}
     </div>
   );
 }
@@ -251,14 +250,14 @@ function PracticeSession({ session, answer, feedback, canSubmit, remaining, erro
 }
 
 function ModuleFeedback({ session, answer, feedback, onExplanation }: { session: PracticeSessionState; answer: PracticeAnswer; feedback: PracticeFeedback; onExplanation(): void }) {
-  if (session.module === "figure_sequence" && answer.kind === "two_stage_single_choice") return <FigureSequencePracticeFeedback correctAnswer={feedback.correctAnswer} difficulty={session.question.difficulty} educationalExplanation={feedback.educationalExplanation} isCorrect={feedback.isCorrect} onExplanationOpen={onExplanation} selectedAnswer={answer.optionIds} sequence={session.question.structuredData as FigureSequencePresentation} trace={feedback.explanationTrace} />;
-  if (session.module === "mathematical_equation" && answer.kind === "symbol_assignment") return <MathematicalEquationPracticeFeedback correctAnswer={feedback.correctAnswer} data={session.question.structuredData as MathematicalEquationStructuredData} difficulty={session.question.difficulty} educationalExplanation={feedback.educationalExplanation} isCorrect={feedback.isCorrect} onExplanationOpen={onExplanation} selectedAnswer={answer.values} trace={feedback.explanationTrace} />;
-  if (session.module === "latin_square" && answer.kind === "single_choice") return <LatinSquarePracticeFeedback correctAnswer={feedback.correctAnswer} data={session.question.structuredData as LatinSquareStructuredData} difficulty={session.question.difficulty} educationalExplanation={feedback.educationalExplanation} isCorrect={feedback.isCorrect} onExplanationOpen={onExplanation} selectedAnswer={answer.optionId} trace={feedback.explanationTrace} />;
+  if (session.module === "figure_sequence" && answer.kind === "two_stage_single_choice") return <FigureSequencePracticeFeedback correctAnswer={feedback.correctAnswer} difficulty={session.question.difficulty} educationalExplanation={feedback.educationalExplanation} isCorrect={feedback.isCorrect} onExplanationOpen={onExplanation} selectedAnswer={answer.optionIds} sequence={session.question.structuredData as FigureSequencePresentation} trace={feedback.figureExplanationTrace} />;
+  if (session.module === "mathematical_equation" && answer.kind === "symbol_assignment") return <MathematicalEquationPracticeFeedback correctAnswer={feedback.correctAnswer} data={session.question.structuredData as MathematicalEquationStructuredData} difficulty={session.question.difficulty} educationalExplanation={feedback.educationalExplanation} isCorrect={feedback.isCorrect} onExplanationOpen={onExplanation} selectedAnswer={answer.values} trace={feedback.mathematicalExplanationTrace} />;
+  if (session.module === "latin_square" && answer.kind === "single_choice") return <LatinSquarePracticeFeedback correctAnswer={feedback.correctAnswer} data={session.question.structuredData as LatinSquareStructuredData} difficulty={session.question.difficulty} educationalExplanation={feedback.educationalExplanation} isCorrect={feedback.isCorrect} onExplanationOpen={onExplanation} selectedAnswer={answer.optionId} trace={feedback.latinExplanationTrace} />;
   return <Card><CardContent className="pt-5"><p className="font-semibold">{feedback.isCorrect ? "Correct!" : "Not quite"}</p><p className="mt-2 text-sm leading-6">{feedback.explanation}</p></CardContent></Card>;
 }
 
 function PracticeSummaryView({ summary, onNew }: { summary: PracticeSummary; onNew(): void }) {
-  return <div className="mx-auto max-w-4xl space-y-6"><Card><CardHeader><div className="flex items-center gap-3"><CheckCircle2 className="h-8 w-8 text-success" /><div><CardTitle>Practice complete</CardTitle><CardDescription>{moduleTitle(summary.module)} · {summary.difficulty}</CardDescription></div></div></CardHeader><CardContent><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Score" value={`${summary.score}/${summary.correct + summary.incorrect}`} /><Metric label="Correct" value={String(summary.correct)} /><Metric label="Incorrect" value={String(summary.incorrect)} /><Metric label="Accuracy" value={`${Math.round(summary.accuracy)}%`} /><Metric label="Average time" value={formatSeconds(summary.averageTimeSeconds)} /></div><p className="mt-5 rounded-md bg-primary-muted p-4 text-sm font-medium">{summary.insight}</p></CardContent></Card><div className="flex flex-wrap gap-3"><Button asChild><Link href={`/practice/review/${summary.sessionId}` as Route}>Review every answer</Link></Button><Button onClick={onNew} variant="secondary">New practice session</Button>{summary.incorrectFamilies.length ? <Button asChild variant="outline"><Link href={`/practice?module=${summary.module}&focus=${encodeURIComponent(summary.incorrectFamilies.join(","))}` as Route}>Practice incorrect skills</Link></Button> : null}</div>{summary.incorrectFamilies.length ? <p className="text-sm text-muted-foreground">A new validated set will focus on {summary.incorrectFamilies.map((skill) => coreSkill(skill)?.label).filter(Boolean).join(", ")} where generation supports it.</p> : null}</div>;
+  return <div className="mx-auto max-w-4xl space-y-6"><Card><CardHeader><div className="flex items-center gap-3"><CheckCircle2 className="h-8 w-8 text-success" /><div><CardTitle>Practice complete</CardTitle><CardDescription>{moduleTitle(summary.module)} · {summary.difficulty}</CardDescription></div></div></CardHeader><CardContent><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Score" value={`${summary.score}/${summary.correct + summary.incorrect}`} /><Metric label="Correct" value={String(summary.correct)} /><Metric label="Incorrect" value={String(summary.incorrect)} /><Metric label="Accuracy" value={`${Math.round(summary.accuracy)}%`} /><Metric label="Average time" value={formatSeconds(summary.averageTimeSeconds)} /></div><p className="mt-5 rounded-md bg-primary-muted p-4 text-sm font-medium">{summary.insight}</p></CardContent></Card><div className="flex flex-wrap gap-3"><Button asChild><Link href={`/practice/review/${summary.sessionId}` as Route}>Review every answer</Link></Button><Button onClick={onNew} variant="secondary">New practice session</Button>{summary.incorrectFamilies.length ? <Button asChild variant="outline"><Link href={`/practice?module=${summary.module}&focus=${encodeURIComponent(summary.incorrectFamilies.join(","))}` as Route}>Practise incorrect skills</Link></Button> : null}</div>{summary.incorrectFamilies.length ? <p className="text-sm text-muted-foreground">Your next set will focus on {summary.incorrectFamilies.map((skill) => coreSkill(skill)?.label).filter(Boolean).join(", ")}.</p> : null}</div>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-md bg-surface-low p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></div>; }

@@ -14,6 +14,11 @@ export type Profile = {
   fullName: string | null;
   avatarPath: string | null;
   targetExamDate: string | null;
+  marketingEmailOptIn: boolean;
+  marketingEmailOptInAt: string | null;
+  marketingSmsOptIn: boolean;
+  marketingSmsOptInAt: string | null;
+  marketingConsentVersion: string | null;
   timezone: string;
   createdAt: string;
   updatedAt: string;

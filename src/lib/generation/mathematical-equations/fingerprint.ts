@@ -141,8 +141,7 @@ export function mathematicalEquationStructuralValue(candidate: MathematicalEquat
         .sort((first, second) => canonicalize(first as never).localeCompare(canonicalize(second as never))),
     }));
     return {
-      version: 2,
-      family: candidate.structuredData.dependencyModel.family,
+      version: 3,
       rootStrategy: candidate.structuredData.dependencyModel.rootStrategy ?? "unknown",
       target: symbols.get(candidate.structuredData.dependencyModel.targetSymbol ?? ""),
       equations,
@@ -155,7 +154,7 @@ export function mathematicalEquationStructuralValue(candidate: MathematicalEquat
 }
 
 export function mathematicalEquationStructuralSignature(candidate: MathematicalEquationCandidate): string {
-  return createFingerprint("mathematical-equation-structure-v2", mathematicalEquationStructuralValue(candidate) as never);
+  return createFingerprint("mathematical-equation-structure-v3", mathematicalEquationStructuralValue(candidate) as never);
 }
 
 export function fingerprintMathematicalEquation(candidate: MathematicalEquationCandidate): string {
@@ -167,7 +166,10 @@ function relationshipClass(relationship: EquationRelationshipPrimitive): string 
     return "offset_difference";
   }
   if (relationship === "scale" || relationship === "divide_by_constant") return "scale_divide";
-  if (relationship === "sum" || relationship === "complement") return "sum_complement";
+  if (relationship === "scale_offset_add" || relationship === "scale_offset_subtract") return "scale_offset";
+  if (relationship === "sum" || relationship === "complement" || relationship === "reverse_difference") return "sum_complement";
+  if (relationship === "multi_variable_balance" || relationship === "three_variable_difference") return "multi_variable_balance";
+  if (relationship === "mixed_three_variable") return "weighted_sum";
   return relationship;
 }
 
@@ -236,7 +238,8 @@ function operators(candidate: MathematicalEquationCandidate): Set<string> {
 }
 
 export const MATHEMATICAL_EQUATION_SIMILARITY_WEIGHTS = {
-  graph: 6,
+  graph: 0,
+  graphShape: 6,
   relationships: 5,
   variableCount: 2,
   equationCount: 2,
@@ -277,10 +280,11 @@ export function mathematicalEquationStructuralProfile(candidate: MathematicalEqu
   return {
     namespace: "mathematical_equation",
     features: {
-      fingerprintVersion: "v2",
+      fingerprintVersion: "v3",
       variableCount: candidate.structuredData.variables.length,
       equationCount: candidate.structuredData.equations.length,
       graph: candidate.structuredData.dependencyModel.family,
+      graphShape: `depth-${graph.dependencyDepth}/branches-${graph.branchCount}/recombine-${graph.recombinationCount}`,
       relationships,
       dependencyDepth: graph.dependencyDepth,
       substitutionDepth: Math.max(0, ...candidate.solutionPath.map((step) => step.knownSymbols.length)),

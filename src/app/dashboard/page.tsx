@@ -1,10 +1,7 @@
 import {
   ArrowRight,
-  BarChart3,
   BookOpenCheck,
-  CalendarDays,
   ClipboardCheck,
-  History,
   Play,
   RotateCcw,
   Sparkles,
@@ -27,9 +24,7 @@ import type {
   DashboardAction,
   DashboardActivity,
   DashboardProgressModule,
-  DashboardQuickAction,
 } from "@/lib/dashboard/model";
-import { daysUntil } from "@/lib/dashboard/recommendations";
 import type { Confidence, Trend } from "@/lib/progress/model";
 
 const dateFormatter = new Intl.DateTimeFormat("en", {
@@ -50,13 +45,6 @@ const trendLabels: Record<Trend, string> = {
   stable: "Stable",
   declining: "Declining",
   insufficient_data: "Trend pending",
-};
-
-const quickActionIcons = {
-  practice: BookOpenCheck,
-  mock: Timer,
-  progress: BarChart3,
-  results: History,
 };
 
 function scoreLabel(activity: DashboardActivity): string {
@@ -114,25 +102,6 @@ function ActionCard({ action, secondary = false }: { action: DashboardAction; se
   );
 }
 
-function QuickActionCard({ action }: { action: DashboardQuickAction }) {
-  const Icon = quickActionIcons[action.key];
-  return (
-    <Link
-      className="group rounded-lg border border-workspace-border bg-surface-lowest p-4 transition-colors hover:border-primary hover:bg-primary-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      href={action.href as Route}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="rounded-md bg-surface-container p-2 text-primary group-hover:bg-primary group-hover:text-primary-foreground">
-          <Icon aria-hidden="true" className="h-5 w-5" />
-        </span>
-        <ArrowRight aria-hidden="true" className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-      </div>
-      <h3 className="mt-4 font-semibold">{action.label}</h3>
-      <p className="mt-1 text-sm leading-5 text-muted-foreground">{action.description}</p>
-    </Link>
-  );
-}
-
 function ProgressModuleCard({ module }: { module: DashboardProgressModule }) {
   const accuracy = module.recentAccuracy === null ? "Not enough data" : `${Math.round(module.recentAccuracy)}%`;
   const trendVariant = module.trend === "improving" ? "success" : module.trend === "declining" ? "warning" : "subtle";
@@ -181,7 +150,7 @@ export default async function DashboardPage() {
     <PageShell
       eyebrow="Student dashboard"
       title={`Welcome back, ${data.displayName}`}
-      description="Resume active work, start Core practice, take a Core Mock, or review your evidence-based progress."
+      description="Continue where you left off or take the next useful step in your Core preparation."
     >
       {result.warnings.length ? (
         <div aria-live="polite" className="rounded-lg border border-warning bg-warning-container p-4 text-sm text-warning-container-foreground" role="status">
@@ -203,29 +172,11 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      <section aria-labelledby="quick-actions" className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold" id="quick-actions">Quick actions</h2>
-            <p className="mt-1 text-sm text-muted-foreground">The main Core destinations, without extra setup steps.</p>
-          </div>
-          {data.targetExamDate ? (
-            <Link className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary" href="/profile">
-              <CalendarDays aria-hidden="true" className="h-4 w-4" />
-              {daysUntil(data.targetExamDate)} days · {dateFormatter.format(new Date(`${data.targetExamDate}T00:00:00`))}
-            </Link>
-          ) : null}
-        </div>
-        <div className={`grid gap-3 sm:grid-cols-2 ${data.quickActions.length === 4 ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
-          {data.quickActions.map((action) => <QuickActionCard action={action} key={action.key} />)}
-        </div>
-      </section>
-
       <section aria-labelledby="core-progress" className="space-y-3">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold" id="core-progress">Core progress</h2>
-            <p className="mt-1 text-sm text-muted-foreground">The same Phase 8 module evidence used on your full progress page.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Your recent accuracy across the three Core modules.</p>
           </div>
           <Button asChild size="sm" variant="ghost">
             <Link href="/progress">View details <ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
@@ -242,7 +193,7 @@ export default async function DashboardPage() {
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {data.progressUnavailable
                   ? "Your resume and activity actions are still available. Try the progress page again shortly."
-                  : "Your preparation covers Figure Sequences, Mathematical Equations, and Latin Squares. Complete a short practice set to begin building evidence."}
+                  : "Your preparation covers Figure Sequences, Mathematical Equations, and Latin Squares. Complete a short practice set to start seeing your progress."}
               </p>
             </CardContent>
           </Card>

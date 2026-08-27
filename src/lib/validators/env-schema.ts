@@ -4,7 +4,26 @@ export const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  NEXT_PUBLIC_PHONE_AUTH_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  SECURITY_RATE_LIMIT_SECRET: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().min(32).optional(),
+  ),
+  TRUSTED_CLIENT_IP_HEADER: z
+    .enum(["none", "x-real-ip", "x-forwarded-for", "cf-connecting-ip"])
+    .default("none"),
+  FREE_LAUNCH_ACCESS_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
   ENABLE_ON_DEMAND_CORE_MOCKS: z
     .enum(["true", "false"])
     .default("false")
@@ -23,7 +42,12 @@ export function parseEnv(input: Record<string, string | undefined>) {
     NEXT_PUBLIC_APP_URL: input.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_SUPABASE_URL: input.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: input.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_GOOGLE_AUTH_ENABLED: input.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED,
+    NEXT_PUBLIC_PHONE_AUTH_ENABLED: input.NEXT_PUBLIC_PHONE_AUTH_ENABLED,
     SUPABASE_SERVICE_ROLE_KEY: input.SUPABASE_SERVICE_ROLE_KEY,
+    SECURITY_RATE_LIMIT_SECRET: input.SECURITY_RATE_LIMIT_SECRET,
+    TRUSTED_CLIENT_IP_HEADER: input.TRUSTED_CLIENT_IP_HEADER,
+    FREE_LAUNCH_ACCESS_ENABLED: input.FREE_LAUNCH_ACCESS_ENABLED,
     ENABLE_ON_DEMAND_CORE_MOCKS: input.ENABLE_ON_DEMAND_CORE_MOCKS,
     CORE_MOCK_HISTORY_WINDOW: input.CORE_MOCK_HISTORY_WINDOW,
     CORE_MOCK_GENERATION_COOLDOWN_SECONDS:

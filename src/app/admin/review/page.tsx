@@ -13,9 +13,8 @@ export default async function ReviewQueuePage() {
 
   try {
     questions = await getReviewQueue(isAdmin);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load the review queue.";
+  } catch {
+    loadError = "Unable to load the review queue.";
   }
 
   return (

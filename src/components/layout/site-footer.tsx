@@ -16,13 +16,10 @@ export function SiteFooter() {
             topic analytics.
           </p>
           <div className="flex gap-4">
-            <Link href="/pricing" className="hover:text-primary">
-              Pricing
-            </Link>
             <Link href="/exam-format" className="hover:text-primary">
               Exam Format
             </Link>
-            <Link href="/tests" className="hover:text-primary">
+            <Link href="/onboarding" className="hover:text-primary">
               Free Diagnostic
             </Link>
           </div>

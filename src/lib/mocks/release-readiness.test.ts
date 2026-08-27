@@ -38,7 +38,9 @@ describe("Core mock release-readiness invariants", () => {
 
   it("keeps the server clock and immutable snapshots authoritative", () => {
     const testData = source("src/lib/tests/data.ts");
-    expect(testData).toContain("activeSectionAt(sections");
+    expect(testData).toContain("activeSectionFromCursor(sections");
+    expect(testData).toContain("section_expires_at");
+    expect(testData).toContain("expectedSectionId");
     expect(testData).toContain("Only the current timed section can be changed.");
     expect(testData).toContain("gradePracticeAnswer(response.response_payload");
     expect(testData).toContain("private_snapshot");

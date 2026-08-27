@@ -30,6 +30,11 @@ export type Database = {
         onboarding_preference: "diagnostic" | "practice_first" | "explore" | null;
         diagnostic_status: "not_started" | "in_progress" | "completed" | "skipped";
         diagnostic_session_id: string | null;
+        marketing_email_opt_in: boolean;
+        marketing_email_opt_in_at: string | null;
+        marketing_sms_opt_in: boolean;
+        marketing_sms_opt_in_at: string | null;
+        marketing_consent_version: string | null;
         timezone: string;
         created_at: string;
         updated_at: string;

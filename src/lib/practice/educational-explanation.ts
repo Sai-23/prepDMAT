@@ -103,7 +103,7 @@ export function buildFigureEducationalExplanation(
   const walkthrough = buildFigureSequenceWalkthrough(sequence, trace, correctAnswer);
   if (!walkthrough.valid || walkthrough.steps.length < 3) return null;
   const ruleSteps = walkthrough.steps.filter((step) => step.type === "track_symbol");
-  const predictionSteps = walkthrough.steps.filter((step) => step.type === "predict_matrix");
+  const predictionSteps = walkthrough.steps.filter((step) => step.type === "match_option");
   const correct = walkthrough.correctLabels.map((label, index) => `matrix ${index + 1}: Option ${label}`).join("; ");
   return {
     version: EDUCATIONAL_EXPLANATION_VERSION,
@@ -152,19 +152,22 @@ export function buildEquationEducationalExplanation(
   if (!walkthrough.valid || !walkthrough.assignment || !walkthrough.steps.length) return null;
   const assignment = walkthrough.assignment;
   const first = walkthrough.steps[0];
-  const combined = walkthrough.steps.some((step) => step.type === "combine_equations");
+  const combined = walkthrough.steps.some((step) =>
+    step.operation === "ADD_EQUATIONS" ||
+    step.operation === "SUBTRACT_EQUATIONS" ||
+    step.operation === "ELIMINATION");
   return {
     version: EDUCATIONAL_EXPLANATION_VERSION,
     module: "mathematical_equation",
     difficulty: difficultyOf(difficulty),
     summary: `Start with ${first.targetSymbol}, then use each solved value to unlock the next relationship.`,
-    observation: first.type === "combine_equations"
+    observation: combined
       ? "No single relationship gives the first value, so two relationships must be combined."
       : `The first useful relationship isolates ${first.targetSymbol} with no unresolved dependency.`,
     steps: walkthrough.steps.map((step) => ({
       id: step.id,
       title: step.title,
-      description: `${step.instruction} Rewrite ${step.originalEquation} as ${step.substitutedEquation}; this gives ${step.targetSymbol} = ${step.solvedValue}.`,
+      description: `${step.instruction} ${step.expressionBefore} becomes ${step.expressionAfter}.`,
       references: [
         ...step.activeEquationIndices.map((index) => ({ kind: "equation" as const, id: String(index), label: `Equation ${index + 1}` })),
         { kind: "variable" as const, id: step.targetSymbol, label: step.targetSymbol },

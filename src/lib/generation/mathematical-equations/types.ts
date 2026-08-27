@@ -7,9 +7,9 @@ import type {
 } from "../types";
 import type { EvidenceClassification } from "../../evidence";
 
-export const MATHEMATICAL_EQUATION_GENERATOR_VERSION = "mathematical-equations@8.1.0";
-export const MATHEMATICAL_EQUATION_SOLVER_VERSION = "mathematical-equations-solver@2.0.0";
-export const MATHEMATICAL_EQUATION_VALIDATOR_VERSION = "mathematical-equations-validator@7.0.0";
+export const MATHEMATICAL_EQUATION_GENERATOR_VERSION = "mathematical-equations@9.0.0";
+export const MATHEMATICAL_EQUATION_SOLVER_VERSION = "mathematical-equations-solver@3.0.0";
+export const MATHEMATICAL_EQUATION_VALIDATOR_VERSION = "mathematical-equations-validator@8.0.0";
 export const MATHEMATICAL_EQUATION_DOMAIN = { minimum: 1, maximum: 20 } as const;
 
 export type EquationVariable = string;
@@ -49,14 +49,41 @@ export type EquationRelationshipPrimitive =
   | "direct_value"
   | "offset_add"
   | "offset_subtract"
+  | "scale_offset_add"
+  | "scale_offset_subtract"
   | "scale"
   | "divide_by_constant"
   | "sum"
   | "difference"
+  | "reverse_difference"
   | "complement"
   | "weighted_sum"
+  | "weighted_difference"
+  | "both_sides"
   | "multi_variable_sum"
+  | "three_variable_difference"
+  | "mixed_three_variable"
   | "multi_variable_balance";
+
+export type EquationReasoningFamily =
+  | "simple_sum"
+  | "simple_difference"
+  | "reverse_difference"
+  | "direct_scale"
+  | "division"
+  | "scale_offset"
+  | "weighted_sum"
+  | "weighted_difference"
+  | "constant_first"
+  | "variables_both_sides"
+  | "three_variable"
+  | "same_target"
+  | "elimination_pair"
+  | "weighted_elimination"
+  | "dependency_chain"
+  | "branching"
+  | "recombination"
+  | "coefficient_collection";
 
 export type EquationDependencyModel = {
   family: EquationStructuralFamily;
@@ -66,6 +93,7 @@ export type EquationDependencyModel = {
   relationshipReversalCount?: number;
   meaningfulReasoningSteps?: number;
   relationshipPrimitives?: EquationRelationshipPrimitive[];
+  reasoningFamilies?: EquationReasoningFamily[];
   evidenceLevel?: EquationEvidenceLevel;
   rootStrategy?: "direct" | "coupled" | "global_balance";
   targetSymbol?: EquationVariable;
@@ -92,6 +120,59 @@ export type EquationSolutionStep = {
   dependencySymbols?: string[];
   reasoning?: "solve_variable" | "substitute" | "combine_equations";
 };
+
+export type EquationSolveTraceOperation =
+  | "DIRECT_REWRITE"
+  | "SUBSTITUTION"
+  | "ELIMINATION"
+  | "COLLECT_TERMS"
+  | "ADD_EQUATIONS"
+  | "SUBTRACT_EQUATIONS"
+  | "MULTIPLY"
+  | "DIVIDE"
+  | "REARRANGE"
+  | "RESOLVE_VARIABLE"
+  | "PROPAGATE_VALUE";
+
+export type EquationSolveTraceStep = {
+  operation: EquationSolveTraceOperation;
+  expressionBefore: string;
+  expressionAfter: string;
+  evaluatedNumbers: number[];
+  resolvedVariable?: string;
+  division?: {
+    dividend: number;
+    divisor: number;
+    quotient: number;
+    exact: boolean;
+  };
+  algebraicCancellation?: boolean;
+};
+
+export type EquationSolveTrace = {
+  steps: EquationSolveTraceStep[];
+  resolvedAssignment: VariableAssignment;
+  maximumEvaluatedIntermediate: number;
+  minimumEvaluatedIntermediate: number;
+  hasNegativeIntermediate: boolean;
+  hasFractionalIntermediate: boolean;
+};
+
+export type SolveTraceRangeFailureCode =
+  | "INTERMEDIATE_ABOVE_MAX"
+  | "INTERMEDIATE_BELOW_MIN"
+  | "NEGATIVE_INTERMEDIATE"
+  | "NON_INTEGER_INTERMEDIATE"
+  | "NON_EXACT_DIVISION";
+
+export type SolveTraceRangeValidation =
+  | { valid: true; failures: []; maximum: number; minimum: number }
+  | {
+      valid: false;
+      failures: Array<{ code: SolveTraceRangeFailureCode; value: number; stepIndex: number }>;
+      maximum: number;
+      minimum: number;
+    };
 
 export type MathematicalEquationCandidate = GenerationCandidate<
   MathematicalEquationStructuredData,
@@ -158,6 +239,7 @@ export type MathematicalEquationValidationSolution = {
   calculatedDifficulty: GenerationDifficulty;
   metrics: EquationDifficultyMetrics;
   exploredAssignments: number;
+  solveTrace: EquationSolveTrace;
 };
 
 export type MathematicalEquationGenerationFailure = {

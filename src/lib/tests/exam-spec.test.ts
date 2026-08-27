@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeSectionAt, DMAT_EXAM_SPEC, validateOfficialFullMockSections } from "./exam-spec";
+import { activeSectionAt, activeSectionFromCursor, DMAT_EXAM_SPEC, validateOfficialFullMockSections } from "./exam-spec";
 
 describe("official dMAT mock specification", () => {
   const sections = [...DMAT_EXAM_SPEC.core].map((section, index) => ({
@@ -22,5 +22,16 @@ describe("official dMAT mock specification", () => {
     expect(activeSectionAt(sections, 0, 1500_000)?.section.sectionType).toBe("mathematical_equation");
     expect(activeSectionAt(sections, 0, 4_499_999)?.section.sectionType).toBe("latin_square");
     expect(activeSectionAt(sections, 0, 4_500_000)).toBeNull();
+  });
+
+  it("advances from the persisted section cursor without reopening a locked section", () => {
+    const cursor = {
+      currentSectionId: sections[1].id,
+      sectionStartedAtMs: 1_000,
+      sectionExpiresAtMs: 1_501_000,
+    };
+    expect(activeSectionFromCursor(sections, cursor, 1_500_999)?.section.id).toBe(sections[1].id);
+    expect(activeSectionFromCursor(sections, cursor, 1_501_000)?.section.id).toBe(sections[2].id);
+    expect(activeSectionFromCursor(sections, cursor, 3_001_000)).toBeNull();
   });
 });

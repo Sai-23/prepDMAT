@@ -6,6 +6,11 @@ import type {
   AdminTestListItem,
   EditableAdminTest,
 } from "@/lib/admin/test-schemas";
+import {
+  buildMockQuestionRows,
+  buildMockSectionRows,
+  mockSaveFailure,
+} from "@/lib/admin/mock-persistence";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { validateOfficialFullMockSections } from "@/lib/tests/exam-spec";
 
@@ -45,7 +50,13 @@ async function writeTestAudit(
     entity_id: testId,
     metadata,
   });
-  if (error) throw new Error("The test was saved, but its audit record failed.");
+  if (error) {
+    throw mockSaveFailure("The Mock was saved, but its audit record failed.", {
+      stage: "audit",
+      mockId: testId,
+      error,
+    });
+  }
 }
 
 async function validateQuestionAssignments(input: AdminTestBuilderInput) {
@@ -60,26 +71,57 @@ async function validateQuestionAssignments(input: AdminTestBuilderInput) {
     .eq("publication_status", "published")
     .is("deleted_at", null);
 
-  if (error || !data || data.length !== questionIds.length) {
-    throw new Error(
-      "Every assigned question must still be approved and published.",
+  if (error) {
+    throw mockSaveFailure("The selected questions could not be verified. Try again.", {
+      stage: "question_validation",
+      questionCount: questionIds.length,
+      error,
+    });
+  }
+  if (!data || data.length !== questionIds.length) {
+    const availableIds = new Set((data ?? []).map((question) => question.id));
+    const unavailable = input.sections
+      .map((section, index) => ({
+        section,
+        index,
+        count: section.questionIds.filter((questionId) => !availableIds.has(questionId)).length,
+      }))
+      .find((item) => item.count > 0);
+    throw mockSaveFailure(
+      unavailable
+        ? `${unavailable.count} question${unavailable.count === 1 ? " is" : "s are"} no longer available in “${unavailable.section.title}”.`
+        : "Every assigned question must still be approved and published.",
+      {
+        stage: "question_validation",
+        sectionType: unavailable?.section.sectionType ?? null,
+        sectionIndex: unavailable ? unavailable.index + 1 : null,
+        questionCount: unavailable?.count ?? questionIds.length,
+      },
     );
   }
 
   const questionById = new Map(
     data.map((question) => [question.id, question]),
   );
-  input.sections.forEach((section) => {
+  input.sections.forEach((section, sectionIndex) => {
     section.questionIds.forEach((questionId) => {
       const question = questionById.get(questionId);
       const expectedModule = section.module ?? input.module;
       if (!question || (expectedModule && question.module !== expectedModule)) {
-        throw new Error(
-          `The questions assigned to “${section.title}” do not match its module.`,
-        );
+        throw mockSaveFailure(`The questions assigned to “${section.title}” do not match its module.`, {
+          stage: "question_validation",
+          sectionType: section.sectionType,
+          sectionIndex: sectionIndex + 1,
+          questionCount: section.questionIds.length,
+        });
       }
       if (section.sectionType !== "mixed" && question.question_type !== section.sectionType) {
-        throw new Error(`Every question in “${section.title}” must match its section type.`);
+        throw mockSaveFailure(`Every question in “${section.title}” must match its section type.`, {
+          stage: "question_validation",
+          sectionType: section.sectionType,
+          sectionIndex: sectionIndex + 1,
+          questionCount: section.questionIds.length,
+        });
       }
     });
   });
@@ -93,36 +135,24 @@ async function insertTestSections(
   const admin = createSupabaseAdminClient();
   const { data: sections, error: sectionError } = await admin
     .from("test_sections")
-    .insert(
-      input.sections.map((section, index) => ({
-        test_id: testId,
-        title: section.title,
-        section_type: section.sectionType,
-        module: section.module ?? input.module,
-        duration_seconds: section.durationSeconds,
-        sort_order: index + 1,
-        template_version: options.templateVersion ?? 1,
-        is_current: options.isCurrent ?? true,
-      })),
-    )
+    .insert(buildMockSectionRows(testId, input, options))
     .select("id, sort_order");
 
   if (sectionError || !sections || sections.length !== input.sections.length) {
-    throw new Error("Unable to save every test section.");
+    throw mockSaveFailure(
+      "The Mock sections could not be saved. Review the section configuration and try again.",
+      {
+        stage: "section_creation",
+        mockId: testId,
+        sectionType: input.sections.length === 1 ? input.sections[0].sectionType : "multiple",
+        sectionIndex: input.sections.length === 1 ? 1 : null,
+        questionCount: input.sections.reduce((total, section) => total + section.questionIds.length, 0),
+        error: sectionError,
+      },
+    );
   }
 
-  const sectionByOrder = new Map(
-    sections.map((section) => [section.sort_order, section.id]),
-  );
-  const mappings = input.sections.flatMap((section, sectionIndex) => {
-    const sectionId = sectionByOrder.get(sectionIndex + 1);
-    if (!sectionId) return [];
-    return section.questionIds.map((questionId, questionIndex) => ({
-      test_section_id: sectionId,
-      question_id: questionId,
-      sort_order: questionIndex + 1,
-    }));
-  });
+  const mappings = buildMockQuestionRows(sections, input);
   const { error: mappingError } = await admin
     .from("test_questions")
     .insert(mappings);
@@ -135,7 +165,17 @@ async function insertTestSections(
         "id",
         sections.map((section) => section.id),
       );
-    throw new Error("Unable to assign every selected question.");
+    throw mockSaveFailure(
+      "The selected questions could not be attached to their Mock sections.",
+      {
+        stage: "question_association",
+        mockId: testId,
+        sectionType: input.sections.length === 1 ? input.sections[0].sectionType : "multiple",
+        sectionIndex: input.sections.length === 1 ? 1 : null,
+        questionCount: mappings.length,
+        error: mappingError,
+      },
+    );
   }
 
   return sections;
@@ -346,7 +386,13 @@ export async function saveAdminTest(
       })
       .select("id")
       .single();
-    if (error || !test) throw new Error("Unable to create this test.");
+    if (error || !test) {
+      throw mockSaveFailure("Unable to create the Mock parent record.", {
+        stage: "parent_creation",
+        questionCount: input.sections.reduce((total, section) => total + section.questionIds.length, 0),
+        error,
+      });
+    }
     const createdTestId = test.id as string;
     resolvedTestId = createdTestId;
 
@@ -365,7 +411,12 @@ export async function saveAdminTest(
         .select("id, is_published")
         .eq("id", resolvedTestId)
         .maybeSingle();
-    if (!current) throw new Error("Test not found.");
+    if (!current) {
+      throw mockSaveFailure("Mock not found.", {
+        stage: "template_loading",
+        mockId: resolvedTestId,
+      });
+    }
 
     const { data: oldSections, error: oldSectionError } = await admin
       .from("test_sections")
@@ -373,7 +424,11 @@ export async function saveAdminTest(
       .eq("test_id", resolvedTestId)
       .eq("is_current", true);
     if (oldSectionError || !oldSections?.length) {
-      throw new Error("Unable to load the current mock template.");
+      throw mockSaveFailure("Unable to load the current Mock template.", {
+        stage: "template_loading",
+        mockId: resolvedTestId,
+        error: oldSectionError,
+      });
     }
     const nextTemplateVersion = Math.max(
       ...oldSections.map((section) => Number(section.template_version ?? 1)),
@@ -391,7 +446,12 @@ export async function saveAdminTest(
       .in("id", oldSections.map((section) => section.id));
     if (retireError) {
       await admin.from("test_sections").delete().in("id", stagedIds);
-      throw new Error("Unable to version the previous mock structure.");
+      throw mockSaveFailure("Unable to version the previous Mock structure.", {
+        stage: "template_retirement",
+        mockId: resolvedTestId,
+        questionCount: input.sections.reduce((total, section) => total + section.questionIds.length, 0),
+        error: retireError,
+      });
     }
 
     const { error: activateError } = await admin
@@ -401,7 +461,12 @@ export async function saveAdminTest(
     if (activateError) {
       await admin.from("test_sections").update({ is_current: true }).in("id", oldSections.map((section) => section.id));
       await admin.from("test_sections").delete().in("id", stagedIds);
-      throw new Error("Unable to activate the revised mock structure.");
+      throw mockSaveFailure("Unable to activate the revised Mock structure.", {
+        stage: "template_activation",
+        mockId: resolvedTestId,
+        questionCount: input.sections.reduce((total, section) => total + section.questionIds.length, 0),
+        error: activateError,
+      });
     }
 
     const { error: updateError } = await admin
@@ -422,7 +487,12 @@ export async function saveAdminTest(
       await admin.from("test_sections").update({ is_current: false }).in("id", stagedIds);
       await admin.from("test_sections").update({ is_current: true }).in("id", oldSections.map((section) => section.id));
       await admin.from("test_sections").delete().in("id", stagedIds);
-      throw new Error("The structure was saved, but mock details failed.");
+      throw mockSaveFailure("The structure was saved, but Mock details failed.", {
+        stage: "parent_update",
+        mockId: resolvedTestId,
+        questionCount: input.sections.reduce((total, section) => total + section.questionIds.length, 0),
+        error: updateError,
+      });
     }
   }
 
@@ -434,7 +504,12 @@ export async function saveAdminTest(
       .update({ is_published: true })
       .eq("id", resolvedTestId);
     if (error) {
-      throw new Error("The test was saved as a draft but could not be published.");
+      throw mockSaveFailure("The Mock was saved as a draft but could not be published.", {
+        stage: "publication",
+        mockId: resolvedTestId,
+        questionCount: input.sections.reduce((total, section) => total + section.questionIds.length, 0),
+        error,
+      });
     }
   }
 

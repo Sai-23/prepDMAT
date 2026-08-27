@@ -4,6 +4,7 @@ import {
   LATIN_SQUARE_SIZE,
   LATIN_SQUARE_SOLVER_VERSION,
   type LatinSquareCandidate,
+  type CompletedLatinGrid,
   type LatinSymbol,
   type LatinTargetSolverOutcome,
   type VisibleLatinGrid,
@@ -90,6 +91,39 @@ export function countLatinGridSolutions(
 
   search();
   return { count, capped: count >= limit, exploredAssignments };
+}
+
+export function findUniqueLatinGridSolution(source: VisibleLatinGrid): CompletedLatinGrid | null {
+  if (!validGridShape(source) || hasKnownDuplicates(source)) return null;
+  const grid = source.map((row) => [...row]);
+  let first: CompletedLatinGrid | null = null;
+  let count = 0;
+  const search = (): void => {
+    if (count > 1) return;
+    let best: { row: number; column: number; candidates: LatinSymbol[] } | null = null;
+    for (let row = 0; row < LATIN_SQUARE_SIZE; row += 1) {
+      for (let column = 0; column < LATIN_SQUARE_SIZE; column += 1) {
+        if (grid[row][column] !== null) continue;
+        const candidates = DEFAULT_LATIN_SYMBOLS.filter((symbol) => canPlace(grid, row, column, symbol));
+        if (candidates.length === 0) return;
+        if (!best || candidates.length < best.candidates.length) best = { row, column, candidates };
+      }
+    }
+    if (!best) {
+      count += 1;
+      if (count === 1) first = structuredClone(grid) as CompletedLatinGrid;
+      return;
+    }
+    const cell = best;
+    for (const symbol of cell.candidates) {
+      grid[cell.row][cell.column] = symbol;
+      search();
+      grid[cell.row][cell.column] = null;
+      if (count > 1) return;
+    }
+  };
+  search();
+  return count === 1 ? first : null;
 }
 
 function hasCompletion(grid: VisibleLatinGrid): {

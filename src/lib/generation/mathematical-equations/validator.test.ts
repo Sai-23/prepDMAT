@@ -3,7 +3,71 @@ import { describe, expect, it } from "vitest";
 import { mathematicalEquationGenerator } from "./generator";
 import { renderMathematicalEquation } from "./presentation";
 import { inspectMathematicalEquationStyle } from "./style";
+import type { MathematicalEquationCandidate, MathematicalExpression } from "./types";
 import { mathematicalEquationValidator } from "./validator";
+
+const constant = (value: number): MathematicalExpression => ({ kind: "constant", value });
+const variable = (symbol: string): MathematicalExpression => ({ kind: "variable", symbol });
+const operation = (
+  operator: "add" | "subtract" | "multiply" | "divide",
+  left: MathematicalExpression,
+  right: MathematicalExpression,
+): MathematicalExpression => ({ kind: "operation", operator, left, right });
+
+function unsafeSubstitutionCandidate(): MathematicalEquationCandidate {
+  const candidate = mathematicalEquationGenerator.generate(
+    { seed: "unsafe-trace-fixture-base", difficulty: "medium" },
+    1,
+  );
+  const equations = [
+    { left: operation("add", variable("A"), operation("multiply", constant(3), variable("C"))), right: constant(20) },
+    { left: constant(19), right: operation("add", operation("add", operation("multiply", constant(3), variable("B")), variable("A")), variable("C")) },
+    { left: variable("C"), right: operation("subtract", variable("A"), constant(12)) },
+  ];
+  const reasoningPath = [
+    "Combine the first and third equations to obtain A = 14.",
+    "Substitute A = 14 to obtain C = 2.",
+    "Substitute A = 14 and C = 2 to obtain B = 1.",
+  ];
+  return {
+    ...candidate,
+    presentation: {
+      prompt: candidate.presentation.prompt,
+      blocks: equations.map((equation) => ({ kind: "formula", expression: renderMathematicalEquation(equation) })),
+    },
+    structuredData: {
+      variables: ["A", "B", "C"],
+      equations,
+      domain: { minimum: 1, maximum: 20, integersOnly: true },
+      dependencyModel: {
+        family: "triangle",
+        solveOrder: ["A", "C", "B"],
+        edges: [
+          { source: "A", target: "C" },
+          { source: "A", target: "B" },
+          { source: "C", target: "B" },
+        ],
+        hiddenGroupingCount: 1,
+        relationshipReversalCount: 1,
+        meaningfulReasoningSteps: 4,
+        relationshipPrimitives: ["weighted_sum", "weighted_sum", "offset_subtract"],
+        reasoningFamilies: ["weighted_sum", "same_target", "elimination_pair"],
+        evidenceLevel: "official_composition",
+        rootStrategy: "coupled",
+        targetSymbol: "B",
+      },
+    },
+    response: { kind: "symbol_assignment", symbols: ["A", "B", "C"] },
+    correctAnswer: { A: 14, B: 1, C: 2 },
+    explanation: reasoningPath.join("\n"),
+    reasoningPath,
+    solutionPath: [
+      { equationIndex: 0, supportingEquationIndices: [2], targetSymbol: "A", knownSymbols: [], dependencySymbols: [], reasoning: "combine_equations" },
+      { equationIndex: 2, targetSymbol: "C", knownSymbols: ["A"], dependencySymbols: ["A"], reasoning: "substitute" },
+      { equationIndex: 1, targetSymbol: "B", knownSymbols: ["A", "C"], dependencySymbols: ["A", "C"], reasoning: "substitute" },
+    ],
+  };
+}
 
 describe("MathematicalEquationValidator", () => {
   it.each(["easy", "medium", "hard"] as const)(
@@ -89,6 +153,16 @@ describe("MathematicalEquationValidator", () => {
     expect(result.valid).toBe(false);
     if (!result.valid) {
       expect(result.issues.map((entry) => entry.code)).toContain("VISIBLE_CONSTANT_OUT_OF_RANGE");
+    }
+  });
+
+  it("rejects the observed 4A = 56 canonical-path failure without special-casing its text", () => {
+    const result = mathematicalEquationValidator.validate(unsafeSubstitutionCandidate(), "medium");
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.issues.map((entry) => entry.code)).toContain("INTERMEDIATE_ABOVE_MAX");
+      const traceCheck = result.checks.findLast((entry) => entry.stage === "safety");
+      expect(traceCheck?.details).toMatchObject({ maximumEvaluatedIntermediate: 56 });
     }
   });
 

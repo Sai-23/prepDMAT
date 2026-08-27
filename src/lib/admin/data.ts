@@ -119,6 +119,33 @@ export function getGeneratedFigureFingerprints(): Promise<Set<string>> {
   return getGeneratedFingerprints("figure_sequence");
 }
 
+export type ExistingGeneratedQuestion = {
+  id: string;
+  publicationStatus: string;
+  verificationStatus: string;
+  deletedAt: string | null;
+};
+
+export async function getGeneratedQuestionByFingerprint(
+  fingerprint: string,
+): Promise<ExistingGeneratedQuestion | null> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("questions")
+    .select("id, publication_status, verification_status, deleted_at")
+    .eq("source_type", "generated")
+    .eq("metadata->generation->>fingerprint", fingerprint)
+    .maybeSingle();
+  if (error) throw new Error("Unable to verify the generated question's publication state.");
+  if (!data) return null;
+  return {
+    id: data.id as string,
+    publicationStatus: data.publication_status as string,
+    verificationStatus: data.verification_status as string,
+    deletedAt: data.deleted_at as string | null,
+  };
+}
+
 function assertGeneratedQuestionCanPublish(candidate: {
   questionType: string;
   structuredData: unknown;
@@ -238,6 +265,7 @@ export async function createPublishedGeneratedLatin(
     presentation: question.presentation,
     response: question.response,
     deductionTrace: question.deductionTrace,
+    completedGrid: question.completedGrid,
   };
   const metadata = {
     generation: question.metadata,

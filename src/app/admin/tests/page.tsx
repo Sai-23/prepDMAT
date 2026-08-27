@@ -11,9 +11,8 @@ export default async function AdminTestsPage() {
   let loadError: string | null = null;
   try {
     tests = await getAdminTests();
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load created mocks.";
+  } catch {
+    loadError = "Unable to load created mocks.";
   }
 
   return (

@@ -5,6 +5,7 @@ import {
   visibleFrameValue,
 } from "../generation/figure-sequences";
 import { buildFigureSequenceWalkthrough } from "./figure-sequence-explanation";
+import { createVerifiedFigureExplanationTrace } from "./figure-sequence-explanation-trace";
 
 function fixture(difficulty: "easy" | "medium" | "hard") {
   return generateValidatedFigureSequence({
@@ -22,12 +23,12 @@ describe("Figure Sequence Practice explanation mapping", () => {
       const question = fixture(difficulty);
       const walkthrough = buildFigureSequenceWalkthrough(
         question.sequence,
-        { rules: question.structuredData.rules },
+        createVerifiedFigureExplanationTrace(question.sequence, { rules: question.structuredData.rules }, question.correctAnswer, question.solutionFrames),
         question.correctAnswer,
       );
       expect(walkthrough.valid).toBe(true);
       expect(walkthrough.rules).toHaveLength(question.structuredData.rules.length);
-      expect(walkthrough.steps).toHaveLength(question.structuredData.rules.length + 2);
+      expect(walkthrough.steps).toHaveLength(question.structuredData.rules.length + 4);
       expect(walkthrough.steps.filter((step) => step.type === "track_symbol"))
         .toHaveLength(question.structuredData.rules.length);
       walkthrough.steps.filter((step) => step.type === "track_symbol").forEach((step) => {
@@ -44,7 +45,17 @@ describe("Figure Sequence Practice explanation mapping", () => {
           throw new Error("Expected the correct candidate to exist");
         }
         expect(visibleFrameValue(step.afterFrame)).toBe(visibleFrameValue(correct.frame));
-        expect(step.correctOptionLabel).toBe(correct.label);
+      });
+      const matches = walkthrough.steps.filter((step) => step.type === "match_option");
+      expect(matches).toHaveLength(2);
+      matches.forEach((step, index) => {
+        const correct = question.sequence.missingMatrices[index].candidates.find(
+          (candidate) => candidate.id === question.correctAnswer[index],
+        );
+        expect(step.correctOptionLabel).toBe(correct?.label);
+        expect(step.distractorDifferences).toHaveLength(
+          question.sequence.missingMatrices[index].candidates.length - 1,
+        );
       });
     },
   );
@@ -53,7 +64,7 @@ describe("Figure Sequence Practice explanation mapping", () => {
     const question = fixture("hard");
     const walkthrough = buildFigureSequenceWalkthrough(
       question.sequence,
-      { rules: question.structuredData.rules },
+      createVerifiedFigureExplanationTrace(question.sequence, { rules: question.structuredData.rules }, question.correctAnswer, question.solutionFrames),
       question.correctAnswer,
     );
     const tracking = walkthrough.steps.filter((step) => step.type === "track_symbol");
@@ -67,11 +78,8 @@ describe("Figure Sequence Practice explanation mapping", () => {
     const question = fixture("medium");
     const badRules = structuredClone(question.structuredData.rules);
     badRules[0].symbolId = "missing-symbol";
-    const walkthrough = buildFigureSequenceWalkthrough(
-      question.sequence,
-      { rules: badRules },
-      question.correctAnswer,
-    );
+    const trace = createVerifiedFigureExplanationTrace(question.sequence, { rules: badRules }, question.correctAnswer, question.solutionFrames);
+    const walkthrough = buildFigureSequenceWalkthrough(question.sequence, trace, question.correctAnswer);
     expect(walkthrough.valid).toBe(false);
     expect(walkthrough.steps).toEqual([]);
     expect(walkthrough.fallbackMessage).toContain("Verified answers:");

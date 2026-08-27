@@ -9,6 +9,7 @@ import {
 import {
   buildLatinSquareWalkthrough,
 } from "./latin-square-explanation";
+import { createVerifiedLatinExplanationTrace } from "./latin-square-explanation-trace";
 import {
   explanationNavigationReducer,
   type ExplanationNavigationState,
@@ -20,6 +21,15 @@ function fixture(difficulty: "easy" | "medium" | "hard") {
     difficulty,
     maxAttempts: 5_000,
   });
+}
+
+function verifiedTrace(question: ReturnType<typeof fixture>) {
+  return createVerifiedLatinExplanationTrace(
+    question.structuredData,
+    question.deductionTrace,
+    question.correctAnswer,
+    question.completedGrid,
+  );
 }
 
 function missingFromRow(grid: VisibleLatinGrid, row: number): LatinSymbol[] {
@@ -41,7 +51,7 @@ describe("Latin-square Practice explanation mapping", () => {
     const question = fixture(difficulty);
     const walkthrough = buildLatinSquareWalkthrough(
       question.structuredData,
-      question.deductionTrace,
+      verifiedTrace(question),
       question.correctAnswer,
     );
     expect(walkthrough.valid).toBe(true);
@@ -69,7 +79,7 @@ describe("Latin-square Practice explanation mapping", () => {
       const question = fixture(difficulty);
       const walkthrough = buildLatinSquareWalkthrough(
         question.structuredData,
-        question.deductionTrace,
+        verifiedTrace(question),
         question.correctAnswer,
       );
       const rowStep = walkthrough.steps.find((step) => step.type === "target_row");
@@ -91,30 +101,23 @@ describe("Latin-square Practice explanation mapping", () => {
   );
 
   it.each(["easy", "medium", "hard"] as const)(
-    "finishes with a deterministic target-only proof grid for %s",
+    "finishes with the generator's complete verified grid for %s",
     (difficulty) => {
       const question = fixture(difficulty);
       const walkthrough = buildLatinSquareWalkthrough(
         question.structuredData,
-        question.deductionTrace,
+        verifiedTrace(question),
         question.correctAnswer,
       );
-      const proofGrid = walkthrough.proofGrid;
-      expect(proofGrid).not.toBeNull();
-      expect(proofGrid?.[question.structuredData.target.row][question.structuredData.target.column])
+      const completedGrid = walkthrough.completedGrid;
+      expect(completedGrid).not.toBeNull();
+      expect(completedGrid?.[question.structuredData.target.row][question.structuredData.target.column])
         .toBe(question.correctAnswer);
-      const proofCells = new Set(walkthrough.steps
-        .filter((step) => step.type === "intermediate" || step.isTarget)
-        .map((step) => `${step.coordinate.row}:${step.coordinate.column}`));
-      proofGrid?.forEach((row, rowIndex) => {
+      completedGrid?.forEach((row, rowIndex) => {
         expect(question.structuredData.grid[rowIndex].every((clue, columnIndex) =>
-          clue === null || proofGrid[rowIndex][columnIndex] === clue,
+          clue === null || completedGrid[rowIndex][columnIndex] === clue,
         )).toBe(true);
-        row.forEach((symbol, columnIndex) => {
-          if (question.structuredData.grid[rowIndex][columnIndex] === null && !proofCells.has(`${rowIndex}:${columnIndex}`)) {
-            expect(symbol).toBeNull();
-          }
-        });
+        expect([...row].sort()).toEqual([...DEFAULT_LATIN_SYMBOLS].sort());
       });
     },
   );
@@ -128,8 +131,7 @@ describe("Latin-square Practice explanation mapping", () => {
     );
     expect(walkthrough.valid).toBe(false);
     expect(walkthrough.steps).toEqual([]);
-    expect(walkthrough.proofGrid?.[question.structuredData.target.row][question.structuredData.target.column])
-      .toBe(question.correctAnswer);
+    expect(walkthrough.completedGrid).toBeNull();
     expect(walkthrough.fallbackMessage).toContain(`verified answer is ${question.correctAnswer}`);
   });
 
@@ -147,8 +149,8 @@ describe("Latin-square Practice explanation mapping", () => {
       legacyTrace,
       question.correctAnswer,
     );
-    expect(walkthrough.valid).toBe(true);
-    expect(walkthrough.steps.at(-1)?.symbol).toBe(question.correctAnswer);
+    expect(walkthrough.valid).toBe(false);
+    expect(walkthrough.fallbackMessage).toContain("earlier question");
   });
 
   it("supports bounded Previous, Next, and Show all navigation", () => {

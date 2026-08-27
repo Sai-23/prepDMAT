@@ -177,7 +177,7 @@ export function LatinSquarePracticeFeedback({
           {currentStep ? (
             <>
               <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(250px,340px)_minmax(0,1fr)]">
-                <OriginalPuzzle data={data} step={currentStep} />
+                <WorkingGrid data={data} step={currentStep} />
                 <div className="min-w-0">
                   {navigation.view === "all" ? (
                     <ol className="space-y-3" data-walkthrough-view="all">
@@ -211,7 +211,7 @@ export function LatinSquarePracticeFeedback({
                         </Button>
                         {navigation.stepIndex === walkthrough.steps.length - 1 ? (
                           <Button onClick={focusSolvedMatrix} size="sm" type="button">
-                            View proof cells
+                            View solved matrix
                             <Grid3X3 aria-hidden="true" className="h-4 w-4" />
                           </Button>
                         ) : (
@@ -232,11 +232,11 @@ export function LatinSquarePracticeFeedback({
                   )}
                 </div>
               </div>
-              {walkthrough.proofGrid ? (
+              {walkthrough.completedGrid && (navigation.view === "all" || currentStep.type === "final") ? (
                 <SolvedSection
                   answer={answer}
                   data={data}
-                  proofGrid={walkthrough.proofGrid}
+                  completedGrid={walkthrough.completedGrid}
                   ref={solvedSection}
                   steps={walkthrough.steps}
                   summary={walkthrough.summary}
@@ -248,11 +248,11 @@ export function LatinSquarePracticeFeedback({
               <p className="rounded-md border border-workspace-border bg-surface-lowest p-3 text-sm leading-6 text-on-surface">
                 {walkthrough.fallbackMessage}
               </p>
-              {walkthrough.proofGrid ? (
+              {walkthrough.completedGrid ? (
                 <SolvedSection
                   answer={answer}
                   data={data}
-                  proofGrid={walkthrough.proofGrid}
+                  completedGrid={walkthrough.completedGrid}
                   ref={solvedSection}
                   steps={walkthrough.steps}
                   summary={walkthrough.summary}
@@ -260,7 +260,7 @@ export function LatinSquarePracticeFeedback({
               ) : null}
             </div>
           )}
-          {education ? (
+          {education && currentStep?.type === "final" ? (
             <aside className="mt-4 rounded-lg border border-success/40 bg-success-container px-4 py-3" aria-label="Answer and takeaway">
               <p className="text-sm font-semibold text-success-container-foreground">{education.answerConclusion}</p>
               <p className="mt-2 text-sm leading-6 text-success-container-foreground"><span className="font-semibold">Remember:</span> {education.takeaway}</p>
@@ -337,7 +337,7 @@ function CompactProgress({ current, count }: { current: number; count: number })
   );
 }
 
-function OriginalPuzzle({
+function WorkingGrid({
   data,
   step,
 }: {
@@ -351,33 +351,50 @@ function OriginalPuzzle({
   return (
     <figure className="rounded-lg border border-workspace-border bg-surface-lowest p-3">
       <figcaption className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Original puzzle
+        Puzzle
       </figcaption>
       <div
-        aria-label={`Original Latin square. ${focusLabel}`}
+        aria-label={`Progressive Latin square. ${focusLabel}`}
         className="grid grid-cols-5 gap-px overflow-hidden rounded-md border-2 border-on-surface bg-on-surface"
         role="grid"
       >
-        {data.grid.flatMap((row, rowIndex) => row.map((symbol, columnIndex) => {
+        {step.previewGrid.flatMap((row, rowIndex) => row.map((symbol, columnIndex) => {
           const isTarget = rowIndex === data.target.row && columnIndex === data.target.column;
-          const isActive =
-            (step.highlightRow && rowIndex === step.coordinate.row) ||
-            (step.highlightColumn && columnIndex === step.coordinate.column);
-          const label = isTarget
-            ? `Target cell, Row ${rowIndex + 1} Column ${columnIndex + 1}`
-            : `${symbol ?? "Open cell"}, Row ${rowIndex + 1} Column ${columnIndex + 1}`;
+          const isActiveRow = step.highlightRow && rowIndex === step.coordinate.row;
+          const isActiveColumn = step.highlightColumn && columnIndex === step.coordinate.column;
+          const isActive = isActiveRow || isActiveColumn;
+          const isGiven = data.grid[rowIndex][columnIndex] !== null;
+          const isInferred = symbol !== null && !isGiven;
+          const state = [
+            isGiven ? "given" : isInferred ? "inferred" : "open",
+            isActiveRow ? "active-row" : null,
+            isActiveColumn ? "active-column" : null,
+            isTarget ? "target" : null,
+          ].filter(Boolean).join(" ");
+          const label = [
+            isTarget ? "Target cell" : null,
+            `Row ${rowIndex + 1} Column ${columnIndex + 1}`,
+            symbol ?? "open",
+            isGiven ? "given clue" : isInferred ? "inferred value" : null,
+            isActiveRow ? "active row" : null,
+            isActiveColumn ? "active column" : null,
+          ].filter(Boolean).join(", ");
           return (
             <div
               aria-label={label}
               className={cn(
-                "relative flex aspect-square items-center justify-center bg-surface-lowest text-lg font-semibold transition-colors motion-reduce:transition-none sm:text-xl",
-                isActive && "bg-primary-muted",
-                isTarget && "z-10 ring-2 ring-inset ring-primary",
+                "relative flex aspect-square items-center justify-center bg-surface-lowest text-lg font-semibold text-on-surface transition-colors motion-reduce:transition-none sm:text-xl",
+                isActive && "bg-surface-high text-on-surface",
+                isInferred && !isTarget && "text-success",
+                isTarget && "z-10 bg-primary-muted text-on-surface ring-2 ring-inset ring-primary",
+                isTarget && step.type === "final" && "bg-success-container text-success-container-foreground ring-success",
               )}
+              data-cell-state={state}
               key={`${rowIndex}:${columnIndex}`}
               role="gridcell"
             >
-              {isTarget ? "?" : symbol}
+              <span>{isTarget && step.type !== "final" ? "?" : symbol}</span>
+              {isInferred && !isTarget ? <Check aria-hidden="true" className="absolute right-0.5 top-0.5 h-3 w-3" /> : null}
             </div>
           );
         }))}
@@ -440,6 +457,7 @@ function StepContents({ step }: { step: LatinExplanationStep }) {
         <CandidateSet label={`Row ${row} allows`} symbols={step.rowCandidates} />
         <CandidateSet label={`Column ${column} allows`} symbols={step.columnCandidates} />
         <CandidateSet emphasized label="Common" symbols={step.commonCandidates} />
+        <EliminatedSet symbols={step.eliminatedCandidates} />
         <p className="text-sm font-semibold text-on-surface">
           {step.commonCandidates.length === 1
             ? `Only ${step.symbol} appears in both sets.`
@@ -486,6 +504,7 @@ function StepContents({ step }: { step: LatinExplanationStep }) {
           <CandidateSet label="Row options" symbols={step.rowCandidates} />
           <CandidateSet label="Column options" symbols={step.columnCandidates} />
           <CandidateSet emphasized label="Fits both" symbols={step.commonCandidates} />
+          <EliminatedSet symbols={step.eliminatedCandidates} />
         </>
       )}
       <p className="text-sm font-semibold text-on-surface">
@@ -516,7 +535,7 @@ function LinePreview({
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {axis === "row" ? `Row ${coordinate.row + 1}` : `Column ${coordinate.column + 1}`} preview
+        {axis === "row" ? `Row ${coordinate.row + 1}` : `Column ${coordinate.column + 1}`}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-1.5" role="list">
         {values.map((value, index) => {
@@ -585,6 +604,22 @@ function CandidateSet({
   );
 }
 
+function EliminatedSet({ symbols }: { symbols: LatinSymbol[] }) {
+  if (!symbols.length) return null;
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Eliminated</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {symbols.map((symbol) => (
+          <span className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full border border-workspace-border bg-surface-low px-2.5 text-sm font-semibold text-muted-foreground line-through" key={symbol}>
+            {symbol}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PositionSet({
   options,
   scope,
@@ -616,14 +651,14 @@ function coordinateKey(coordinate: LatinCoordinate): string {
 }
 
 const SolvedSection = ({
-  proofGrid,
+  completedGrid,
   data,
   summary,
   answer,
   steps,
   ref,
 }: {
-  proofGrid: VisibleLatinGrid;
+  completedGrid: VisibleLatinGrid;
   data: LatinSquareStructuredData;
   summary: LatinWalkthroughSummary | null;
   answer: string;
@@ -635,17 +670,17 @@ const SolvedSection = ({
     ref={ref}
     tabIndex={-1}
   >
-    <ProofMatrix data={data} proofGrid={proofGrid} steps={steps} />
+    <SolvedMatrix completedGrid={completedGrid} data={data} steps={steps} />
     <SummaryCard answer={answer} data={data} summary={summary} />
   </div>
 );
 
-function ProofMatrix({
-  proofGrid,
+function SolvedMatrix({
+  completedGrid,
   data,
   steps,
 }: {
-  proofGrid: VisibleLatinGrid;
+  completedGrid: VisibleLatinGrid;
   data: LatinSquareStructuredData;
   steps: readonly LatinExplanationStep[];
 }) {
@@ -657,33 +692,32 @@ function ProofMatrix({
   return (
     <figure className="rounded-lg border border-workspace-border bg-surface-lowest p-3">
       <figcaption className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface">
-        Cells used in this proof
+        Complete solved matrix
       </figcaption>
-      <div className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))] gap-px overflow-hidden rounded-md bg-workspace-border" role="grid" aria-label="Latin square showing clues and cells used in the target proof">
+      <div className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))] gap-px overflow-hidden rounded-md bg-workspace-border" role="grid" aria-label="Complete solved 5 by 5 Latin square with the target highlighted">
         <span aria-hidden="true" className="bg-surface-low p-1" />
         {Array.from({ length: 5 }, (_, column) => (
           <span className="bg-surface-low p-1 text-center text-[10px] font-semibold text-muted-foreground" key={column}>C{column + 1}</span>
         ))}
-        {proofGrid.flatMap((row, rowIndex) => [
+        {completedGrid.flatMap((row, rowIndex) => [
           <span className="flex items-center bg-surface-low px-1 text-[10px] font-semibold text-muted-foreground" key={`row:${rowIndex}`}>R{rowIndex + 1}</span>,
           ...row.map((symbol, columnIndex) => {
             const original = data.grid[rowIndex][columnIndex] !== null;
             const target = rowIndex === data.target.row && columnIndex === data.target.column;
             const usedInProof = proofCells.has(`${rowIndex}:${columnIndex}`);
-            const displayedSymbol = original || usedInProof ? symbol : null;
             return (
               <span
-                aria-label={`${target ? "Target cell, " : ""}Row ${rowIndex + 1} Column ${columnIndex + 1}, ${displayedSymbol ?? "not needed for this proof"}, ${original ? "given clue" : target ? "final answer" : usedInProof ? "required intermediate" : "not shown"}`}
+                aria-label={`${target ? "Target cell, " : ""}Row ${rowIndex + 1} Column ${columnIndex + 1}, ${symbol}, ${original ? "given clue" : target ? "final answer" : usedInProof ? "reasoning placement" : "completed value"}`}
                 className={cn(
                   "relative flex aspect-square items-center justify-center bg-surface-lowest text-base font-semibold text-on-surface sm:text-lg",
-                  !original && usedInProof && "text-success",
+                  !original && usedInProof && "bg-primary-muted text-primary",
                   target && "z-10 bg-success-container text-success-container-foreground ring-2 ring-inset ring-success",
                 )}
-                data-solved-cell-origin={original ? "given" : target ? "target" : usedInProof ? "required-intermediate" : "not-needed"}
+                data-solved-cell-origin={original ? "given" : target ? "target" : usedInProof ? "reasoning-placement" : "completed"}
                 key={`${rowIndex}:${columnIndex}`}
                 role="gridcell"
               >
-                {displayedSymbol}
+                {symbol}
                 {target ? <Check aria-hidden="true" className="absolute right-0.5 top-0.5 h-3 w-3" /> : null}
               </span>
             );
@@ -692,7 +726,8 @@ function ProofMatrix({
       </div>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
         <span>Regular: given clue</span>
-        <span className="text-success">Green: required proof cell</span>
+        <span className="text-primary">Tinted: reasoning placement</span>
+        <span>Filled: verified completed value</span>
         <span className="font-semibold text-success-container-foreground">Highlighted: target answer</span>
       </div>
     </figure>

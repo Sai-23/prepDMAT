@@ -1,53 +1,71 @@
-import { SectionHeading } from "@/components/shared/section-heading";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock3, FileCheck2, Layers3 } from "lucide-react";
 
-const sections = [
-  {
-    title: "Figure Sequences",
-    description:
-      "SVG-driven visual transformations with structured figure objects, rule tracking, and deterministic answer validation.",
-    badges: ["Core Module", "SVG", "Rule-based"],
-  },
-  {
-    title: "Mathematical Equations",
-    description:
-      "Programmatically generated systems and substitutions with unique-solution checks and distractor validation.",
-    badges: ["Core Module", "Deterministic", "Validated"],
-  },
-  {
-    title: "Latin Squares",
-    description:
-      "5×5 grid reasoning with controlled cell removal, permutation logic, and single-answer guarantees.",
-    badges: ["Core Module", "Constraint logic", "Uniqueness"],
-  },
-];
+import { CoreFormatSamples } from "@/components/exam-format/core-format-samples";
+import { SectionHeading } from "@/components/shared/section-heading";
+import { Card, CardContent } from "@/components/ui/card";
+import { DMAT_CURRENT_CORE_PROTOCOL } from "@/lib/protocol";
 
 export default function ExamFormatPage() {
+  const core = DMAT_CURRENT_CORE_PROTOCOL.core;
+  const totalQuestions = core.reduce((total, section) => total + section.questionCount, 0);
+
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-6 py-10 lg:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       <SectionHeading
         eyebrow="Exam format"
-        title="Understand the structure before you start preparing"
-        description="dMAT Prep supports the Core Module with dedicated question and test architecture for its three question types."
+        title="Know what to expect on test day"
+        description="The dMAT is taken digitally and has a Core Module followed by a second 90-minute module. For the current APS route in India, that second part is the General Academic Module."
       />
-      <div className="grid gap-5 md:grid-cols-2">
-        {sections.map((section) => (
-          <Card key={section.title}>
-            <CardHeader>
-              <CardTitle>{section.title}</CardTitle>
-              <CardDescription>{section.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {section.badges.map((badge) => (
-                <Badge key={badge} variant="subtle">
-                  {badge}
-                </Badge>
-              ))}
+
+      <section aria-labelledby="exam-at-a-glance" className="space-y-5">
+        <div>
+          <h2 className="text-2xl font-semibold" id="exam-at-a-glance">The exam at a glance</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Allow about three and a half hours at the test centre, including the break between the two modules.</p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card className="border-primary bg-primary-muted">
+            <CardContent className="p-6 sm:p-8">
+              <p className="text-sm font-semibold text-primary">Part 1</p>
+              <h3 className="mt-2 text-2xl font-semibold">Core Module</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{totalQuestions} questions · approximately 90 minutes including instructions</p>
+              <ol className="mt-6 divide-y divide-workspace-separator">
+                {core.map((section, index) => (
+                  <li className="grid grid-cols-[1fr_auto] gap-4 py-3" key={section.sectionType}>
+                    <span className="font-medium">{index + 1}. {section.title}</span>
+                    <span className="text-sm text-muted-foreground">{section.questionCount} questions · {Math.round(section.durationSeconds / 60)} min</span>
+                  </li>
+                ))}
+              </ol>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          <Card>
+            <CardContent className="p-6 sm:p-8">
+              <p className="text-sm font-semibold text-primary">Part 2</p>
+              <h3 className="mt-2 text-2xl font-semibold">General Academic Module</h3>
+              <p className="mt-2 text-sm text-muted-foreground">90 minutes · current APS route for the specified India cohort</p>
+              <p className="mt-6 text-sm leading-7 text-on-surface-variant">This module asks you to apply cognitive and analytical skills to academic problem solving. It focuses on transfer and application rather than memorised facts.</p>
+              <p className="mt-4 text-xs leading-5 text-muted-foreground">Requirements can depend on your application route and intake. Confirm your requirement and dates with dMAT and APS before registering.</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-lg bg-surface-low p-4"><Layers3 aria-hidden="true" className="h-5 w-5 text-primary" /><span className="text-sm font-medium">3 Core subtests</span></div>
+          <div className="flex items-center gap-3 rounded-lg bg-surface-low p-4"><FileCheck2 aria-hidden="true" className="h-5 w-5 text-primary" /><span className="text-sm font-medium">20 questions each</span></div>
+          <div className="flex items-center gap-3 rounded-lg bg-surface-low p-4"><Clock3 aria-hidden="true" className="h-5 w-5 text-primary" /><span className="text-sm font-medium">25 minutes each</span></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="core-question-formats" className="space-y-7">
+        <div className="max-w-3xl">
+          <h2 className="text-2xl font-semibold" id="core-question-formats">Try the three Core question formats</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">These examples use the same response interfaces as Practice. They are static examples: selections are not scored or saved.</p>
+        </div>
+        <Card>
+          <CardContent className="p-4 sm:p-6 lg:p-8">
+            <CoreFormatSamples />
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

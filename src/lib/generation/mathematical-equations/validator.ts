@@ -20,6 +20,7 @@ import {
   mathematicalEquationStyleIssues,
 } from "./style";
 import { inspectPublicEquationPresentation } from "./presentation";
+import { buildCanonicalSolveTrace, validateSolveTraceRange } from "./solve-trace";
 import {
   EQUATION_GRAPH_REGISTRY,
   EQUATION_RELATIONSHIP_REGISTRY,
@@ -65,8 +66,12 @@ function validateExpression(
   issues: ValidationIssue[],
 ): void {
   if (expression.kind === "constant") {
-    if (!Number.isSafeInteger(expression.value) || expression.value < 1 || expression.value > 20) {
-      issues.push(issue("format", "VISIBLE_CONSTANT_OUT_OF_RANGE", "Every displayed constant must be an integer from 1 through 20.", path));
+    if (
+      !Number.isSafeInteger(expression.value) ||
+      expression.value < MATHEMATICAL_EQUATION_DOMAIN.minimum ||
+      expression.value > MATHEMATICAL_EQUATION_DOMAIN.maximum
+    ) {
+      issues.push(issue("format", "VISIBLE_CONSTANT_OUT_OF_RANGE", `Every displayed constant must be an integer from ${MATHEMATICAL_EQUATION_DOMAIN.minimum} through ${MATHEMATICAL_EQUATION_DOMAIN.maximum}.`, path));
     }
     return;
   }
@@ -284,12 +289,14 @@ export class MathematicalEquationValidator
     if (
       Object.keys(candidate.correctAnswer).some((symbol) => !declared.has(symbol)) ||
       Object.values(candidate.correctAnswer).some((value) =>
-        !Number.isSafeInteger(value) || value < 1 || value > 20)
+        !Number.isSafeInteger(value) ||
+        value < MATHEMATICAL_EQUATION_DOMAIN.minimum ||
+        value > MATHEMATICAL_EQUATION_DOMAIN.maximum)
     ) {
       issues.push(issue(
         "domain",
         "HIDDEN_VALUE_OUT_OF_RANGE",
-        "Every stored letter value must be an integer from 1 through 20.",
+        `Every stored letter value must be an integer from ${MATHEMATICAL_EQUATION_DOMAIN.minimum} through ${MATHEMATICAL_EQUATION_DOMAIN.maximum}.`,
         "correctAnswer",
       ));
     }
@@ -317,6 +324,8 @@ export class MathematicalEquationValidator
       Number(dependencyModel.meaningfulReasoningSteps) < 2 ||
       !Array.isArray(dependencyModel.relationshipPrimitives) ||
       dependencyModel.relationshipPrimitives.length !== equations.length ||
+      !Array.isArray(dependencyModel.reasoningFamilies) ||
+      dependencyModel.reasoningFamilies.length === 0 ||
       dependencyModel.evidenceLevel === "experimental" ||
       !dependencyModel.rootStrategy ||
       !dependencyModel.targetSymbol ||
@@ -341,11 +350,13 @@ export class MathematicalEquationValidator
       ));
     }
     if (publicPresentation.visibleConstants.some((value) =>
-      !Number.isSafeInteger(value) || value < 1 || value > 20)) {
+      !Number.isSafeInteger(value) ||
+      value < MATHEMATICAL_EQUATION_DOMAIN.minimum ||
+      value > MATHEMATICAL_EQUATION_DOMAIN.maximum)) {
       issues.push(issue(
         "format",
         "VISIBLE_CONSTANT_OUT_OF_RANGE",
-        "The final student-visible formulae contain a numeric constant outside 1 through 20.",
+        `The final student-visible formulae contain a numeric constant outside ${MATHEMATICAL_EQUATION_DOMAIN.minimum} through ${MATHEMATICAL_EQUATION_DOMAIN.maximum}.`,
         "presentation.blocks",
       ));
     }
@@ -461,6 +472,42 @@ export class MathematicalEquationValidator
     checks.push(check("explanation", explanationIssues.length === 0));
     if (explanationIssues.length) return { valid: false, issues: explanationIssues, checks };
 
+    let solveTrace;
+    try {
+      solveTrace = buildCanonicalSolveTrace(candidate, assignment);
+    } catch {
+      const traceIssue = issue(
+        "safety",
+        "CANONICAL_SOLVE_TRACE_UNAVAILABLE",
+        "The declared reasoning path cannot be replayed as deterministic linear arithmetic.",
+      );
+      checks.push(check("safety", false));
+      return { valid: false, issues: [traceIssue], checks };
+    }
+    const traceRange = validateSolveTraceRange(solveTrace, domain);
+    const traceAssignmentMatches = sameAssignment(solveTrace.resolvedAssignment, assignment, variables);
+    checks.push(check("safety", traceRange.valid && traceAssignmentMatches, {
+      maximumEvaluatedIntermediate: traceRange.maximum,
+      minimumEvaluatedIntermediate: traceRange.minimum,
+      negativeIntermediate: solveTrace.hasNegativeIntermediate,
+      fractionalIntermediate: solveTrace.hasFractionalIntermediate,
+      traceStepCount: solveTrace.steps.length,
+    }));
+    if (!traceRange.valid || !traceAssignmentMatches) {
+      return {
+        valid: false,
+        issues: traceRange.valid
+          ? [issue("safety", "SOLVE_TRACE_ASSIGNMENT_MISMATCH", "The canonical trace does not reproduce the unique solution.")]
+          : traceRange.failures.map((failure) => issue(
+              "safety",
+              failure.code,
+              `Canonical solve arithmetic produced ${failure.value}, outside the configured safe integer path.`,
+              `solveTrace.steps.${failure.stepIndex}`,
+            )),
+        checks,
+      };
+    }
+
     const calculated = calculateEquationDifficulty(candidate);
     const difficultyMatches = calculated.difficulty === requestedDifficulty;
     checks.push(check("difficulty", difficultyMatches, {
@@ -483,6 +530,7 @@ export class MathematicalEquationValidator
         calculatedDifficulty: calculated.difficulty,
         metrics: calculated.metrics,
         exploredAssignments: outcome.exploredAssignments,
+        solveTrace,
       },
       checks,
     };

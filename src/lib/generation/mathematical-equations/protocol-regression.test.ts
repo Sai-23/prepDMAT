@@ -8,12 +8,12 @@ import {
 import { mathematicalEquationGenerator } from "./generator";
 
 const STRICT_FIDELITY_PROTOCOL_BASELINE = [
-  { seed: "protocol-regression-easy", difficulty: "easy", semantic: "mathematical-equation:v1:9e3c3d5b5235ae5f", structural: "mathematical-equation-structure-v2:v1:58a15e1a0cca3306", candidate: "mathematical-equation-regression-candidate:v1:fd06fabf2b2c5143" },
-  { seed: "protocol-regression-medium", difficulty: "medium", semantic: "mathematical-equation:v1:74df16ff76775283", structural: "mathematical-equation-structure-v2:v1:a5268d1494b293c0", candidate: "mathematical-equation-regression-candidate:v1:a8ee21b27a5cd8a6" },
-  { seed: "protocol-regression-hard", difficulty: "hard", semantic: "mathematical-equation:v1:ce7c69fe840e81e2", structural: "mathematical-equation-structure-v2:v1:2cc4a7dadc99f0b6", candidate: "mathematical-equation-regression-candidate:v1:c92567db4502933f" },
-  { seed: "shared-evidence-01", difficulty: "easy", semantic: "mathematical-equation:v1:dae5667ab92f9a96", structural: "mathematical-equation-structure-v2:v1:269b2fa19e95f1bd", candidate: "mathematical-equation-regression-candidate:v1:e54444e6fefbd33a" },
-  { seed: "shared-evidence-02", difficulty: "medium", semantic: "mathematical-equation:v1:0da3e0c25ebb233e", structural: "mathematical-equation-structure-v2:v1:c252714e8ca49632", candidate: "mathematical-equation-regression-candidate:v1:81fe0f0917290dd5" },
-  { seed: "shared-evidence-03", difficulty: "hard", semantic: "mathematical-equation:v1:99dcae2af2f6f73e", structural: "mathematical-equation-structure-v2:v1:726b1718021adc34", candidate: "mathematical-equation-regression-candidate:v1:494a0e781d113024" },
+  { seed: "protocol-regression-easy", difficulty: "easy", semantic: "mathematical-equation:v1:823c9ed147e551f5", structural: "mathematical-equation-structure-v3:v1:766752d77c24d44b", candidate: "mathematical-equation-regression-candidate:v1:58c4040d30aa42b1" },
+  { seed: "protocol-regression-medium", difficulty: "medium", semantic: "mathematical-equation:v1:86582aa5d8dfdd41", structural: "mathematical-equation-structure-v3:v1:a6f37c4c93b53350", candidate: "mathematical-equation-regression-candidate:v1:eaca9c2b0b657e0f" },
+  { seed: "protocol-regression-hard", difficulty: "hard", semantic: "mathematical-equation:v1:61b5791f263d45cb", structural: "mathematical-equation-structure-v3:v1:f6edbe0261174b66", candidate: "mathematical-equation-regression-candidate:v1:cf2d764da1f334d9" },
+  { seed: "shared-evidence-01", difficulty: "easy", semantic: "mathematical-equation:v1:d072386ee62791ea", structural: "mathematical-equation-structure-v3:v1:1178f6b02b9e71b4", candidate: "mathematical-equation-regression-candidate:v1:3ec6f276ac3909e2" },
+  { seed: "shared-evidence-02", difficulty: "medium", semantic: "mathematical-equation:v1:f2b2998d811455f9", structural: "mathematical-equation-structure-v3:v1:a0e9e11fdee2bda3", candidate: "mathematical-equation-regression-candidate:v1:57e81a7b319f307f" },
+  { seed: "shared-evidence-03", difficulty: "hard", semantic: "mathematical-equation:v1:2324f6d409065140", structural: "mathematical-equation-structure-v3:v1:13563a250f191d09", candidate: "mathematical-equation-regression-candidate:v1:11e06bb158fcf3cd" },
 ] as const;
 
 describe("Mathematical Equation protocol-infrastructure regression", () => {

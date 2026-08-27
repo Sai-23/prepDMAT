@@ -21,6 +21,11 @@ export const submitTestSchema = z.object({
   autoSubmitted: z.boolean().default(false),
 });
 
+export const advanceTestSectionSchema = z.object({
+  attemptId: z.string().uuid(),
+  currentSectionId: z.string().uuid(),
+});
+
 export type TestCatalogItem = {
   id: string;
   title: string;

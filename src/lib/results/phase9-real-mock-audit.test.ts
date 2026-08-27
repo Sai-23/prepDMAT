@@ -25,7 +25,11 @@ function storedStructuredData(question: CoreMockQuestion): Record<string, unknow
   const base = { schemaVersion: 1, task: question.structuredData, presentation: question.presentation, response: question.response };
   if (question.questionType === "figure_sequence") return { ...base, sequence: question.sequence, solutionFrames: question.solutionFrames };
   if (question.questionType === "mathematical_equation") return { ...base, solutionPath: question.solutionPath, reasoningPath: question.reasoningPath, fastestMethod: question.fastestMethod };
-  return { ...base, deductionTrace: question.deductionTrace };
+  return {
+    ...base,
+    deductionTrace: question.deductionTrace,
+    completedGrid: question.completedGrid,
+  };
 }
 
 function traceFor(question: CoreMockQuestion) {
@@ -77,6 +81,9 @@ function resultQuestion(question: CoreMockQuestion, profile: Profile, module: Pr
     timeSpentSeconds: state.seconds,
     correctAnswer: snapshot.privateSnapshot.correctAnswer,
     explanationTrace: snapshot.privateSnapshot.explanationTrace,
+    figureExplanationTrace: snapshot.privateSnapshot.figureExplanationTrace,
+    latinExplanationTrace: snapshot.privateSnapshot.latinExplanationTrace,
+    mathematicalExplanationTrace: snapshot.privateSnapshot.mathematicalExplanationTrace,
     educationalExplanation: snapshot.privateSnapshot.educationalExplanation,
     questionNumber,
     estimatedTimeSeconds: question.estimatedSolveTimeSeconds,

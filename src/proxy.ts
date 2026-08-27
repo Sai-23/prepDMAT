@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { hasAnyRole } from "@/lib/auth/roles";
+import { createContentSecurityPolicy } from "@/lib/security/csp";
 import { updateSupabaseSession } from "@/lib/supabase/proxy";
 import type { UserRole } from "@/types/auth";
 
@@ -25,22 +26,33 @@ function matchesRoute(pathname: string, routes: readonly string[]) {
   );
 }
 
-function withRedirect(request: NextRequest, pathname: string) {
+function withRedirect(request: NextRequest) {
   const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("next", pathname);
   return NextResponse.redirect(loginUrl);
+}
+
+function withContentSecurityPolicy(response: NextResponse, policy: string) {
+  response.headers.set("Content-Security-Policy", policy);
+  return response;
 }
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const { supabase, response } = updateSupabaseSession(request);
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const contentSecurityPolicy = createContentSecurityPolicy(nonce, {
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
+  const { supabase, response } = updateSupabaseSession(request, requestHeaders);
 
   if (
     !matchesRoute(pathname, authenticatedRoutes) &&
     !matchesRoute(pathname, reviewerRoutes) &&
     !matchesRoute(pathname, adminOnlyRoutes)
   ) {
-    return response;
+    return withContentSecurityPolicy(response, contentSecurityPolicy);
   }
 
   const {
@@ -48,7 +60,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return withRedirect(request, pathname);
+    return withContentSecurityPolicy(withRedirect(request), contentSecurityPolicy);
   }
 
   if (matchesRoute(pathname, reviewerRoutes) || matchesRoute(pathname, adminOnlyRoutes)) {
@@ -64,11 +76,14 @@ export async function proxy(request: NextRequest) {
       : (["admin", "reviewer"] as const);
 
     if (!hasAnyRole(resolvedRoles, allowedRoles)) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return withContentSecurityPolicy(
+        NextResponse.redirect(new URL("/dashboard", request.url)),
+        contentSecurityPolicy,
+      );
     }
   }
 
-  return response;
+  return withContentSecurityPolicy(response, contentSecurityPolicy);
 }
 
 export const config = {

@@ -2,6 +2,9 @@ import { z } from "zod";
 
 import type { PracticeAnswer, PracticeQuestion } from "@/lib/practice/schemas";
 import type { EducationalExplanation } from "@/lib/practice/educational-explanation";
+import type { FigureExplanationTrace } from "@/lib/practice/figure-sequence-explanation-trace";
+import type { LatinExplanationTrace } from "@/lib/practice/latin-square-explanation-trace";
+import type { EquationExplanationTrace } from "@/lib/practice/mathematical-equation-explanation";
 import type { CoreSkillId } from "@/lib/progress/skills";
 
 export const resultAttemptIdSchema = z.string().uuid();
@@ -43,6 +46,9 @@ export type ResultQuestion = Omit<
   answer?: PracticeAnswer | null;
   correctAnswer?: unknown;
   explanationTrace?: unknown;
+  figureExplanationTrace?: FigureExplanationTrace;
+  latinExplanationTrace?: LatinExplanationTrace;
+  mathematicalExplanationTrace?: EquationExplanationTrace;
   educationalExplanation?: EducationalExplanation;
   questionNumber?: number;
   estimatedTimeSeconds?: number;

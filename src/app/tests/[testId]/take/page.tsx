@@ -30,9 +30,8 @@ export default async function TakeTestPage({
   let loadError: string | null = null;
   try {
     attempt = await getTestAttempt(user.id, testId.data, attemptId.data);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to restore this test attempt.";
+  } catch {
+    loadError = "Unable to restore this test attempt.";
   }
 
   if (loadError || !attempt) {

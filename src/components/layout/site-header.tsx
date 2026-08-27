@@ -124,7 +124,7 @@ export function SiteHeader() {
               dMAT Prep
             </p>
             <p className="hidden text-xs text-muted-foreground sm:block">
-              Technical academic workspace
+              Prepare with clarity
             </p>
           </div>
         </Link>

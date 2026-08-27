@@ -2,7 +2,7 @@
 
 import { ArrowRight, LockKeyhole } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent } from "react";
 
 import {
   completeDiagnosticAction,
@@ -14,6 +14,10 @@ import { NativePracticeResponse } from "@/components/practice/native-practice-re
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DiagnosticSessionState } from "@/lib/onboarding/data";
+import {
+  createDiagnosticSubmissionGuard,
+  saveAndAdvanceDiagnostic,
+} from "@/lib/onboarding/diagnostic-navigation";
 import type { PracticeAnswer, PracticeQuestion } from "@/lib/practice/schemas";
 
 function isCompleteAnswer(answer: PracticeAnswer | null, question: PracticeQuestion) {
@@ -26,6 +30,13 @@ function isCompleteAnswer(answer: PracticeAnswer | null, question: PracticeQuest
   return Boolean(answer.optionId);
 }
 
+function isTypingControl(target: EventTarget | null) {
+  return target instanceof HTMLTextAreaElement
+    || target instanceof HTMLSelectElement
+    || target instanceof HTMLButtonElement
+    || (target instanceof HTMLElement && target.isContentEditable);
+}
+
 export function DiagnosticExperience({ initialSession }: { initialSession: DiagnosticSessionState }) {
   const router = useRouter();
   const [session, setSession] = useState(initialSession);
@@ -33,10 +44,13 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
   const [answered, setAnswered] = useState(initialSession.answered);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const submissionGuard = useRef(createDiagnosticSubmissionGuard());
   const canSubmit = useMemo(
     () => isCompleteAnswer(answer, session.question),
     [answer, session.question],
   );
+  const canContinue = (answered || canSubmit) && !pending;
+  const isFinalQuestion = session.currentPosition === session.questionCount;
 
   useEffect(() => {
     if (answered) return;
@@ -52,45 +66,48 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
 
-  const submit = () => {
-    if (!answer || answered || !canSubmit) return;
+  const saveAndContinue = () => {
+    if (!answer || !canContinue || !submissionGuard.current.acquire()) return;
     setError(null);
     startTransition(async () => {
-      const result = await submitDiagnosticAnswerAction({
-        sessionId: session.sessionId,
-        questionId: session.question.id,
-        answer,
-      });
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      setAnswered(true);
-    });
-  };
+      try {
+        const result = await saveAndAdvanceDiagnostic(
+          { session, answer, answerAlreadySaved: answered },
+          {
+            save: submitDiagnosticAnswerAction,
+            advance: nextDiagnosticQuestionAction,
+            complete: completeDiagnosticAction,
+          },
+        );
 
-  const advance = () => {
-    if (!answered) return;
-    setError(null);
-    startTransition(async () => {
-      if (session.currentPosition === session.questionCount) {
-        const result = await completeDiagnosticAction({ sessionId: session.sessionId });
-        if (result.error) {
+        if (result.status === "error") {
+          setAnswered(result.answerSaved);
           setError(result.error);
           return;
         }
-        router.push("/onboarding/diagnostic/summary");
-        return;
+        if (result.status === "completed") {
+          router.replace("/onboarding/diagnostic/summary");
+          return;
+        }
+
+        setSession(result.session);
+        setAnswer(result.session.answer);
+        setAnswered(result.session.answered);
+      } finally {
+        submissionGuard.current.release();
       }
-      const result = await nextDiagnosticQuestionAction({ sessionId: session.sessionId });
-      if (result.error || !result.session) {
-        setError(result.error ?? "Unable to load the next diagnostic question.");
-        return;
-      }
-      setSession(result.session);
-      setAnswer(result.session.answer);
-      setAnswered(result.session.answered);
     });
+  };
+
+  const handleKeyboardSubmit = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (
+      event.key === "Enter"
+      && (event.ctrlKey || event.metaKey)
+      && !isTypingControl(event.target)
+    ) {
+      event.preventDefault();
+      event.currentTarget.requestSubmit();
+    }
   };
 
   const progress = Math.round((session.currentPosition / session.questionCount) * 100);
@@ -99,48 +116,81 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
     <div className="mx-auto max-w-5xl space-y-5">
       <header className="rounded-xl border border-workspace-border bg-surface-lowest p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Initial Core diagnostic</p>
-            <p className="font-semibold">Question {session.currentPosition} of {session.questionCount}</p>
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            Initial Core diagnostic
+          </p>
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <LockKeyhole aria-hidden="true" className="h-4 w-4" />
             Results shown after completion
           </p>
-        </div>
-        <div aria-label={`${progress} percent complete`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={progress} className="mt-3 h-2 overflow-hidden rounded-full bg-surface-high" role="progressbar">
-          <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">{session.question.questionText}</CardTitle>
-          <CardDescription>{session.question.topic} · {session.question.difficulty} · Untimed</CardDescription>
+          <CardDescription>
+            {session.question.topic} · {session.question.difficulty} · Untimed
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <NativePracticeResponse
-            answer={answer}
-            disabled={answered || pending}
-            onChange={setAnswer}
-            question={session.question}
-          />
-          {answered ? (
-            <p className="rounded-md bg-primary-muted p-3 text-sm font-medium">Answer saved. Correctness and explanations remain hidden until all 15 questions are complete.</p>
-          ) : null}
-          {error ? <p aria-live="assertive" className="rounded-md bg-error-container p-3 text-sm text-error-container-foreground">{error}</p> : null}
-          <div className="flex justify-end">
-            {answered ? (
-              <Button disabled={pending} onClick={advance} size="lg">
-                {session.currentPosition === session.questionCount ? "Finish diagnostic" : "Next question"}
-                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        <CardContent>
+          <form
+            className="space-y-6"
+            onKeyDown={handleKeyboardSubmit}
+            onSubmit={(event) => {
+              event.preventDefault();
+              saveAndContinue();
+            }}
+          >
+            <NativePracticeResponse
+              answer={answer}
+              disabled={answered || pending}
+              onChange={setAnswer}
+              question={session.question}
+            />
+
+            {error ? (
+              <p
+                aria-live="assertive"
+                className="rounded-md bg-error-container p-3 text-sm text-error-container-foreground"
+              >
+                {error} Select Retry to try again.
+              </p>
+            ) : null}
+
+            <div className="grid gap-4 border-t border-workspace-separator pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div className="min-w-0 space-y-2">
+                <p className="text-sm font-semibold text-on-surface">
+                  Question {session.currentPosition} of {session.questionCount}
+                </p>
+                <div
+                  aria-label={`${progress} percent complete`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={progress}
+                  className="h-2 overflow-hidden rounded-full bg-surface-high"
+                  role="progressbar"
+                >
+                  <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+              <Button
+                className="min-h-12 w-full px-5 sm:w-auto"
+                disabled={!canContinue}
+                size="lg"
+                type="submit"
+              >
+                {pending
+                  ? "Saving..."
+                  : error
+                    ? "Retry"
+                    : isFinalQuestion
+                      ? "Finish Diagnostic"
+                      : "Save & Continue"}
+                {!pending ? <ArrowRight aria-hidden="true" className="h-4 w-4" /> : null}
               </Button>
-            ) : (
-              <Button disabled={!canSubmit || pending} onClick={submit} size="lg">
-                {pending ? "Saving…" : "Save answer"}
-              </Button>
-            )}
-          </div>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

@@ -120,7 +120,11 @@ function storedStructuredData(question: Generated): Record<string, unknown> {
       fastestMethod: question.fastestMethod,
     };
   }
-  return { ...base, deductionTrace: question.deductionTrace };
+  return {
+    ...base,
+    deductionTrace: question.deductionTrace,
+    completedGrid: question.completedGrid,
+  };
 }
 
 export function generatePracticeManifest(input: {

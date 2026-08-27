@@ -5,6 +5,8 @@ import { calculateEquationDifficulty } from "./difficulty";
 import { mathematicalEquationStructuralSignature } from "./fingerprint";
 import { mathematicalEquationGenerator } from "./generator";
 import { inspectMathematicalEquationStyle } from "./style";
+import { buildCanonicalSolveTrace, validateSolveTraceRange } from "./solve-trace";
+import { MATHEMATICAL_EQUATION_DOMAIN } from "./types";
 
 function evaluate(expression: MathematicalExpression, values: VariableAssignment): number {
   if (expression.kind === "constant") return expression.value;
@@ -136,11 +138,21 @@ describe("MathematicalEquationGenerator", () => {
 
   it("covers the production relationship vocabulary without unsafe display arithmetic", () => {
     const relationships = new Set<string>();
+    const reasoningFamilies = new Set<string>();
+    const familySamples = new Map<string, ReturnType<typeof mathematicalEquationGenerator.generate>>();
+    const reasoningFamilySamples = new Map<string, ReturnType<typeof mathematicalEquationGenerator.generate>>();
     const hardTargets = new Set<string>();
     for (const difficulty of ["easy", "medium", "hard"] as const) {
       for (let seed = 0; seed < 500; seed += 1) {
         const candidate = mathematicalEquationGenerator.generate({ seed: `coverage-${difficulty}-${seed}`, difficulty }, 1);
-        candidate.structuredData.dependencyModel.relationshipPrimitives?.forEach((item) => relationships.add(item));
+        candidate.structuredData.dependencyModel.relationshipPrimitives?.forEach((item) => {
+          relationships.add(item);
+          if (!familySamples.has(item)) familySamples.set(item, candidate);
+        });
+        candidate.structuredData.dependencyModel.reasoningFamilies?.forEach((item) => {
+          reasoningFamilies.add(item);
+          if (!reasoningFamilySamples.has(item)) reasoningFamilySamples.set(item, candidate);
+        });
         if (difficulty === "hard") hardTargets.add(candidate.structuredData.dependencyModel.targetSymbol ?? "");
         const style = inspectMathematicalEquationStyle(candidate);
         expect(style.negativeDisplayedConstantCount).toBe(0);
@@ -149,10 +161,22 @@ describe("MathematicalEquationGenerator", () => {
       }
     }
     expect(relationships).toEqual(new Set([
-      "direct_value", "offset_add", "offset_subtract", "scale", "divide_by_constant",
-      "sum", "difference", "complement", "weighted_sum", "multi_variable_sum",
+      "offset_add", "offset_subtract", "scale", "divide_by_constant", "sum",
+      "difference", "complement", "weighted_sum", "multi_variable_sum",
       "multi_variable_balance",
     ]));
+    expect(reasoningFamilies).toEqual(new Set([
+      "simple_sum", "simple_difference", "reverse_difference", "direct_scale", "division",
+      "scale_offset", "weighted_sum", "weighted_difference", "constant_first",
+      "variables_both_sides", "three_variable", "same_target", "elimination_pair",
+      "weighted_elimination", "dependency_chain", "branching", "recombination",
+      "coefficient_collection",
+    ]));
+    for (const candidate of new Set([...familySamples.values(), ...reasoningFamilySamples.values()])) {
+      const trace = buildCanonicalSolveTrace(candidate, candidate.correctAnswer);
+      expect(validateSolveTraceRange(trace, MATHEMATICAL_EQUATION_DOMAIN).valid).toBe(true);
+      expect(candidate.presentation.blocks).toHaveLength(candidate.structuredData.equations.length);
+    }
     expect(hardTargets).toEqual(new Set(["A", "B", "C", "D"]));
   }, 60_000);
 
@@ -171,6 +195,9 @@ describe("MathematicalEquationGenerator", () => {
       const family = candidate.structuredData.dependencyModel.family;
       graphs.set(family, (graphs.get(family) ?? 0) + 1);
       expect(candidate.structuredData.variables).toHaveLength(2);
+      expect(candidate.structuredData.dependencyModel.rootStrategy).not.toBe("direct");
+      expect(candidate.structuredData.dependencyModel.relationshipPrimitives).not.toContain("direct_value");
+      expect(candidate.solutionPath[0].reasoning).toBe("combine_equations");
       expect(calculateEquationDifficulty(candidate).difficulty).toBe("easy");
     }
     expect(new Set(graphs.keys())).toEqual(new Set(["direct", "chain", "reverse_chain"]));
@@ -187,5 +214,5 @@ describe("MathematicalEquationGenerator", () => {
     }
     expect(relationships.scale).toBeGreaterThan(100);
     expect(relationships.divide_by_constant).toBeGreaterThan(100);
-  });
+  }, 15_000);
 });

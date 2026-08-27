@@ -6,6 +6,9 @@ import { generateValidatedFigureSequence } from "@/lib/generation/figure-sequenc
 import { DEFAULT_LATIN_SYMBOLS, generateValidatedLatinSquare } from "@/lib/generation/latin-squares";
 import type { ResultQuestion } from "@/lib/results/schemas";
 import { ResultReview } from "./result-review";
+import { createVerifiedEquationExplanationTrace } from "@/lib/practice/mathematical-equation-explanation-trace";
+import { createVerifiedFigureExplanationTrace } from "@/lib/practice/figure-sequence-explanation-trace";
+import { createVerifiedLatinExplanationTrace } from "@/lib/practice/latin-square-explanation-trace";
 
 vi.mock("@/app/learning/actions", () => ({
   toggleBookmarkAction: vi.fn(),
@@ -42,6 +45,10 @@ const equation: MathematicalEquationStructuredData = {
 };
 
 function resultQuestion(answer: { A?: number; B?: number }): ResultQuestion {
+  const solutionPath = [
+    { equationIndex: 0, targetSymbol: "A", knownSymbols: [] },
+    { equationIndex: 1, targetSymbol: "B", knownSymbols: ["A"] },
+  ];
   return {
     id: "equation-result",
     module: "core",
@@ -67,10 +74,12 @@ function resultQuestion(answer: { A?: number; B?: number }): ResultQuestion {
     timeSpentSeconds: 42,
     answer: { kind: "symbol_assignment", values: answer },
     correctAnswer: { A: 3, B: 9 },
-    explanationTrace: [
-      { equationIndex: 0, targetSymbol: "A", knownSymbols: [] },
-      { equationIndex: 1, targetSymbol: "B", knownSymbols: ["A"] },
-    ],
+    explanationTrace: solutionPath,
+    mathematicalExplanationTrace: createVerifiedEquationExplanationTrace(
+      equation,
+      solutionPath,
+      { A: 3, B: 9 },
+    ) ?? undefined,
   };
 }
 
@@ -110,7 +119,7 @@ describe("completed Mathematical Equation result review", () => {
     expect(html).toContain("Variable A. Your answer 3. Correct answer 3. Correct.");
     expect(html).toContain("Variable B. Your answer 1. Correct answer 9. Incorrect.");
     expect(html).toContain("How to solve it");
-    expect(html).toContain("Substitute known values");
+    expect(html).toContain("Substitute A = 3");
     expect(html).toContain("Final answer");
     expect(html).not.toContain("Dense legacy explanation must not render.");
     expect(html).not.toContain("Your response:");
@@ -144,17 +153,19 @@ describe("completed generated Core result review", () => {
       answer: { kind: "two_stage_single_choice", optionIds: wrong },
       correctAnswer: generated.correctAnswer,
       explanationTrace: { rules: generated.structuredData.rules },
+      figureExplanationTrace: createVerifiedFigureExplanationTrace(generated.sequence, { rules: generated.structuredData.rules }, generated.correctAnswer, generated.solutionFrames) ?? undefined,
       explanation: "Legacy figure prose must not render.",
       isCorrect: false,
     };
     const html = renderToStaticMarkup(<ResultReview questions={[question]} />);
     expect(html).toContain('data-feedback-interface="figure-sequence-guided"');
-    expect(html).toContain("Verified across every transition");
+    expect(html).not.toContain("Verified across every transition");
+    expect(html).toContain('data-rule-summary="figure-sequence"');
     expect(html).toContain("Quick explanation");
     expect(html).not.toContain("Legacy figure prose must not render.");
   });
 
-  it("reuses the Latin causal proof and hides unrelated solved cells", () => {
+  it("reuses the Latin causal proof and shows the complete verified matrix", () => {
     const generated = generateValidatedLatinSquare({ seed: "phase7-result-latin", difficulty: "hard", maxAttempts: 5_000 });
     const wrong = DEFAULT_LATIN_SYMBOLS.find((symbol) => symbol !== generated.correctAnswer)!;
     const question: ResultQuestion = {
@@ -169,14 +180,14 @@ describe("completed generated Core result review", () => {
       answer: { kind: "single_choice", optionId: wrong },
       correctAnswer: generated.correctAnswer,
       explanationTrace: generated.deductionTrace,
+      latinExplanationTrace: createVerifiedLatinExplanationTrace(generated.structuredData, generated.deductionTrace, generated.correctAnswer, generated.completedGrid) ?? undefined,
       explanation: "Legacy Latin prose must not render.",
       isCorrect: false,
     };
     const html = renderToStaticMarkup(<ResultReview questions={[question]} />);
     expect(html).toContain('data-feedback-interface="latin-square-guided"');
-    expect(html).toContain("Cells used in this proof");
-    expect(html).toContain("not needed for this proof");
-    expect(html).not.toContain("Completely solved matrix");
+    expect(html).toContain("Complete solved matrix");
+    expect(html).toContain("completed value");
     expect(html).not.toContain("Legacy Latin prose must not render.");
   });
 });

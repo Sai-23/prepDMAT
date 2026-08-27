@@ -12,9 +12,8 @@ export default async function MistakesPage() {
 
   try {
     mistakes = await getMistakes(user.id);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load your mistake notebook.";
+  } catch {
+    loadError = "Unable to load your mistake notebook.";
   }
 
   return (

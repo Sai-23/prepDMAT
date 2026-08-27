@@ -28,9 +28,8 @@ export default async function AdminTestEditPage({
       getEditableAdminTest(parsed.data),
       getAdminQuestionBank(),
     ]);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load this test.";
+  } catch {
+    loadError = "Unable to load this test.";
   }
   if (!loadError && !test) notFound();
 

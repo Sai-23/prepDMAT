@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
   if (state.completedAt) redirect("/dashboard");
 
   return (
-    <PageShell eyebrow="Getting started" title="Start Core preparation with context" description="A short introduction, one optional starting profile, then the normal dashboard.">
+    <PageShell eyebrow="Getting started" title="Choose your starting point" description="Meet the three Core formats, then take a short diagnostic or go straight to Practice.">
       <OnboardingExperience />
     </PageShell>
   );

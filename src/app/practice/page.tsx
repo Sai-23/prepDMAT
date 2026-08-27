@@ -52,15 +52,15 @@ export default async function PracticePage({
           ? query.fromMock : undefined,
       };
     }
-  } catch (error) {
-    loadError = error instanceof Error ? error.message : "Unable to load practice.";
+  } catch {
+    loadError = "Unable to load practice.";
   }
 
   return (
     <PageShell
-      eyebrow="Practice mode"
-      title="Focused Core practice"
-      description="Choose a single Core module, generate a validated session, check each answer, and learn from immediate worked feedback."
+      eyebrow="Practice"
+      title="What do you want to practise?"
+      description="Choose a Core module, answer at your own pace or against the clock, and learn from feedback after each question."
     >
       {loadError || !performance ? (
         <ErrorState title="Practice is not ready" description={loadError ?? "Unable to load practice."} />

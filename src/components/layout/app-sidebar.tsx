@@ -71,7 +71,7 @@ export function AppSidebar({
                 ? isFullAdmin
                   ? "Admin console"
                   : "Reviewer console"
-                : "Student desk"}
+                : "Your preparation"}
             </p>
           </div>
         )}
@@ -102,7 +102,7 @@ export function AppSidebar({
       ) : null}
 
       <nav className="mt-2 flex-1 space-y-1" aria-label="Workspace navigation">
-        {items.map((item, index) => {
+        {items.map((item) => {
           const active =
             item.href === "/admin"
               ? pathname === item.href
@@ -124,12 +124,7 @@ export function AppSidebar({
               {active ? (
                 <span className="absolute inset-y-1 left-0 w-0.5 bg-primary" />
               ) : null}
-              <span
-                aria-hidden="true"
-                className="font-mono text-[11px] text-muted-foreground"
-              >
-                {String(index + 1).padStart(2, "0")}
-              </span>
+              {collapsed ? <span aria-hidden="true" className="text-xs font-semibold">{item.label.slice(0, 2)}</span> : null}
               {!collapsed ? <span>{item.label}</span> : null}
             </Link>
           );
@@ -138,7 +133,7 @@ export function AppSidebar({
 
       <div className="space-y-2 border-t border-workspace-separator pt-2">
         <ThemeToggle compact={collapsed} />
-        <Button
+        {admin ? <Button
           aria-label="Enter Zen Mode"
           className={collapsed ? "w-full px-0" : "w-full justify-start"}
           onClick={onZenMode}
@@ -148,7 +143,7 @@ export function AppSidebar({
         >
           <Focus className="h-4 w-4" />
           {!collapsed ? "Zen Mode" : null}
-        </Button>
+        </Button> : null}
       </div>
     </aside>
   );

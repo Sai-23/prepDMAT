@@ -34,7 +34,7 @@ export function HeroSection() {
             Prepare Smarter for the dMAT
           </h1>
           <p className="max-w-2xl text-lg leading-8 text-slate-600">
-            Realistic timed mocks, validated Core practice questions, and detailed
+            Realistic timed mocks, focused Core practice questions, and clear
             performance analytics.
           </p>
         </div>

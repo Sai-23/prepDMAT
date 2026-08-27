@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRight, Check, RotateCw, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, Check, X } from "lucide-react";
+import { useMemo } from "react";
 
 import { FigureMatrixSvg } from "@/components/questions/figure-matrix-svg";
 import { cn } from "@/lib/utils";
@@ -55,14 +55,12 @@ export function FigureSequencePracticeFeedback({
     () => isCorrect ? null : diagnoseFigureMistake(sequence, selectedAnswer, correctAnswer),
     [correctAnswer, isCorrect, selectedAnswer, sequence],
   );
-  const [inspectedSymbolId, setInspectedSymbolId] = useState<string | null>(null);
   const selectedLabels = sequence.missingMatrices.map((matrix, index) =>
     matrix.candidates.find((candidate) => candidate.id === selectedAnswer[index])?.label ?? "Unanswered",
   );
 
   return (
     <PracticeExplanationShell
-      answerConclusion={education?.answerConclusion}
       dataFeedbackInterface="figure-sequence-guided"
       fallbackMessage={walkthrough.fallbackMessage}
       getStepKey={(step) => step.id}
@@ -71,7 +69,6 @@ export function FigureSequencePracticeFeedback({
       initiallyOpen={initiallyOpen}
       isCorrect={isCorrect}
       mistakeFeedback={mistake}
-      observation={education?.observation}
       onExplanationOpen={onExplanationOpen}
       renderStep={(step, index, total) => (
         <FigureStepCard
@@ -85,8 +82,6 @@ export function FigureSequencePracticeFeedback({
       )}
       renderVisual={(step) => (
         <FigureStepVisual
-          inspectedSymbolId={inspectedSymbolId}
-          onInspect={setInspectedSymbolId}
           sequence={sequence}
           step={step}
         />
@@ -116,7 +111,6 @@ export function FigureSequencePracticeFeedback({
       )}
       quickSummary={education?.summary}
       steps={walkthrough.valid ? walkthrough.steps : []}
-      takeaway={education?.takeaway}
     />
   );
 }
@@ -124,38 +118,66 @@ export function FigureSequencePracticeFeedback({
 function FigureStepVisual({
   sequence,
   step,
-  inspectedSymbolId,
-  onInspect,
 }: {
   sequence: FigureSequencePresentation;
   step: FigureExplanationStep;
-  inspectedSymbolId: string | null;
-  onInspect(symbolId: string | null): void;
 }) {
-  const highlightId = inspectedSymbolId ?? step.activeSymbolId;
+  const visibleRules = step.type === "track_symbol"
+    ? step.rulesFound.slice(-1)
+    : step.rulesFound;
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+      <div
+        className="grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+        data-figure-comparison="before-after"
+      >
         <FigureFrameCard
           frame={step.beforeFrame}
           grid={sequence.grid}
-          highlightSymbolId={highlightId}
+          highlightSymbolId={step.activeSymbolId}
           label={step.type === "track_symbol" ? "Old position" : "Previous state"}
         />
-        <ArrowRight aria-hidden="true" className="h-5 w-5 text-primary" />
+        <ArrowRight aria-hidden="true" className="mx-auto h-5 w-5 rotate-90 text-primary sm:rotate-0" />
         <FigureFrameCard
           frame={step.afterFrame}
           grid={sequence.grid}
-          highlightSymbolId={highlightId}
+          highlightSymbolId={step.activeSymbolId}
           label={step.type === "track_symbol" ? "New position" : "Result"}
         />
       </div>
-      <RuleChips
-        activeSymbolId={highlightId}
-        onInspect={onInspect}
-        rules={step.rulesFound}
-      />
+      <RuleSummary rules={visibleRules} />
+      <SequenceStrip sequence={sequence} step={step} />
     </div>
+  );
+}
+
+function SequenceStrip({
+  sequence,
+  step,
+}: {
+  sequence: FigureSequencePresentation;
+  step: FigureExplanationStep;
+}) {
+  const activeIndices = new Set([step.beforeFrame.index, step.afterFrame.index]);
+  return (
+    <figure className="rounded-lg border border-workspace-border bg-surface-lowest p-3">
+      <figcaption className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Sequence overview
+      </figcaption>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6" aria-label="Original four frames followed by two missing matrices">
+        {sequence.visibleFrames.map((frame) => (
+          <div className={cn("overflow-hidden rounded border-2 bg-white", activeIndices.has(frame.index) ? "border-primary" : "border-workspace-border")} key={frame.index}>
+            <FigureMatrixSvg frame={frame} grid={sequence.grid} label={`Frame ${frame.index + 1}`} />
+            <p className="border-t border-workspace-border py-1 text-center text-[10px] font-semibold text-slate-700">Frame {frame.index + 1}</p>
+          </div>
+        ))}
+        {sequence.missingMatrices.map((matrix, index) => (
+          <div className={cn("flex aspect-square items-center justify-center rounded border-2 bg-surface-low text-xl font-bold", activeIndices.has(matrix.sequenceIndex) ? "border-primary text-primary" : "border-workspace-border text-muted-foreground")} key={matrix.sequenceIndex} aria-label={`Missing matrix ${index + 1}`}>
+            ?
+          </div>
+        ))}
+      </div>
+    </figure>
   );
 }
 
@@ -185,38 +207,22 @@ function FigureFrameCard({
   );
 }
 
-function RuleChips({
+function RuleSummary({
   rules,
-  activeSymbolId,
-  onInspect,
 }: {
   rules: FigureRulePresentation[];
-  activeSymbolId: string | null;
-  onInspect(symbolId: string | null): void;
 }) {
   return (
-    <div className="rounded-lg border border-workspace-border bg-surface-lowest p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rules found</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {rules.map((rule) => {
-          const active = activeSymbolId === rule.symbolId;
-          return (
-            <button
-              aria-pressed={active}
-              className={cn(
-                "min-h-10 rounded-full border px-3 py-2 text-left text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transition-none",
-                active ? "border-primary bg-primary-muted text-primary" : "border-workspace-border bg-surface-low hover:border-primary",
-              )}
-              key={rule.symbolId}
-              onClick={() => onInspect(active ? null : rule.symbolId)}
-              type="button"
-            >
-              <Check aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 text-success" />
-              {rule.summary}
-            </button>
-          );
-        })}
-      </div>
+    <div className="border-t border-workspace-separator pt-3" data-rule-summary="figure-sequence">
+      <p className="text-sm font-semibold text-on-surface">{rules.length === 1 ? "Rule" : "Rules"}</p>
+      <ul className="mt-2 space-y-2 text-sm text-on-surface">
+        {rules.map((rule) => (
+          <li className="flex items-start gap-2" key={rule.symbolId}>
+            <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+            <span>{rule.summary}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -244,42 +250,20 @@ function FigureStepCard({
       <h5 className="mt-2 text-lg font-semibold text-on-surface">{step.title}</h5>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.instruction}</p>
       {step.type === "track_symbol" ? (
-        <>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {step.changes.map((change) => (
-              <div className="rounded-md border border-workspace-border bg-surface-low p-3" key={change.label}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{change.label}</p>
-                <p className="mt-1 text-sm font-semibold text-on-surface">{change.before} → {change.after}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Verified across every transition
-            </p>
-            <ol className="mt-2 grid gap-2 sm:grid-cols-2" aria-label={`All transitions for ${step.symbolLabel}`}>
-              {step.transitions.map((transition) => (
-                <li className="rounded-md border border-workspace-border bg-surface-low p-3 text-sm text-on-surface" key={`${transition.fromFrame}:${transition.toFrame}`}>
-                  <span className="font-semibold">Frame {transition.fromFrame + 1} → {transition.toFrame + 1}:</span>{" "}
-                  {transition.changes.length
-                    ? transition.changes.map((change) => `${change.label.toLowerCase()} ${change.before} → ${change.after}`).join("; ")
-                    : "state remains unchanged"}
-                  {transition.boundaryBehavior === "bounce" ? "; edge reached, so direction reverses" : ""}
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="mt-4 rounded-md border border-success bg-success-container px-3 py-2.5 text-sm font-semibold text-success-container-foreground">
-            <Check aria-hidden="true" className="mr-2 inline h-4 w-4" />
-            {step.ruleSummary}
-          </div>
-        </>
+        <dl className="mt-4 divide-y divide-workspace-separator border-y border-workspace-separator text-sm">
+          {step.changes.map((change) => (
+            <div className="grid gap-1 py-2.5 sm:grid-cols-[6rem_1fr]" key={change.label}>
+              <dt className="font-medium text-muted-foreground">{change.label}</dt>
+              <dd className="font-semibold text-on-surface">{change.before} → {change.after}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : step.type === "predict_matrix" ? (
+        <p className="mt-4 text-sm font-semibold text-on-surface">
+          Apply {step.rulesFound.length === 1 ? "the rule" : "the rules"} once to get missing matrix {step.missingIndex + 1}.
+        </p>
       ) : (
         <>
-          <div className="mt-4 rounded-md border border-primary bg-primary-muted px-3 py-3 text-sm text-on-surface">
-            <RotateCw aria-hidden="true" className="mr-2 inline h-4 w-4 text-primary" />
-            Apply {step.rulesFound.length === 1 ? "the discovered rule" : `all ${step.rulesFound.length} discovered rules`}.
-          </div>
           <p className="mt-4 text-sm font-semibold text-on-surface">
             The result matches Option {step.correctOptionLabel}.
             <Check aria-label="Matching option" className="ml-1 inline h-4 w-4 text-success" />
@@ -291,9 +275,7 @@ function FigureStepCard({
               sequence={sequence}
             />
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Use this result as the starting point for missing matrix 2.
-            </p>
+            <p className="mt-3 text-sm text-muted-foreground">Continue from this constructed frame to predict missing matrix 2.</p>
           )}
         </>
       )}

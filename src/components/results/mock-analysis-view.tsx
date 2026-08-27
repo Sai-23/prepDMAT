@@ -49,6 +49,7 @@ export function MockAnalysisView({
     },
     { fast_correct: 0, fast_incorrect: 0, slow_correct: 0, slow_incorrect: 0, typical: 0, unavailable: 0 },
   );
+  const recommended = analysis.recommendations[0];
 
   return (
     <div className="space-y-10">
@@ -59,15 +60,15 @@ export function MockAnalysisView({
               <p className="text-sm font-semibold uppercase tracking-[0.18em] opacity-80" id="result-summary">Result</p>
               <p className="mt-3 text-5xl font-semibold">{analysis.overall.correct} / {analysis.overall.total}</p>
               <p className="mt-2 text-sm opacity-90">{percent(analysis.overall.scoreAccuracy)} mock accuracy</p>
-              <p className="mt-1 text-xs opacity-75">Raw mock result — not an official dMAT score</p>
+              <p className="mt-1 text-xs opacity-75">Practice result — not an official dMAT score</p>
             </div>
             <div className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-4">
               <Metric dark label="Incorrect" value={analysis.overall.incorrect} icon="incorrect" />
               <Metric dark label="Unanswered" value={analysis.overall.unanswered} icon="unanswered" />
               <Metric dark label="Recorded study time" value={formatStudyTime(result.totalTimeSeconds)} icon="time" />
               <div className="rounded-md border border-primary-foreground/20 bg-primary-muted p-4">
-                <p className="text-xs opacity-80">Origin</p>
-                <p className="mt-2 font-semibold capitalize">{analysis.origin}</p>
+                <p className="text-xs opacity-80">Mock type</p>
+                <p className="mt-2 font-semibold">{analysis.origin === "generated" ? "Full Core" : "Custom"}</p>
                 {analysis.autoSubmitted ? <Badge className="mt-3" variant="warning">Auto-submitted</Badge> : null}
               </div>
             </div>
@@ -76,7 +77,7 @@ export function MockAnalysisView({
       </section>
 
       <section aria-labelledby="section-performance" className="space-y-4">
-        <SectionHeading id="section-performance" title="Section performance" description="Raw results by Core section and difficulty; difficulty accuracy uses attempted questions." />
+        <SectionHeading id="section-performance" title="Section performance" description="Your result by Core section and question difficulty." />
         <div className="grid gap-5 xl:grid-cols-3">
           {analysis.sections.map((section) => (
             <SectionCard
@@ -89,15 +90,24 @@ export function MockAnalysisView({
         </div>
       </section>
 
+      <section aria-labelledby="next-step" className="rounded-xl border border-primary bg-primary-muted p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div>
+          <p className="text-sm font-semibold text-primary" id="next-step">Your next step</p>
+          <h2 className="mt-2 text-xl font-semibold">{recommended ? `Practise ${recommended.skill}` : "Review the questions you missed"}</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{recommended?.reason ?? "Open the question review and revisit incorrect or unanswered questions with their explanations."}</p>
+        </div>
+        <Button asChild className="mt-5 w-full shrink-0 sm:mt-0 sm:w-auto"><Link href={(recommended?.href ?? "#question-review") as Route}>{recommended ? `Start ${recommended.questionCount} questions` : "Review mistakes"}</Link></Button>
+      </section>
+
       <section aria-labelledby="key-insights" className="space-y-4">
-        <SectionHeading id="key-insights" title="Key insights" description="Conservative observations supported by this completed mock." />
+        <SectionHeading id="key-insights" title="What this result suggests" description="Patterns from this completed mock." />
         <Card>
           <CardContent className="p-6">
             {analysis.insights.length ? (
               <ul className="grid gap-3" role="list">
                 {analysis.insights.map((insight) => <li className="flex gap-3 text-sm leading-6" key={insight}><Target className="mt-1 h-4 w-4 shrink-0 text-primary" />{insight}</li>)}
               </ul>
-            ) : <p className="text-sm text-slate-600">No strong attempt-specific pattern met the evidence threshold.</p>}
+            ) : <p className="text-sm text-slate-600">No repeated pattern stands out from this mock yet.</p>}
             {analysis.longitudinalContext.length ? (
               <div className="mt-5 border-t border-workspace-border pt-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent context</p>
@@ -109,20 +119,20 @@ export function MockAnalysisView({
       </section>
 
       <section aria-labelledby="marks-lost" className="space-y-4">
-        <SectionHeading id="marks-lost" title="Where marks were lost" description="Only repeated, supported skill evidence is shown. Multi-skill questions share one mark of evidence." />
+        <SectionHeading id="marks-lost" title="Where marks were lost" description="Repeated patterns are shown here; one isolated mistake is not labelled as a weak area." />
         {analysis.skillLosses.length ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {analysis.skillLosses.map((loss) => (
               <Card key={loss.skillId}>
                 <CardContent className="p-5">
                   <p className="font-semibold">{loss.label}</p>
-                  <p className="mt-2 text-sm text-slate-600">{loss.incorrectQuestions} incorrect questions · {loss.weightedMarkLoss.toFixed(1)} weighted marks</p>
-                  <p className="mt-2 text-xs text-slate-500">Evidence by difficulty: Easy {loss.difficulties.easy.toFixed(1)}, Medium {loss.difficulties.medium.toFixed(1)}, Hard {loss.difficulties.hard.toFixed(1)}</p>
+                  <p className="mt-2 text-sm text-slate-600">{loss.incorrectQuestions} incorrect questions</p>
+                  <p className="mt-2 text-xs text-slate-500">Seen across easy, medium, or hard questions in this mock.</p>
                 </CardContent>
               </Card>
             ))}
           </div>
-        ) : <Card><CardContent className="p-6 text-sm text-slate-600">No repeated skill-level mark loss met the evidence threshold. {analysis.origin === "curated" ? "Some curated questions may not contain enough public metadata for skill attribution." : "An isolated error is not labelled as a weakness."}</CardContent></Card>}
+        ) : <Card><CardContent className="p-6 text-sm text-slate-600">No repeated skill pattern stands out. An isolated error is not labelled as a weak area.</CardContent></Card>}
       </section>
 
       <section aria-labelledby="timing-pacing" className="space-y-4">
@@ -152,31 +162,8 @@ export function MockAnalysisView({
         </div>
       </section>
 
-      <section aria-labelledby="practice-next" className="space-y-4">
-        <SectionHeading id="practice-next" title="What to practice next" description="Small, deterministic sessions based only on supported mistakes in this mock." />
-        <div className="grid gap-4 lg:grid-cols-3">
-          {analysis.recommendations.map((recommendation) => (
-            <Card key={recommendation.skillId}>
-              <CardContent className="flex h-full flex-col p-5">
-                <p className="font-semibold">Practice {recommendation.skill}</p>
-                <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{recommendation.reason}</p>
-                <Button asChild className="mt-4"><Link href={recommendation.href as Route}>Start {recommendation.questionCount} new questions</Link></Button>
-              </CardContent>
-            </Card>
-          ))}
-          <Card>
-            <CardContent className="flex h-full flex-col p-5">
-              <p className="font-semibold">Review and practice</p>
-              <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">Revisit incorrect and unanswered questions with their saved explanations.</p>
-              {analysis.practiceMistakesHref ? <Button asChild className="mt-4"><Link href={analysis.practiceMistakesHref as Route}>Practice mistakes from this mock</Link></Button> : null}
-              <Button asChild className="mt-3" variant="secondary"><Link href="#question-review">Review incorrect questions</Link></Button>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
       <section aria-labelledby="question-review" className="space-y-4" id="question-review-section">
-        <SectionHeading id="question-review" title="Question review" description="Answers, solution metadata, and explanations come from the immutable submitted-attempt snapshot." />
+        <SectionHeading id="question-review" title="Question review" description="Review your answers and explanations from this completed mock." />
         <ResultReview analysis={analysis.questionAnalysis} attemptId={analysis.attemptId} questions={result.questions} />
       </section>
     </div>

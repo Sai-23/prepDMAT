@@ -1,19 +1,19 @@
 import { evaluateExpression } from "./solver";
-import type {
-  MathematicalEquation,
-  MathematicalEquationCandidate,
-  MathematicalExpression,
-  VariableAssignment,
+import {
+  MATHEMATICAL_EQUATION_DOMAIN,
+  type MathematicalEquation,
+  type MathematicalEquationCandidate,
+  type MathematicalExpression,
+  type VariableAssignment,
 } from "./types";
-
 export const MATHEMATICAL_EQUATION_STYLE_POLICY = {
   strictDmatFidelity: true,
-  preferredVisibleConstantMin: 1,
-  preferredVisibleConstantMax: 20,
-  hardVisibleConstantMin: 1,
-  hardVisibleConstantMax: 20,
+  preferredVisibleConstantMin: MATHEMATICAL_EQUATION_DOMAIN.minimum,
+  preferredVisibleConstantMax: MATHEMATICAL_EQUATION_DOMAIN.maximum,
+  hardVisibleConstantMin: MATHEMATICAL_EQUATION_DOMAIN.minimum,
+  hardVisibleConstantMax: MATHEMATICAL_EQUATION_DOMAIN.maximum,
   /** Compatibility name retained for audit consumers; strict production value is 20. */
-  hardVisibleConstantLimit: 20,
+  hardVisibleConstantLimit: MATHEMATICAL_EQUATION_DOMAIN.maximum,
   preferredCoefficients: [2, 3, 4, 5] as const,
   hardCoefficientLimit: 6,
 } as const;
@@ -74,9 +74,9 @@ function operationCost(
   let own = 1;
   if (expression.operator === "add") {
     own += Number(leftMagnitude >= 10 && rightMagnitude >= 10) * 0.7;
-    own += Number(resultMagnitude > 20) * 0.6;
+    own += Number(resultMagnitude > MATHEMATICAL_EQUATION_DOMAIN.maximum) * 0.6;
   } else if (expression.operator === "subtract") {
-    own += Number(leftMagnitude >= 20 || rightMagnitude >= 10) * 0.5;
+    own += Number(leftMagnitude >= MATHEMATICAL_EQUATION_DOMAIN.maximum || rightMagnitude >= 10) * 0.5;
     own += Number(result.known && result.valid && result.value < 0) * 0.8;
   } else if (expression.operator === "multiply") {
     const coefficient = expression.left.kind === "constant"
@@ -85,7 +85,7 @@ function operationCost(
         ? Math.abs(expression.right.value)
         : Math.max(leftMagnitude, rightMagnitude);
     own += ({ 2: 0, 3: 0.25, 4: 0.45, 5: 0.35 }[coefficient] ?? 0.8);
-    own += Number(resultMagnitude > 20) * 0.7;
+    own += Number(resultMagnitude > MATHEMATICAL_EQUATION_DOMAIN.maximum) * 0.7;
   } else {
     const divisor = expression.right.kind === "constant" ? Math.abs(expression.right.value) : rightMagnitude;
     own += divisor <= 3 ? 0 : 0.35;
@@ -111,10 +111,14 @@ export function inspectEquationPresentation(
     total + operationCost(equation.left, assignment) + operationCost(equation.right, assignment), 0);
   const presentationPenalty = visibleConstants.reduce((total, value) => {
     if (value < 0) return total + 12 + Math.abs(value) * 0.2;
-    if (value <= 20) return total + Math.max(0, value - 15) * 0.04;
-    if (value <= 30) return total + 1.25 + (value - 20) * 0.12;
-    if (value <= 40) return total + 2.75 + (value - 30) * 0.2;
-    return total + 10 + (value - 40) * 0.5;
+    if (value <= MATHEMATICAL_EQUATION_DOMAIN.maximum) return total + Math.max(0, value - 15) * 0.04;
+    if (value <= MATHEMATICAL_EQUATION_DOMAIN.maximum + 10) {
+      return total + 1.25 + (value - MATHEMATICAL_EQUATION_DOMAIN.maximum) * 0.12;
+    }
+    if (value <= MATHEMATICAL_EQUATION_DOMAIN.maximum + 20) {
+      return total + 2.75 + (value - MATHEMATICAL_EQUATION_DOMAIN.maximum - 10) * 0.2;
+    }
+    return total + 10 + (value - MATHEMATICAL_EQUATION_DOMAIN.maximum - 20) * 0.5;
   }, 0) + coefficients.reduce((total, coefficient) =>
     total + ({ 2: 0, 3: 0.12, 4: 0.28, 5: 0.24 }[coefficient] ?? 0.8), 0);
   return {

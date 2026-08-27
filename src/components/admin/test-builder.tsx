@@ -364,7 +364,7 @@ export function TestBuilder({
           }).slice(0, 100);
 
           return (
-            <Card key={section.clientId}>
+            <Card id={`mock-section-${sectionIndex + 1}`} key={section.clientId}>
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -646,6 +646,16 @@ export function TestBuilder({
             role={state.status === "error" ? "alert" : "status"}
           >
             {state.message}
+            {state.diagnostic ? (
+              <div className="mt-3 rounded-xl border border-red-200 bg-white/60 p-3 text-xs">
+                <p><span className="font-semibold">Failure stage:</span> {state.diagnostic.failureStage.replaceAll("_", " ")}</p>
+                <p className="mt-1"><span className="font-semibold">Section:</span> {state.diagnostic.sectionType?.replaceAll("_", " ") ?? "Not section-specific"}{state.diagnostic.sectionIndex ? ` (${state.diagnostic.sectionIndex})` : ""}</p>
+                <p className="mt-1"><span className="font-semibold">Question count:</span> {state.diagnostic.questionCount}</p>
+                {state.diagnostic.databaseErrorCode ? <p className="mt-1"><span className="font-semibold">Safe error code:</span> <span className="font-mono">{state.diagnostic.databaseErrorCode}</span></p> : null}
+                {state.diagnostic.constraintName ? <p className="mt-1"><span className="font-semibold">Constraint:</span> <span className="font-mono">{state.diagnostic.constraintName}</span></p> : null}
+                {state.diagnostic.sectionIndex ? <Button className="mt-3" onClick={() => document.getElementById(`mock-section-${state.diagnostic?.sectionIndex}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} size="sm" type="button" variant="outline">Review section</Button> : null}
+              </div>
+            ) : null}
             {state.testId ? (
               <span className="mt-2 block">
                 <Link

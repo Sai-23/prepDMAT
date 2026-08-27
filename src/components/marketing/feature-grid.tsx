@@ -36,7 +36,7 @@ export function FeatureGrid() {
       <SectionHeading
         eyebrow="Core platform features"
         title="Built for deliberate preparation, not casual quizzing"
-        description="The foundation prioritizes accuracy, timing realism, clean interfaces, and a question architecture that can scale across the full dMAT structure."
+        description="Build confidence with realistic questions, clear explanations, timed practice, and useful next steps."
       />
       <div className="grid gap-5 md:grid-cols-2">
         {features.map(({ title, description, icon: Icon }) => (

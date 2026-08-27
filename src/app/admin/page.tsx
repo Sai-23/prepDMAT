@@ -38,11 +38,8 @@ export default async function AdminDashboardPage() {
       getAdminMetrics(),
       isAdmin ? getRecentGeneratedCoreMocksForAdmin(10) : Promise.resolve([]),
     ]);
-  } catch (error) {
-    loadError =
-      error instanceof Error
-        ? error.message
-        : "Unable to load administrative metrics.";
+  } catch {
+    loadError = "Unable to load administrative metrics.";
   }
 
   const cards = metrics

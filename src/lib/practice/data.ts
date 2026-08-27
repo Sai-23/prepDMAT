@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { PublicActionError } from "@/lib/security/public-errors";
 
 import { generatePracticeManifest, practiceDurationSeconds, type PracticeItemManifest } from "./generation";
 import { createPracticeSnapshots, gradePracticeAnswer, type PrivatePracticeSnapshot } from "./native";
@@ -17,6 +18,12 @@ import type {
 import { practiceTargetPaceSeconds } from "./timing";
 import { coreSkill, mapQuestionToSkills } from "@/lib/progress/skills";
 import { getMockPracticeContext } from "@/lib/results/mock-practice-context";
+import type { MathematicalEquationStructuredData } from "@/lib/generation/mathematical-equations";
+import { createVerifiedEquationExplanationTrace } from "./mathematical-equation-explanation-trace";
+import { createVerifiedFigureExplanationTrace } from "./figure-sequence-explanation-trace";
+import { createVerifiedLatinExplanationTrace } from "./latin-square-explanation-trace";
+import type { FigureSequencePresentation } from "@/lib/generation/figure-sequences";
+import type { LatinSquareStructuredData } from "@/lib/generation/latin-squares";
 
 type QuestionRow = {
   id: string;
@@ -79,14 +86,40 @@ type ItemRow = {
   fingerprint?: string | null;
 };
 
-function feedback(item: ItemRow): PracticeFeedback | null {
+function feedback(item: ItemRow, question: PracticeQuestion): PracticeFeedback | null {
   if (item.response_status !== "answered") return null;
   const privateSnapshot = item.private_snapshot as PrivatePracticeSnapshot;
+  const mathematicalExplanationTrace = question.questionType === "mathematical_equation"
+    ? createVerifiedEquationExplanationTrace(
+        question.structuredData as MathematicalEquationStructuredData,
+        privateSnapshot.explanationTrace,
+        privateSnapshot.correctAnswer,
+        privateSnapshot.mathematicalExplanationTrace,
+      )
+    : null;
+  const figureExplanationTrace = question.questionType === "figure_sequence"
+    ? createVerifiedFigureExplanationTrace(
+        question.structuredData as FigureSequencePresentation,
+        privateSnapshot.figureExplanationTrace ?? privateSnapshot.explanationTrace,
+        privateSnapshot.correctAnswer,
+      )
+    : null;
+  const latinExplanationTrace = question.questionType === "latin_square"
+    ? createVerifiedLatinExplanationTrace(
+        question.structuredData as LatinSquareStructuredData,
+        privateSnapshot.explanationTrace,
+        privateSnapshot.correctAnswer,
+        privateSnapshot.latinExplanationTrace?.completedGrid,
+      )
+    : null;
   return {
     isCorrect: item.is_correct === true,
     correctAnswer: privateSnapshot.correctAnswer,
     explanation: privateSnapshot.explanation,
     ...(privateSnapshot.explanationTrace === undefined ? {} : { explanationTrace: privateSnapshot.explanationTrace }),
+    ...(figureExplanationTrace ? { figureExplanationTrace } : {}),
+    ...(latinExplanationTrace ? { latinExplanationTrace } : {}),
+    ...(mathematicalExplanationTrace ? { mathematicalExplanationTrace } : {}),
     ...(privateSnapshot.educationalExplanation === undefined ? {} : { educationalExplanation: privateSnapshot.educationalExplanation }),
   };
 }
@@ -125,7 +158,7 @@ function state(session: SessionRow, item: ItemRow): PracticeSessionState {
     totalTimeSeconds: session.total_time_seconds,
     question,
     answer: item.response_status === "answered" ? item.response_payload as PracticeAnswer : null,
-    feedback: feedback(item),
+    feedback: feedback(item, question),
     targetPaceSeconds: practiceTargetPaceSeconds(question.estimatedTimeSeconds),
   };
 }
@@ -350,7 +383,8 @@ export async function recordPracticeAnswer(userId: string, input: { sessionId: s
     if (String(error.message).includes("practice_answer_locked")) throw new Error("This question has already been answered.");
     throw new Error("Unable to save this answer.");
   }
-  return { ...feedback({ ...item, response_status: "answered", response_payload: input.answer, is_correct: isCorrect })!, timeSpentSeconds, targetPaceSeconds: practiceTargetPaceSeconds((item.public_snapshot as PracticeQuestion).estimatedTimeSeconds) };
+  const question = item.public_snapshot as PracticeQuestion;
+  return { ...feedback({ ...item, response_status: "answered", response_payload: input.answer, is_correct: isCorrect }, question)!, timeSpentSeconds, targetPaceSeconds: practiceTargetPaceSeconds(question.estimatedTimeSeconds) };
 }
 
 export async function openPracticeExplanation(userId: string, sessionId: string, questionId: string) {
@@ -390,7 +424,7 @@ export async function getPracticeReview(userId: string, sessionId: string): Prom
       position: item.position,
       question: item.public_snapshot as PracticeQuestion,
       answer: item.response_payload as PracticeAnswer,
-      feedback: feedback(item)!,
+      feedback: feedback(item, item.public_snapshot as PracticeQuestion)!,
       timeSpentSeconds: item.time_spent_seconds,
       reasoningFamily: item.reasoning_family,
       reasoningClassification: item.reasoning_classification,
@@ -423,5 +457,13 @@ export async function reportPracticeQuestion(userId: string, input: { sessionId:
     details: input.details,
     provenance: { seed: item.seed, generatorVersion: item.generator_version, validatorVersion: item.validator_version, fingerprint: item.fingerprint },
   });
-  if (error) throw new Error("Unable to submit this report.");
+  if (error) {
+    if (String(error.message).includes("question_report_duplicate")) {
+      throw new PublicActionError(
+        "INVALID_REQUEST",
+        "You have already reported this question for review.",
+      );
+    }
+    throw new Error("Unable to submit this report.");
+  }
 }

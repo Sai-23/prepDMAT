@@ -11,20 +11,22 @@ export type NavigationItem = {
 };
 
 export const primaryNavigation: NavigationItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/exam-format", label: "Exam Format" },
+  { href: "/dashboard", label: "Dashboard", requiresAuth: true },
   { href: "/practice", label: "Practice", requiresAuth: true },
   { href: "/tests", label: "Mock Tests", requiresAuth: true },
-  { href: "/pricing", label: "Pricing" },
+  { href: "/progress" as Route, label: "Progress", requiresAuth: true },
+  { href: "/exam-format", label: "Exam Format" },
+  { href: "/onboarding", label: "Free Diagnostic", requiresAuth: true },
 ];
 
 export const studentNavigation: NavigationItem[] = [
   { href: "/dashboard", label: "Dashboard", requiresAuth: true },
+  { href: "/practice", label: "Practice", requiresAuth: true },
+  { href: "/tests", label: "Mock Tests", requiresAuth: true },
   { href: "/progress" as Route, label: "Progress", requiresAuth: true },
   { href: "/results", label: "Results", requiresAuth: true },
   { href: "/mistakes", label: "Mistake Notebook", requiresAuth: true },
   { href: "/bookmarks", label: "Bookmarks", requiresAuth: true },
-  { href: "/profile", label: "Profile", requiresAuth: true },
 ];
 
 export const adminNavigation: NavigationItem[] = [

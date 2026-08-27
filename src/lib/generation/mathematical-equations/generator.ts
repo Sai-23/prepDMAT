@@ -11,12 +11,14 @@ import {
   inspectEquationPresentation,
   MATHEMATICAL_EQUATION_STYLE_POLICY,
 } from "./style";
+import { buildCanonicalSolveTrace, validateSolveTraceRange } from "./solve-trace";
 import {
   MATHEMATICAL_EQUATION_DOMAIN,
   MATHEMATICAL_EQUATION_GENERATOR_VERSION,
   type EquationEvidenceLevel,
   type EquationOperator,
   type EquationRelationshipPrimitive,
+  type EquationReasoningFamily,
   type EquationSolutionStep,
   type EquationStructuralFamily,
   type MathematicalEquation,
@@ -47,6 +49,7 @@ type BuiltModel = {
   values: VariableAssignment;
   equations: MathematicalEquation[];
   relationships: EquationRelationshipPrimitive[];
+  reasoningFamilies: EquationReasoningFamily[];
   steps: EquationSolutionStep[];
   reasoningPath: string[];
   hiddenGroupingCount: number;
@@ -70,16 +73,23 @@ type RelationshipPlan = {
 const UNARY_RELATIONSHIP_WEIGHTS = [
   ["offset_add", 9],
   ["offset_subtract", 9],
+  ["scale_offset_add", 7],
+  ["scale_offset_subtract", 7],
   ["scale", 6],
-  ["divide_by_constant", 6],
+  ["divide_by_constant", 7],
   ["sum", 9],
   ["difference", 9],
+  ["reverse_difference", 7],
   ["complement", 9],
   ["weighted_sum", 7],
+  ["weighted_difference", 7],
+  ["both_sides", 5],
 ] as const satisfies readonly (readonly [EquationRelationshipPrimitive, number])[];
 
 const MULTI_RELATIONSHIP_WEIGHTS = [
   ["multi_variable_sum", 4],
+  ["three_variable_difference", 8],
+  ["mixed_three_variable", 6],
   ["multi_variable_balance", 12],
   ["weighted_sum", 7],
 ] as const satisfies readonly (readonly [EquationRelationshipPrimitive, number])[];
@@ -190,12 +200,17 @@ function plannedRelationship(
   parentCount: number,
   random: SeededRandom,
 ): PlannedRelationship {
+  const multiWeights = MULTI_RELATIONSHIP_WEIGHTS.filter(([relationship]) =>
+    parentCount === 2 || (relationship !== "three_variable_difference" && relationship !== "mixed_three_variable"),
+  );
   const relationship = weightedPick(
-    parentCount === 1 ? UNARY_RELATIONSHIP_WEIGHTS : MULTI_RELATIONSHIP_WEIGHTS,
+    parentCount === 1 ? UNARY_RELATIONSHIP_WEIGHTS : multiWeights,
     random,
   );
   const coefficient = relationship === "scale" || relationship === "divide_by_constant" ||
-    (relationship === "weighted_sum" && parentCount > 1)
+    relationship === "scale_offset_add" || relationship === "scale_offset_subtract" ||
+    relationship === "weighted_difference" || relationship === "both_sides" ||
+    ((relationship === "weighted_sum" || relationship === "mixed_three_variable") && parentCount > 1)
     ? weightedPick(COEFFICIENT_WEIGHTS, random)
     : undefined;
   return { relationship, ...(coefficient ? { coefficient } : {}) };
@@ -230,11 +245,21 @@ function plannedCoefficientMatches(
 ): boolean {
   if (candidate.relationship !== planned.relationship) return false;
   if (!planned.coefficient) return true;
-  if (planned.relationship === "scale") {
+  if (planned.relationship === "scale" || planned.relationship === "scale_offset_add" ||
+    planned.relationship === "scale_offset_subtract") {
     return parents.length === 1 && candidate.coefficients[parents[0]] === planned.coefficient;
   }
   if (planned.relationship === "divide_by_constant") {
     return Math.abs(candidate.coefficients[target] ?? 0) === planned.coefficient;
+  }
+  if (planned.relationship === "weighted_difference") {
+    return parents.length === 1 && Math.max(
+      Math.abs(candidate.coefficients[parents[0]] ?? 0),
+      Math.abs(candidate.coefficients[target] ?? 0),
+    ) === planned.coefficient;
+  }
+  if (planned.relationship === "both_sides") {
+    return parents.length === 1 && Math.abs(candidate.coefficients[target] ?? 0) + 1 === planned.coefficient;
   }
   if (planned.relationship === "weighted_sum" && parents.length > 1) {
     return candidate.coefficients[target] === planned.coefficient;
@@ -258,8 +283,16 @@ function relationshipPossible(
     if (planned.relationship === "offset_subtract") return parentValue > targetValue;
     if (planned.relationship === "scale") return targetValue === parentValue * (planned.coefficient ?? 2);
     if (planned.relationship === "divide_by_constant") return parentValue === targetValue * (planned.coefficient ?? 2);
+    if (planned.relationship === "scale_offset_add") {
+      const product = parentValue * (planned.coefficient ?? 2);
+      return product <= STRICT_VISIBLE_MAX && targetValue > product;
+    }
+    if (planned.relationship === "scale_offset_subtract") {
+      const product = parentValue * (planned.coefficient ?? 2);
+      return product <= STRICT_VISIBLE_MAX && product > targetValue;
+    }
     if (planned.relationship === "difference") return targetValue !== parentValue;
-    if (planned.relationship === "sum" || planned.relationship === "complement") {
+    if (planned.relationship === "sum" || planned.relationship === "complement" || planned.relationship === "reverse_difference") {
       return targetValue + parentValue <= STRICT_VISIBLE_MAX;
     }
     if (planned.relationship === "weighted_sum") {
@@ -268,12 +301,36 @@ function relationshipPossible(
           parentCoefficient * parentValue + targetCoefficient * targetValue <= STRICT_VISIBLE_MAX,
       );
     }
+    if (planned.relationship === "weighted_difference") {
+      const coefficient = planned.coefficient ?? 2;
+      const parentProduct = coefficient * parentValue;
+      const targetProduct = coefficient * targetValue;
+      return (parentProduct <= STRICT_VISIBLE_MAX && parentProduct > targetValue) ||
+        (targetProduct <= STRICT_VISIBLE_MAX && targetProduct > parentValue);
+    }
+    if (planned.relationship === "both_sides") {
+      const coefficient = planned.coefficient ?? 2;
+      return coefficient * targetValue + parentValue <= STRICT_VISIBLE_MAX;
+    }
     return false;
   }
 
   const allValues = [targetValue, ...parentValues];
   if (planned.relationship === "multi_variable_sum") {
     return allValues.reduce((sum, value) => sum + value, 0) <= STRICT_VISIBLE_MAX;
+  }
+  if (planned.relationship === "three_variable_difference") {
+    return allValues.some((_, negativeIndex) => {
+      const total = allValues.reduce((sum, value, index) => sum + (index === negativeIndex ? -value : value), 0);
+      return total >= 1 && total <= STRICT_VISIBLE_MAX;
+    });
+  }
+  if (planned.relationship === "mixed_three_variable") {
+    const coefficient = planned.coefficient ?? 2;
+    return allValues.some((_, scaledIndex) => {
+      const total = allValues.reduce((sum, value, index) => sum + (index === scaledIndex ? coefficient * value : value), 0);
+      return coefficient * allValues[scaledIndex] <= STRICT_VISIBLE_MAX && total <= STRICT_VISIBLE_MAX;
+    });
   }
   if (planned.relationship === "weighted_sum") {
     return (planned.coefficient ?? 2) * targetValue + parentValues.reduce((sum, value) => sum + value, 0) <= STRICT_VISIBLE_MAX;
@@ -335,15 +392,39 @@ function plannedVisibleConstant(
       return Math.abs(targetValue - parentValue);
     }
     if (planned.relationship === "sum" || planned.relationship === "complement") return targetValue + parentValue;
+    if (planned.relationship === "reverse_difference") return targetValue + parentValue;
+    if (planned.relationship === "scale_offset_add" || planned.relationship === "scale_offset_subtract") {
+      return Math.abs(targetValue - (planned.coefficient ?? 2) * parentValue);
+    }
     if (planned.relationship === "weighted_sum") {
       return Math.min(...WEIGHTED_PAIR_COEFFICIENTS
         .map(([parentCoefficient, targetCoefficient]) =>
           parentCoefficient * parentValue + targetCoefficient * targetValue,
         ).filter((total) => total <= STRICT_VISIBLE_MAX));
     }
+    if (planned.relationship === "weighted_difference") {
+      const coefficient = planned.coefficient ?? 2;
+      const options = [coefficient * parentValue - targetValue, coefficient * targetValue - parentValue]
+        .filter((value) => value >= 1 && value <= STRICT_VISIBLE_MAX);
+      return Math.min(...options);
+    }
+    if (planned.relationship === "both_sides") {
+      return ((planned.coefficient ?? 2) - 1) * targetValue + parentValue;
+    }
   }
   const allValues = [targetValue, ...parentValues];
   if (planned.relationship === "multi_variable_sum") return allValues.reduce((sum, value) => sum + value, 0);
+  if (planned.relationship === "three_variable_difference") {
+    return Math.min(...allValues.map((_, negativeIndex) =>
+      allValues.reduce((sum, value, index) => sum + (index === negativeIndex ? -value : value), 0),
+    ).filter((total) => total >= 1 && total <= STRICT_VISIBLE_MAX));
+  }
+  if (planned.relationship === "mixed_three_variable") {
+    const coefficient = planned.coefficient ?? 2;
+    return Math.min(...allValues.map((_, scaledIndex) =>
+      allValues.reduce((sum, value, index) => sum + (index === scaledIndex ? coefficient * value : value), 0),
+    ).filter((total) => total >= 1 && total <= STRICT_VISIBLE_MAX));
+  }
   if (planned.relationship === "weighted_sum") {
     return (planned.coefficient ?? 2) * targetValue + parentValues.reduce((sum, value) => sum + value, 0);
   }
@@ -396,7 +477,10 @@ function constraintAwareAssignments(
     const traversalRandom = random.fork(`traversal-${traversal}`);
     const domains = Object.fromEntries(variables.map((symbol) => [
       symbol,
-      traversalRandom.fork(`domain-${symbol}`).shuffle(Array.from({ length: 20 }, (_, index) => index + 1)),
+      traversalRandom.fork(`domain-${symbol}`).shuffle(Array.from(
+        { length: MATHEMATICAL_EQUATION_DOMAIN.maximum - MATHEMATICAL_EQUATION_DOMAIN.minimum + 1 },
+        (_, index) => index + MATHEMATICAL_EQUATION_DOMAIN.minimum,
+      )),
     ])) as Record<string, number[]>;
     let found = false;
     const search = (index: number): void => {
@@ -522,6 +606,35 @@ function relationCandidates(
         orientationProbability,
       ));
     }
+    for (const coefficient of COEFFICIENTS) {
+      const product = coefficient * parentValue;
+      if (product > 0 && product <= STRICT_VISIBLE_MAX && targetValue > product) {
+        const offset = targetValue - product;
+        candidates.push(built(
+          {
+            left: operation("add", scaledTerm(parent, coefficient), constant(offset)),
+            right: variable(target),
+          },
+          "scale_offset_add",
+          { [parent]: coefficient, [target]: -1 },
+          random,
+          orientationProbability,
+        ));
+      }
+      if (product <= STRICT_VISIBLE_MAX && product > targetValue) {
+        const offset = product - targetValue;
+        candidates.push(built(
+          {
+            left: operation("subtract", scaledTerm(parent, coefficient), constant(offset)),
+            right: variable(target),
+          },
+          "scale_offset_subtract",
+          { [parent]: coefficient, [target]: -1 },
+          random,
+          orientationProbability,
+        ));
+      }
+    }
     if (targetValue % parentValue === 0 && COEFFICIENTS.includes((targetValue / parentValue) as never)) {
       const coefficient = targetValue / parentValue;
       candidates.push(built(
@@ -552,7 +665,7 @@ function relationCandidates(
       ));
       candidates.push(built(
         { left: operation("subtract", constant(sum), variable(parent)), right: variable(target) },
-        "complement",
+        "reverse_difference",
         { [parent]: 1, [target]: 1 },
         random,
         orientationProbability,
@@ -588,6 +701,48 @@ function relationCandidates(
         ));
       }
     }
+    for (const coefficient of COEFFICIENTS) {
+      const parentProduct = coefficient * parentValue;
+      if (parentProduct <= STRICT_VISIBLE_MAX && parentProduct > targetValue) {
+        candidates.push(built(
+          {
+            left: operation("subtract", scaledTerm(parent, coefficient), variable(target)),
+            right: constant(parentProduct - targetValue),
+          },
+          "weighted_difference",
+          { [parent]: coefficient, [target]: -1 },
+          random,
+          orientationProbability,
+        ));
+      }
+      const targetProduct = coefficient * targetValue;
+      if (targetProduct <= STRICT_VISIBLE_MAX && targetProduct > parentValue) {
+        candidates.push(built(
+          {
+            left: operation("subtract", scaledTerm(target, coefficient), variable(parent)),
+            right: constant(targetProduct - parentValue),
+          },
+          "weighted_difference",
+          { [target]: coefficient, [parent]: -1 },
+          random,
+          orientationProbability,
+        ));
+      }
+      const bothSidesTotal = coefficient * targetValue + parentValue;
+      const collectedConstant = (coefficient - 1) * targetValue + parentValue;
+      if (bothSidesTotal <= STRICT_VISIBLE_MAX && collectedConstant <= STRICT_VISIBLE_MAX) {
+        candidates.push(built(
+          {
+            left: operation("add", scaledTerm(target, coefficient), variable(parent)),
+            right: operation("add", variable(target), constant(collectedConstant)),
+          },
+          "both_sides",
+          { [target]: coefficient - 1, [parent]: 1 },
+          random,
+          orientationProbability,
+        ));
+      }
+    }
     return candidates;
   }
 
@@ -612,7 +767,9 @@ function relationCandidates(
     if (total >= 1 && total <= STRICT_VISIBLE_MAX) {
       candidates.push(built(
         { left: linearExpression(terms.map((symbol) => ({ symbol, coefficient: coefficients[symbol] }))), right: constant(total) },
-        "multi_variable_balance",
+        pattern.filter((coefficient) => coefficient < 0).length === 1 && terms.length === 3
+          ? "three_variable_difference"
+          : "multi_variable_balance",
         coefficients,
         random,
         orientationProbability,
@@ -625,7 +782,7 @@ function relationCandidates(
     if (total <= STRICT_VISIBLE_MAX) {
       candidates.push(built(
         { left: linearExpression(terms.map((symbol) => ({ symbol, coefficient: coefficients[symbol] }))), right: constant(total) },
-        "weighted_sum",
+        terms.length === 3 ? "mixed_three_variable" : "weighted_sum",
         coefficients,
         random,
         orientationProbability,
@@ -658,8 +815,19 @@ function chooseCoupledPair(
   const secondPool = pool.filter((candidate) =>
     plannedCoefficientMatches(candidate, planned[1], variables[1], [variables[0]]),
   );
-  const pairs = firstPool.flatMap((first) => secondPool.map((second) => [first, second] as const))
+  const independentPairs = (
+    firstCandidates: readonly (BuiltEquation & { reversed: boolean })[],
+    secondCandidates: readonly (BuiltEquation & { reversed: boolean })[],
+  ) => firstCandidates.flatMap((first) => secondCandidates.map((second) => [first, second] as const))
     .filter(([first, second]) => first !== second && determinant(first.coefficients, second.coefficients, variables) !== 0);
+  const plannedPairs = independentPairs(firstPool, secondPool);
+  const partialPairs = plannedPairs.length > 0
+    ? plannedPairs
+    : independentPairs(
+        pool.filter((candidate) => firstPool.includes(candidate) || secondPool.includes(candidate)),
+        pool,
+      );
+  const pairs = partialPairs.length > 0 ? partialPairs : independentPairs(pool, pool);
   if (pairs.length === 0) throw new Error("Unable to compose independent coupled constraints.");
   return [...random.pick(pairs)];
 }
@@ -693,13 +861,76 @@ function selectRelationship(
   })).sort((first, second) => first.maximum - second.maximum);
   const strict = scored.filter((item) => item.maximum >= 1 && item.maximum <= STRICT_VISIBLE_MAX);
   if (strict.length === 0) {
-    throw new Error("No relationship satisfies the strict 1-20 visible-constant policy.");
+    throw new Error(`No relationship satisfies the strict ${MATHEMATICAL_EQUATION_DOMAIN.minimum}-${MATHEMATICAL_EQUATION_DOMAIN.maximum} visible-constant policy.`);
   }
   return random.pick(strict.map((item) => item.candidate));
 }
 
 function evidenceRank(level: EquationEvidenceLevel): number {
   return ["official", "official_composition", "third_party_supported", "experimental"].indexOf(level);
+}
+
+function reasoningFamiliesFor(
+  relationships: readonly BuiltEquation[],
+  family: EquationStructuralFamily,
+  rootStrategy: GraphDefinition["rootStrategy"],
+): EquationReasoningFamily[] {
+  const result = new Set<EquationReasoningFamily>();
+  relationships.forEach((relationship) => {
+    if (relationship.relationship === "sum") result.add("simple_sum");
+    if (relationship.relationship === "difference") result.add("simple_difference");
+    if (relationship.relationship === "reverse_difference" || relationship.relationship === "complement") {
+      result.add("reverse_difference");
+      result.add("constant_first");
+    }
+    if (relationship.relationship === "scale") result.add("direct_scale");
+    if (relationship.relationship === "divide_by_constant") result.add("division");
+    if (relationship.relationship === "scale_offset_add" || relationship.relationship === "scale_offset_subtract") {
+      result.add("scale_offset");
+    }
+    if (relationship.relationship === "weighted_sum") result.add("weighted_sum");
+    if (relationship.relationship === "weighted_difference") result.add("weighted_difference");
+    if (relationship.relationship === "both_sides") {
+      result.add("variables_both_sides");
+      result.add("coefficient_collection");
+    }
+    if (
+      relationship.relationship === "multi_variable_sum" ||
+      relationship.relationship === "three_variable_difference" ||
+      relationship.relationship === "mixed_three_variable" ||
+      relationship.relationship === "multi_variable_balance"
+    ) result.add("three_variable");
+  });
+  if (rootStrategy === "coupled") {
+    result.add("same_target");
+    result.add("elimination_pair");
+    if (relationships.slice(0, 2).some((relationship) =>
+      Object.values(relationship.coefficients).some((coefficient) => Math.abs(coefficient) > 1),
+    )) result.add("weighted_elimination");
+  }
+  if (family === "chain" || family === "reverse_chain" || family === "cascade") {
+    result.add("dependency_chain");
+  }
+  if (family === "branch" || family === "branch_recombine" || family === "mixed") {
+    result.add("branching");
+  }
+  if (family === "branch_recombine" || family === "merged" || family === "mixed") {
+    result.add("recombination");
+  }
+  return [...result].sort();
+}
+
+function compatibilityRelationship(
+  relationship: EquationRelationshipPrimitive,
+): EquationRelationshipPrimitive {
+  if (relationship === "scale_offset_add") return "offset_add";
+  if (relationship === "scale_offset_subtract") return "offset_subtract";
+  if (relationship === "reverse_difference") return "complement";
+  if (relationship === "weighted_difference" || relationship === "both_sides" || relationship === "mixed_three_variable") {
+    return "weighted_sum";
+  }
+  if (relationship === "three_variable_difference") return "multi_variable_balance";
+  return relationship;
 }
 
 function buildFromValues(
@@ -881,7 +1112,8 @@ function buildFromValues(
     variables,
     values,
     equations: displayed.map((item) => item.equation),
-    relationships: displayed.map((item) => item.relationship),
+    relationships: displayed.map((item) => compatibilityRelationship(item.relationship)),
+    reasoningFamilies: reasoningFamiliesFor(displayed, definition.id, rootStrategy),
     steps,
     reasoningPath,
     hiddenGroupingCount: multiVariableCount + Number(rootStrategy === "global_balance"),
@@ -903,9 +1135,7 @@ function buildModel(
   if (!count) throw new Error(`Graph ${definition.id} does not support ${configuration.difficulty}.`);
   const variables = random.shuffle([...SYMBOLS.slice(0, count)]);
   const parents = parentsFor(definition.id, count);
-  const rootStrategy = definition.id === "direct" && random.fork("root-strategy").boolean(0.45)
-    ? "coupled"
-    : definition.rootStrategy;
+  const rootStrategy = definition.rootStrategy === "direct" ? "coupled" : definition.rootStrategy;
   let lastError: unknown = null;
   for (let planAttempt = 0; planAttempt < 12; planAttempt += 1) {
     const planRandom = random.fork(`relationship-plan-${planAttempt}`);
@@ -918,7 +1148,7 @@ function buildModel(
       configuration.difficulty === "easy" ? 40 : 24,
     );
     if (assignments.length === 0) {
-      lastError = new Error("The planned relationship graph has no assignment in the 1-20 integer domain.");
+      lastError = new Error(`The planned relationship graph has no assignment in the ${MATHEMATICAL_EQUATION_DOMAIN.minimum}-${MATHEMATICAL_EQUATION_DOMAIN.maximum} integer domain.`);
       continue;
     }
     const rankedAssignments = [...assignments].sort((first, second) =>
@@ -942,6 +1172,11 @@ function buildModel(
           rootStrategy,
           plan,
         );
+        const trace = buildCanonicalSolveTrace(
+          { structuredData: { equations: model.equations }, solutionPath: model.steps },
+          model.values,
+        );
+        if (!validateSolveTraceRange(trace, MATHEMATICAL_EQUATION_DOMAIN).valid) return [];
         const style = inspectEquationPresentation(model.equations, model.values);
         if (configuration.difficulty === "easy" && style.mentalArithmeticCost > 9) return [];
         const solutionValues = Object.values(model.values);
@@ -1004,6 +1239,7 @@ export class MathematicalEquationGenerator implements QuestionGenerator<Mathemat
           relationshipReversalCount: model.relationshipReversalCount,
           meaningfulReasoningSteps: model.meaningfulReasoningSteps,
           relationshipPrimitives: model.relationships,
+          reasoningFamilies: model.reasoningFamilies,
           evidenceLevel: model.evidenceLevel,
           rootStrategy: model.rootStrategy,
           targetSymbol: model.targetSymbol,

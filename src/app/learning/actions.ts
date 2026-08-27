@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/guards";
 import { saveMistakeEntry, setBookmark } from "@/lib/learning/data";
+import { safeActionFailure } from "@/lib/security/public-errors";
 import {
   bookmarkMutationSchema,
   mistakeEntrySchema,
@@ -24,10 +25,7 @@ export async function toggleBookmarkAction(input: unknown) {
     revalidatePath("/results");
     return { error: null, bookmarked: parsed.data.bookmarked };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Unable to update this bookmark.",
-    };
+    return safeActionFailure(error, "Unable to update this bookmark.");
   }
 }
 
@@ -51,9 +49,6 @@ export async function saveMistakeEntryAction(input: unknown) {
       isUnderstood: parsed.data.isUnderstood,
     };
   } catch (error) {
-    return {
-      error:
-        error instanceof Error ? error.message : "Unable to save this entry.",
-    };
+    return safeActionFailure(error, "Unable to save this entry.");
   }
 }

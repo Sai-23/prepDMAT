@@ -16,22 +16,22 @@
     {
       "answerCount": 0,
       "phase8ProgressPreparationMedianMs": 0.343,
-      "dashboardAssemblyMedianMs": 0.075
+      "dashboardAssemblyMedianMs": 0.07
     },
     {
       "answerCount": 100,
-      "phase8ProgressPreparationMedianMs": 1.293,
-      "dashboardAssemblyMedianMs": 0.099
+      "phase8ProgressPreparationMedianMs": 1.101,
+      "dashboardAssemblyMedianMs": 0.091
     },
     {
       "answerCount": 1000,
-      "phase8ProgressPreparationMedianMs": 3.703,
+      "phase8ProgressPreparationMedianMs": 4.46,
       "dashboardAssemblyMedianMs": 0.07
     },
     {
       "answerCount": 5000,
-      "phase8ProgressPreparationMedianMs": 13.936,
-      "dashboardAssemblyMedianMs": 0.072
+      "phase8ProgressPreparationMedianMs": 15.876,
+      "dashboardAssemblyMedianMs": 0.065
     }
   ],
   "databaseRoundTripMeasurement": "Not sampled without an authenticated test student; bounded query and no-N+1 contracts are verified instead.",

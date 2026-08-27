@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { generateValidatedMathematicalEquation } from "../../lib/generation/mathematical-equations";
 import { MathematicalEquationPracticeFeedback } from "./mathematical-equation-practice-feedback";
+import { createVerifiedEquationExplanationTrace } from "../../lib/practice/mathematical-equation-explanation-trace";
 
 function fixture(difficulty: "easy" | "medium" | "hard") {
   return generateValidatedMathematicalEquation({
@@ -41,7 +42,11 @@ function renderFeedback({
         initiallyOpen={initiallyOpen}
         isCorrect={!wrong}
         selectedAnswer={selected}
-        trace={question.solutionPath}
+        trace={createVerifiedEquationExplanationTrace(
+          question.structuredData,
+          question.solutionPath,
+          question.correctAnswer,
+        )}
       />,
     ),
   };
@@ -57,6 +62,8 @@ describe("MathematicalEquationPracticeFeedback", () => {
       expect(html).toContain("Solved values");
       expect(html).toContain("Answer review");
       expect(html).toContain("Step 1 of");
+      expect(html).toContain("Before");
+      expect(html).toContain("After");
       expect(html).toContain("Previous");
       expect(html).toContain("Next");
       expect(html).not.toContain('"kind"');
@@ -66,10 +73,12 @@ describe("MathematicalEquationPracticeFeedback", () => {
 
   it("shows substituted values and accumulated solved-variable chips", () => {
     const question = fixture("hard");
-    const { html } = renderFeedback({ difficulty: "hard", initialStep: 2 });
-    expect(html).toContain("Substitute known values");
-    question.solutionPath.slice(0, 3).forEach((step) => {
-      expect(html).toContain(`${step.targetSymbol} = ${question.correctAnswer[step.targetSymbol]}`);
+    const { html } = renderFeedback({ difficulty: "hard", initialView: "all" });
+    expect(html).toContain("Use a value we already know");
+    expect(html).toContain("Replace");
+    expect(html).toContain("data-equation-transformation=\"substitution\"");
+    question.structuredData.variables.forEach((symbol) => {
+      expect(html).toContain(`${symbol} = ${question.correctAnswer[symbol]}`);
     });
   });
 
@@ -92,5 +101,6 @@ describe("MathematicalEquationPracticeFeedback", () => {
     expect(html).toContain("Show one step at a time");
     expect(html).toContain("lg:grid-cols-");
     expect(html).toContain("motion-reduce:transition-none");
+    expect(html).toContain("overflow-x-auto");
   });
 });

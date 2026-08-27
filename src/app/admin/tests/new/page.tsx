@@ -12,11 +12,8 @@ export default async function TestBuilderPage() {
   let loadError: string | null = null;
   try {
     questionBank = await getAdminQuestionBank();
-  } catch (error) {
-    loadError =
-      error instanceof Error
-        ? error.message
-        : "Unable to load the approved question bank.";
+  } catch {
+    loadError = "Unable to load the approved question bank.";
   }
 
   return (

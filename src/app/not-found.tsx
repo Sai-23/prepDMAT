@@ -12,7 +12,7 @@ export default function NotFound() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm leading-6 text-slate-600">
-            The requested route does not exist in the current Phase 1 application
+            This page does not exist or may have moved
             shell.
           </p>
           <Button asChild>

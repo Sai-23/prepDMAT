@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   typedRoutes: true,
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/pricing",
+        destination: "/",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -15,6 +15,12 @@ import type { PrivatePracticeSnapshot } from "@/lib/practice/native";
 import type { ExamSectionSnapshot } from "@/lib/tests/exam-spec";
 import type { StructuralProfile } from "@/lib/generation/novelty";
 import { mapQuestionToSkills } from "@/lib/progress/skills";
+import type { MathematicalEquationStructuredData } from "@/lib/generation/mathematical-equations";
+import { createVerifiedEquationExplanationTrace } from "@/lib/practice/mathematical-equation-explanation-trace";
+import { createVerifiedFigureExplanationTrace } from "@/lib/practice/figure-sequence-explanation-trace";
+import { createVerifiedLatinExplanationTrace } from "@/lib/practice/latin-square-explanation-trace";
+import type { FigureSequencePresentation } from "@/lib/generation/figure-sequences";
+import type { LatinSquareStructuredData } from "@/lib/generation/latin-squares";
 
 type AttemptRow = {
   id: string;
@@ -171,6 +177,29 @@ export async function getAttemptResult(
       const selectedOptionId = answer?.kind === "single_choice" ? answer.optionId : response.selected_option_id;
       const correctOptionId = typeof privateSnapshot.correctAnswer === "string" ? privateSnapshot.correctAnswer : "";
       const generated = (attempt.mock_origin ?? "curated") === "generated";
+      const mathematicalExplanationTrace = question.questionType === "mathematical_equation"
+        ? createVerifiedEquationExplanationTrace(
+            question.structuredData as MathematicalEquationStructuredData,
+            privateSnapshot.explanationTrace,
+            privateSnapshot.correctAnswer,
+            privateSnapshot.mathematicalExplanationTrace,
+          )
+        : null;
+      const figureExplanationTrace = question.questionType === "figure_sequence"
+        ? createVerifiedFigureExplanationTrace(
+            question.structuredData as FigureSequencePresentation,
+            privateSnapshot.figureExplanationTrace ?? privateSnapshot.explanationTrace,
+            privateSnapshot.correctAnswer,
+          )
+        : null;
+      const latinExplanationTrace = question.questionType === "latin_square"
+        ? createVerifiedLatinExplanationTrace(
+            question.structuredData as LatinSquareStructuredData,
+            privateSnapshot.explanationTrace,
+            privateSnapshot.correctAnswer,
+            privateSnapshot.latinExplanationTrace?.completedGrid,
+          )
+        : null;
       return [{
         id: question.id, module: question.module, questionType: question.questionType,
         topic: question.topic, subtopic: question.subtopic, difficulty: question.difficulty,
@@ -185,6 +214,9 @@ export async function getAttemptResult(
         answer,
         correctAnswer: privateSnapshot.correctAnswer,
         explanationTrace: privateSnapshot.explanationTrace,
+        ...(figureExplanationTrace ? { figureExplanationTrace } : {}),
+        ...(latinExplanationTrace ? { latinExplanationTrace } : {}),
+        ...(mathematicalExplanationTrace ? { mathematicalExplanationTrace } : {}),
         educationalExplanation: privateSnapshot.educationalExplanation,
         questionNumber: Number(item.position),
         estimatedTimeSeconds: question.estimatedTimeSeconds,

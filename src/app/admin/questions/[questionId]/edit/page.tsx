@@ -21,9 +21,8 @@ export default async function QuestionEditPage({
   let loadError: string | null = null;
   try {
     question = await getEditableQuestion(parsed.data);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load this question.";
+  } catch {
+    loadError = "Unable to load this question.";
   }
   if (!loadError && !question) notFound();
   const isPublished = question?.publicationStatus === "published";

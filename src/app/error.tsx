@@ -11,7 +11,9 @@ type ErrorPageProps = {
 
 export default function GlobalError({ error, reset }: ErrorPageProps) {
   useEffect(() => {
-    console.error(error);
+    console.error("Unexpected client error", {
+      digest: error.digest ?? "unavailable",
+    });
   }, [error]);
 
   return (

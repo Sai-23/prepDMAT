@@ -7,6 +7,9 @@ import { generateValidatedMathematicalEquation } from "../../lib/generation/math
 import { FigureSequencePracticeFeedback } from "./figure-sequence-practice-feedback";
 import { LatinSquarePracticeFeedback } from "./latin-square-practice-feedback";
 import { MathematicalEquationPracticeFeedback } from "./mathematical-equation-practice-feedback";
+import { createVerifiedEquationExplanationTrace } from "../../lib/practice/mathematical-equation-explanation-trace";
+import { createVerifiedFigureExplanationTrace } from "../../lib/practice/figure-sequence-explanation-trace";
+import { createVerifiedLatinExplanationTrace } from "../../lib/practice/latin-square-explanation-trace";
 
 const difficulties = ["easy", "medium", "hard"] as const;
 const samples = [1, 2, 3] as const;
@@ -26,7 +29,11 @@ describe("Core Practice explanation 27-sample structural audit", () => {
           initiallyOpen
           isCorrect
           selectedAnswer={question.correctAnswer}
-          trace={question.solutionPath}
+          trace={createVerifiedEquationExplanationTrace(
+            question.structuredData,
+            question.solutionPath,
+            question.correctAnswer,
+          )}
         />,
       );
 
@@ -56,13 +63,14 @@ describe("Core Practice explanation 27-sample structural audit", () => {
           isCorrect
           selectedAnswer={question.correctAnswer}
           sequence={question.sequence}
-          trace={{ rules: question.structuredData.rules }}
+          trace={createVerifiedFigureExplanationTrace(question.sequence, { rules: question.structuredData.rules }, question.correctAnswer, question.solutionFrames)}
         />,
       );
 
       expect(html).toContain('data-feedback-interface="figure-sequence-guided"');
       expect(html).toContain('data-walkthrough-view="all"');
-      expect(html).toContain("Rules found");
+      expect(html).toContain('data-rule-summary="figure-sequence"');
+      expect(html).not.toContain("Verified across every transition");
       expect(html).toContain("Predict missing matrix 2");
       expect(html).toContain('data-answer-comparison="figure-sequence"');
       expect(html).not.toContain("symbol-");
@@ -85,7 +93,7 @@ describe("Core Practice explanation 27-sample structural audit", () => {
           initiallyOpen
           isCorrect
           selectedAnswer={question.correctAnswer}
-          trace={question.deductionTrace}
+          trace={createVerifiedLatinExplanationTrace(question.structuredData, question.deductionTrace, question.correctAnswer, question.completedGrid)}
         />,
       );
 
@@ -93,8 +101,8 @@ describe("Core Practice explanation 27-sample structural audit", () => {
       expect(html).toContain('data-walkthrough-view="all"');
       expect(html).toContain("Missing from this row");
       expect(html).toContain("Missing from this column");
-      expect(html).toContain("Cells used in this proof");
-      expect(html).toContain("not needed for this proof");
+      expect(html).toContain("Complete solved matrix");
+      expect(html).toContain("completed value");
       expect(html).toContain(`Correct answer: ${question.correctAnswer}`);
       expect(html).not.toContain("single_candidate");
       expect(html).not.toContain('"dependencies"');

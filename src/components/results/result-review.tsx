@@ -296,7 +296,7 @@ export function ResultReview({
                     isCorrect={question.isCorrect}
                     selectedAnswer={equationAnswer}
                     showOutcomeHeader={false}
-                    trace={question.explanationTrace}
+                    trace={question.mathematicalExplanationTrace}
                   />
                 ) : figureReview ? (
                   <FigureSequencePracticeFeedback
@@ -308,7 +308,7 @@ export function ResultReview({
                     isCorrect={question.isCorrect}
                     selectedAnswer={figureAnswer}
                     sequence={question.structuredData as FigureSequencePresentation}
-                    trace={question.explanationTrace}
+                    trace={question.figureExplanationTrace}
                   />
                 ) : latinReview ? (
                   <LatinSquarePracticeFeedback
@@ -320,7 +320,7 @@ export function ResultReview({
                     initialView="all"
                     isCorrect={question.isCorrect}
                     selectedAnswer={latinAnswer}
-                    trace={question.explanationTrace}
+                    trace={question.latinExplanationTrace}
                   />
                 ) : question.response?.kind && question.response.kind !== "single_choice" ? (
                   <div className="space-y-4">

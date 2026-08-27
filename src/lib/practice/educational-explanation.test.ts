@@ -12,6 +12,9 @@ import {
   diagnoseLatinMistake,
   isEducationalExplanation,
 } from "./educational-explanation";
+import { createVerifiedEquationExplanationTrace } from "./mathematical-equation-explanation-trace";
+import { createVerifiedFigureExplanationTrace } from "./figure-sequence-explanation-trace";
+import { createVerifiedLatinExplanationTrace } from "./latin-square-explanation-trace";
 
 describe("educational explanation contract", () => {
   it.each(["easy", "medium", "hard"] as const)("builds replayable %s explanations for all Core modules", (difficulty) => {
@@ -31,9 +34,9 @@ describe("educational explanation contract", () => {
       maxAttempts: 5_000,
     });
     const explanations = [
-      buildFigureEducationalExplanation(figure.sequence, { rules: figure.structuredData.rules }, figure.correctAnswer, difficulty),
-      buildEquationEducationalExplanation(equation.structuredData, equation.solutionPath, equation.correctAnswer, difficulty),
-      buildLatinEducationalExplanation(latin.structuredData, latin.deductionTrace, latin.correctAnswer, difficulty),
+      buildFigureEducationalExplanation(figure.sequence, createVerifiedFigureExplanationTrace(figure.sequence, { rules: figure.structuredData.rules }, figure.correctAnswer, figure.solutionFrames), figure.correctAnswer, difficulty),
+      buildEquationEducationalExplanation(equation.structuredData, createVerifiedEquationExplanationTrace(equation.structuredData, equation.solutionPath, equation.correctAnswer), equation.correctAnswer, difficulty),
+      buildLatinEducationalExplanation(latin.structuredData, createVerifiedLatinExplanationTrace(latin.structuredData, latin.deductionTrace, latin.correctAnswer, latin.completedGrid), latin.correctAnswer, difficulty),
     ];
     expect(explanations.every(isEducationalExplanation)).toBe(true);
     for (const explanation of explanations) {
@@ -55,7 +58,7 @@ describe("educational explanation contract", () => {
     const equationWrong = { ...equation.correctAnswer };
     const first = equation.structuredData.variables[0];
     equationWrong[first] += 1;
-    expect(diagnoseEquationMistake(equation.structuredData, equation.solutionPath, equationWrong, equation.correctAnswer)?.supported).toBe(true);
+    expect(diagnoseEquationMistake(equation.structuredData, createVerifiedEquationExplanationTrace(equation.structuredData, equation.solutionPath, equation.correctAnswer), equationWrong, equation.correctAnswer)?.supported).toBe(true);
 
     const latin = generateValidatedLatinSquare({ seed: "phase7-diagnosis-latin", difficulty: "hard", maxAttempts: 5_000 });
     const latinWrong = DEFAULT_LATIN_SYMBOLS.find((symbol) => symbol !== latin.correctAnswer)!;

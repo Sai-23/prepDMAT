@@ -44,8 +44,8 @@ export default async function ResultsPage({
     } else {
       history = await getResultHistory(user.id);
     }
-  } catch (error) {
-    loadError = error instanceof Error ? error.message : "Unable to load your results.";
+  } catch {
+    loadError = "Unable to load your results.";
   }
 
   if (requestedAttempt) {
@@ -53,7 +53,7 @@ export default async function ResultsPage({
       <PageShell
         eyebrow="Core mock result"
         title={loaded?.result.testTitle ?? "Result unavailable"}
-        description="Review one completed mock, understand supported patterns, and choose a focused next action."
+        description="See your score, review each section, and choose what to work on next."
       >
         {loadError || !loaded ? (
           <>
@@ -74,7 +74,7 @@ export default async function ResultsPage({
     <PageShell
       eyebrow="Results"
       title="Completed attempts"
-      description="Open a submitted mock to review its raw result, saved timing, explanations, and supported next actions."
+      description="Open a completed mock to see your score, review mistakes, and decide what to practise next."
     >
       {loadError || !history ? (
         <ErrorState title="Results unavailable" description={loadError ?? "Unable to load your result history."} />
@@ -88,12 +88,12 @@ export default async function ResultsPage({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-slate-950">{attempt.testTitle}</p>
-                    <Badge variant={attempt.origin === "generated" ? "success" : "subtle"}>{attempt.origin === "generated" ? "Generated" : "Curated"}</Badge>
+                    <Badge variant={attempt.origin === "generated" ? "success" : "subtle"}>{attempt.origin === "generated" ? "Full Core" : "Custom"}</Badge>
                     <Badge variant={attempt.status === "auto_submitted" ? "warning" : "success"}>{attempt.status.replace("_", " ")}</Badge>
                   </div>
                   <p className="mt-2 text-sm text-slate-500">{dateFormatter.format(new Date(attempt.submittedAt ?? attempt.startedAt))}</p>
                 </div>
-                <div><p className="text-xs text-slate-500">Raw accuracy</p><p className="mt-1 font-semibold">{Math.round(attempt.accuracy)}%</p></div>
+                <div><p className="text-xs text-slate-500">Score</p><p className="mt-1 font-semibold">{Math.round(attempt.accuracy)}%</p></div>
                 <div><p className="text-xs text-slate-500">Recorded time</p><p className="mt-1 font-semibold">{formatStudyTime(attempt.totalTimeSeconds)}</p></div>
                 <Button asChild size="sm" variant="secondary"><Link href={`/results?attempt=${attempt.id}` as Route}>Review<ArrowRight className="h-4 w-4" /></Link></Button>
               </CardContent>

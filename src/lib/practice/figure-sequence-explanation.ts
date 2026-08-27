@@ -1,11 +1,12 @@
 import {
-  replayFigureSequenceDetailed,
-  visibleFrameValue,
   type FigureFrame,
   type FigureSequencePresentation,
   type FigureSymbolRuleSet,
   type FigureSymbolState,
 } from "../generation/figure-sequences";
+import type { FigureExplanationTrace } from "./figure-sequence-explanation-trace";
+
+const FIGURE_EXPLANATION_TRACE_VERSION = "figure-sequence-explanation-trace@1";
 
 export type FigureRulePresentation = {
   symbolId: string;
@@ -14,7 +15,7 @@ export type FigureRulePresentation = {
 };
 
 export type FigureChange = {
-  label: "Position" | "Orientation" | "Colour";
+  label: "Position" | "Orientation" | "Colour" | "Count";
   before: string;
   after: string;
 };
@@ -53,7 +54,21 @@ export type FigureExplanationStep =
       beforeFrame: FigureFrame;
       afterFrame: FigureFrame;
       missingIndex: 0 | 1;
+      rulesFound: FigureRulePresentation[];
+      isFinal: false;
+    }
+  | {
+      id: string;
+      type: "match_option";
+      eyebrow: "MATCH THE RESULT";
+      title: string;
+      instruction: string;
+      activeSymbolId: null;
+      beforeFrame: FigureFrame;
+      afterFrame: FigureFrame;
+      missingIndex: 0 | 1;
       correctOptionLabel: string;
+      distractorDifferences: Array<{ optionLabel: string; differences: string[] }>;
       rulesFound: FigureRulePresentation[];
       isFinal: boolean;
     };
@@ -70,10 +85,6 @@ function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null;
-}
-
-function sameFrame(first: FigureFrame, second: FigureFrame): boolean {
-  return visibleFrameValue(first) === visibleFrameValue(second);
 }
 
 function titleCase(value: string): string {
@@ -133,6 +144,23 @@ function changesBetween(before: FigureSymbolState, after: FigureSymbolState): Fi
   return changes;
 }
 
+function frameDifferences(expected: FigureFrame, candidate: FigureFrame): string[] {
+  const candidateById = new Map(candidate.symbols.map((symbol) => [symbol.id, symbol]));
+  const differences = new Set<string>();
+  if (expected.symbols.length !== candidate.symbols.length) differences.add("symbol count");
+  expected.symbols.forEach((symbol) => {
+    const actual = candidateById.get(symbol.id);
+    if (!actual) differences.add("missing or extra symbol");
+    else {
+      if (actual.row !== symbol.row || actual.column !== symbol.column) differences.add("position");
+      if (actual.orientation !== symbol.orientation) differences.add("orientation");
+      if (actual.color !== symbol.color) differences.add("colour");
+      if (actual.fill !== symbol.fill) differences.add("fill");
+    }
+  });
+  return [...differences];
+}
+
 function fallback(correctLabels: string[]): FigureWalkthrough {
   return {
     valid: false,
@@ -160,11 +188,19 @@ export function buildFigureSequenceWalkthrough(
   const correctLabels = correctCandidates.every(Boolean)
     ? correctCandidates.map((candidate) => candidate?.label ?? "")
     : [];
-  const trace = record(rawTrace);
-  if (!trace || !Array.isArray(trace.rules) || !correctCandidates.every(Boolean)) {
+  const traceRecord = record(rawTrace);
+  if (
+    traceRecord?.version !== FIGURE_EXPLANATION_TRACE_VERSION ||
+    !Array.isArray(traceRecord.rules) ||
+    !Array.isArray(traceRecord.replayedFrames) ||
+    !Array.isArray(traceRecord.boundaryEvents) ||
+    !Array.isArray(traceRecord.correctOptionLabels) ||
+    !correctCandidates.every(Boolean)
+  ) {
     return fallback(correctLabels);
   }
-  const rules = trace.rules as FigureSymbolRuleSet[];
+  const trace = rawTrace as FigureExplanationTrace;
+  const rules = trace.rules;
   const firstFrame = sequence.visibleFrames[0];
   if (
     !firstFrame ||
@@ -177,20 +213,12 @@ export function buildFigureSequenceWalkthrough(
     )
   ) return fallback(correctLabels);
 
-  let replayed: FigureFrame[];
-  let boundaryEvents: ReturnType<typeof replayFigureSequenceDetailed>["boundaryEvents"];
-  try {
-    const simulation = replayFigureSequenceDetailed(sequence.grid, firstFrame, rules, 5);
-    replayed = simulation.frames;
-    boundaryEvents = simulation.boundaryEvents;
-  } catch {
-    return fallback(correctLabels);
-  }
+  const replayed = trace.replayedFrames;
+  const boundaryEvents = trace.boundaryEvents;
   if (
-    !sequence.visibleFrames.every((frame, index) => sameFrame(frame, replayed[index])) ||
-    !correctCandidates.every((candidate, index) =>
-      candidate ? sameFrame(candidate.frame, replayed[index + 4]) : false,
-    )
+    replayed.length !== 6 ||
+    trace.correctOptionLabels.length !== 2 ||
+    !trace.correctOptionLabels.every((label, index) => label === correctLabels[index])
   ) return fallback(correctLabels);
 
   const labels = symbolLabels(firstFrame);
@@ -213,7 +241,7 @@ export function buildFigureSequenceWalkthrough(
       type: "track_symbol",
       eyebrow: "TRACK ONE SYMBOL",
       title: `Track the ${label.toLowerCase()}`,
-      instruction: "Compare Frame 1 with Frame 2. Ignore the faded symbols for now.",
+      instruction: "Compare Frame 1 and Frame 2.",
       activeSymbolId: rule.symbolId,
       symbolLabel: label,
       beforeFrame: replayed[0],
@@ -251,7 +279,26 @@ export function buildFigureSequenceWalkthrough(
       beforeFrame: replayed[missingIndex + 3],
       afterFrame: replayed[missingIndex + 4],
       missingIndex,
+      rulesFound: rulePresentations,
+      isFinal: false,
+    });
+    steps.push({
+      id: `match:${missingIndex}`,
+      type: "match_option",
+      eyebrow: "MATCH THE RESULT",
+      title: `Match missing matrix ${missingIndex + 1}`,
+      instruction: "Now compare the constructed frame with the answer options.",
+      activeSymbolId: null,
+      beforeFrame: replayed[missingIndex + 3],
+      afterFrame: replayed[missingIndex + 4],
+      missingIndex,
       correctOptionLabel: correctLabels[missingIndex],
+      distractorDifferences: sequence.missingMatrices[missingIndex].candidates
+        .filter((candidate) => candidate.id !== correctIds[missingIndex])
+        .map((candidate) => ({
+          optionLabel: candidate.label,
+          differences: frameDifferences(replayed[missingIndex + 4], candidate.frame),
+        })),
       rulesFound: rulePresentations,
       isFinal: missingIndex === 1,
     });

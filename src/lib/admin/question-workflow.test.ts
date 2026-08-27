@@ -87,17 +87,22 @@ describe("generated-question preview and explicit publication", () => {
   it("publishes only through separately authorized actions", () => {
     const actions = source("src/app/admin/actions.ts");
     [
-      ["publishGeneratedEquationAction", "createPublishedGeneratedEquation"],
-      ["publishGeneratedLatinAction", "createPublishedGeneratedLatin"],
-      ["publishGeneratedFigureAction", "createPublishedGeneratedFigure"],
-    ].forEach(([actionName, persistenceName]) => {
+      "publishGeneratedEquationAction",
+      "publishGeneratedLatinAction",
+      "publishGeneratedFigureAction",
+    ].forEach((actionName) => {
       const action = exportedFunction(actions, actionName);
       expect(action).toContain('requireRole(["admin"])');
-      expect(action).toContain(persistenceName);
-      expect(action).toContain("reproduceValidated");
-      expect(action).toContain("fingerprint");
-      expect(action).toContain("revalidateGeneratedQuestionPaths");
+      expect(action).toContain("publishIndividualGeneratedQuestion");
     });
+    expect(actions).toContain("async function publishOneGeneratedQuestion");
+    expect(actions).toContain("reproduceValidatedMathematicalEquation");
+    expect(actions).toContain("reproduceValidatedLatinSquare");
+    expect(actions).toContain("reproduceValidatedFigureSequence");
+    expect(actions).toContain("createPublishedGeneratedEquation");
+    expect(actions).toContain("createPublishedGeneratedLatin");
+    expect(actions).toContain("createPublishedGeneratedFigure");
+    expect(actions).toContain("revalidateGeneratedQuestionPaths");
   });
 
   it("persists only an explicit publish with approved/published state and timestamp", () => {
@@ -118,13 +123,50 @@ describe("generated-question preview and explicit publication", () => {
       component.indexOf("function publish("),
     );
     expect(generateHandler).not.toContain("publishGenerated");
-    expect(component).toContain("Question preview");
+    expect(component).toContain("Generated questions");
     expect(component).toContain("Preview only");
     expect(component).toContain("Publish Question");
     expect(component).toContain("Generate Another");
     expect(component).toContain("Discard");
     expect(component).not.toContain("Generate & Publish");
     expect(component).not.toContain("Published automatically");
+  });
+
+  it("adds an authorized, validated, partial-success Publish All workflow", () => {
+    const actions = source("src/app/admin/actions.ts");
+    const action = exportedFunction(actions, "publishGeneratedQuestionsAction");
+    const component = source("src/components/admin/equation-generator.tsx");
+    expect(action).toContain('requireRole(["admin"])');
+    expect(action).toContain("generatedQuestionPublishItemSchema.safeParse");
+    expect(action).toContain("runGeneratedQuestionBatch");
+    expect(actions).toContain("reproduceValidatedMathematicalEquation");
+    expect(actions).toContain("reproduceValidatedLatinSquare");
+    expect(actions).toContain("reproduceValidatedFigureSequence");
+    expect(actions).toContain("assessGeneratedQuestionEnvelope");
+    expect(component).toContain("Publish All (${readyQuestions.length})");
+    expect(component).toContain("Publish Question");
+    expect(component).toContain("batchRequestActive.current");
+    expect(component).toContain("could not be published");
+    expect(component).toContain("Retry Publish");
+    expect(component).toContain("Current status");
+    expect(component).toContain("Publish eligibility");
+    expect(component).toContain("Failure reason");
+    expect(component).toContain("Published");
+  });
+
+  it("keeps Discard separate from Delete and confirms batch discard", () => {
+    const component = source("src/components/admin/equation-generator.tsx");
+    expect(component).toContain("Discard All");
+    expect(component).toContain("Discarded previews are removed from this page");
+    expect(component).not.toContain("Delete All");
+    expect(component).toContain("publishedIds[question.metadata.fingerprint]");
+  });
+
+  it("revalidates student and admin destinations after successful batch publication", () => {
+    const actions = source("src/app/admin/actions.ts");
+    ["/admin", "/admin/generate", "/admin/review", "/practice", "/tests"].forEach((path) => {
+      expect(actions).toContain(`revalidatePath("${path}")`);
+    });
   });
 
   it("keeps database defaults and triggers safe for unpublished records", () => {

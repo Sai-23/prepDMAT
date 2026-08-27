@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { generateValidatedFigureSequence } from "../../lib/generation/figure-sequences";
+import { createVerifiedFigureExplanationTrace } from "../../lib/practice/figure-sequence-explanation-trace";
 import { FigureSequencePracticeFeedback } from "./figure-sequence-practice-feedback";
 
 function fixture(difficulty: "easy" | "medium" | "hard") {
@@ -44,7 +45,7 @@ function renderFeedback({
         isCorrect={!wrong}
         selectedAnswer={selected}
         sequence={question.sequence}
-        trace={{ rules: question.structuredData.rules }}
+        trace={createVerifiedFigureExplanationTrace(question.sequence, { rules: question.structuredData.rules }, question.correctAnswer, question.solutionFrames)}
       />,
     ),
   };
@@ -58,7 +59,7 @@ describe("FigureSequencePracticeFeedback", () => {
       expect(html).toContain("Track the");
       expect(html).toContain("Old position");
       expect(html).toContain("New position");
-      expect(html).toContain("Rules found");
+      expect(html).toContain('data-rule-summary="figure-sequence"');
       expect(html).toContain('stroke-dasharray="5 4"');
       if (difficulty !== "easy") {
         expect(html).toContain('opacity="0.18"');
@@ -73,16 +74,16 @@ describe("FigureSequencePracticeFeedback", () => {
     expect(html).toContain("Position");
     expect(html).toContain("Orientation");
     expect(html).toContain("rotate");
-    expect(html).toContain('aria-pressed="');
+    expect(html).toContain('data-figure-comparison="before-after"');
     expect(html).not.toContain("symbol-");
   });
 
   it("walks through both missing matrices and shows option images", () => {
     const question = fixture("medium");
-    const finalStep = question.structuredData.rules.length + 1;
+    const finalStep = question.structuredData.rules.length + 3;
     const { html } = renderFeedback({ difficulty: "medium", wrong: true, initialStep: finalStep });
-    expect(html).toContain("Predict missing matrix 2");
-    expect(html).toContain("Apply the same rules one more time");
+    expect(html).toContain("Match missing matrix 2");
+    expect(html).toContain("Now compare the constructed frame with the answer options");
     expect(html).toContain('data-answer-comparison="figure-sequence"');
     expect(html).toContain("Your matrix 1");
     expect(html).toContain("Correct matrix 2");
@@ -95,8 +96,27 @@ describe("FigureSequencePracticeFeedback", () => {
     const { html } = renderFeedback({ difficulty: "hard", initialView: "all" });
     expect(html).toContain('data-walkthrough-view="all"');
     expect(html).toContain("Show one step at a time");
-    expect(html).toContain("min-h-10");
     expect(html).toContain("lg:grid-cols-");
     expect(html).toContain("motion-reduce:transition-none");
+    expect(html).toContain("sm:rotate-0");
+  });
+
+  it("constructs a missing frame before revealing its option match", () => {
+    const question = fixture("medium");
+    const { html } = renderFeedback({ difficulty: "medium", initialStep: question.structuredData.rules.length });
+    expect(html).toContain("Sequence overview");
+    expect(html).toContain("missing matrix 1");
+    expect(html).not.toContain("The result matches Option");
+    expect(html).not.toContain('data-answer-comparison="figure-sequence"');
+    expect(html).toContain("grid-cols-3");
+    expect(html).toContain("sm:grid-cols-6");
+  });
+
+  it("keeps verification evidence internal and renders the active rule once", () => {
+    const { html } = renderFeedback({ difficulty: "hard" });
+    expect(html).not.toContain("Verified across every transition");
+    expect(html).not.toContain("All transitions for");
+    expect(html).not.toContain("Ignore the faded symbols for now");
+    expect(html.match(/data-rule-summary="figure-sequence"/g)).toHaveLength(1);
   });
 });

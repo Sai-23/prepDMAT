@@ -1,6 +1,11 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/guards";
+import { safeActionFailure } from "@/lib/security/public-errors";
+import {
+  enforceSecurityRateLimit,
+  rateLimitActionError,
+} from "@/lib/security/rate-limit";
 import {
   abandonPracticeSession,
   completePracticeSession,
@@ -19,19 +24,23 @@ import {
   practiceReportSchema,
 } from "@/lib/practice/schemas";
 
-function message(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
-
 export async function startPracticeAction(input: unknown) {
   const user = await requireUser();
   const parsed = practiceConfigSchema.safeParse(input);
   if (!parsed.success) return { error: "Check the practice settings and try again." };
   try {
+    await enforceSecurityRateLimit("generation:practice", { userId: user.id });
+  } catch (error) {
+    return { ...rateLimitActionError(error), session: undefined };
+  }
+  try {
     const session = await createPracticeSession(user.id, parsed.data);
     return session ? { error: null, session } : { error: "Unable to restore the new practice session." };
   } catch (error) {
-    return { error: message(error, "Unable to start practice right now.") };
+    return {
+      ...safeActionFailure(error, "Unable to start practice right now."),
+      session: undefined,
+    };
   }
 }
 
@@ -43,7 +52,7 @@ export async function showPracticeQuestionAction(input: unknown) {
     await markPracticeQuestionShown(user.id, parsed.data.sessionId, parsed.data.questionId);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to restore response timing.") };
+    return safeActionFailure(error, "Unable to restore response timing.");
   }
 }
 
@@ -54,7 +63,7 @@ export async function submitPracticeAnswerAction(input: unknown) {
   try {
     return { error: null, ...(await recordPracticeAnswer(user.id, parsed.data)) };
   } catch (error) {
-    return { error: message(error, "Unable to save this answer.") };
+    return safeActionFailure(error, "Unable to save this answer.");
   }
 }
 
@@ -65,7 +74,10 @@ export async function nextPracticeQuestionAction(input: unknown) {
   try {
     return { error: null, session: await getNextPracticeQuestion(user.id, parsed.data.sessionId) };
   } catch (error) {
-    return { error: message(error, "Unable to load the next question.") };
+    return {
+      ...safeActionFailure(error, "Unable to load the next question."),
+      session: undefined,
+    };
   }
 }
 
@@ -76,7 +88,10 @@ export async function completePracticeAction(input: unknown) {
   try {
     return { error: null, summary: await completePracticeSession(user.id, parsed.data.sessionId) };
   } catch (error) {
-    return { error: message(error, "Unable to complete this practice session.") };
+    return {
+      ...safeActionFailure(error, "Unable to complete this practice session."),
+      summary: undefined,
+    };
   }
 }
 
@@ -88,7 +103,7 @@ export async function abandonPracticeAction(input: unknown) {
     await abandonPracticeSession(user.id, parsed.data.sessionId);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to leave this practice session.") };
+    return safeActionFailure(error, "Unable to leave this practice session.");
   }
 }
 
@@ -100,7 +115,7 @@ export async function openPracticeExplanationAction(input: unknown) {
     await openPracticeExplanation(user.id, parsed.data.sessionId, parsed.data.questionId);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to record explanation activity.") };
+    return safeActionFailure(error, "Unable to record explanation activity.");
   }
 }
 
@@ -112,6 +127,6 @@ export async function reportPracticeQuestionAction(input: unknown) {
     await reportPracticeQuestion(user.id, parsed.data);
     return { error: null, success: true };
   } catch (error) {
-    return { error: message(error, "Unable to report this question.") };
+    return safeActionFailure(error, "Unable to report this question.");
   }
 }

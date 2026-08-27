@@ -2,7 +2,6 @@ import type { Route } from "next";
 import {
   ArrowRight,
   Clock3,
-  Crown,
   FileCheck2,
   Layers3,
   Sparkles,
@@ -44,31 +43,31 @@ export default async function TestsPage() {
 
   try {
     tests = await getTestCatalog(user.id);
-  } catch (error) {
-    loadError =
-      error instanceof Error ? error.message : "Unable to load published tests.";
+  } catch {
+    loadError = "Unable to load published tests.";
   }
+  const visibleTests = tests?.filter((test) => test.hasAccess) ?? null;
 
   return (
     <PageShell
       eyebrow="Mock tests"
-      title="Timed tests built for realistic preparation"
-      description="Choose a diagnostic, mini mock, sectional test, or full simulation. Answers are autosaved and feedback is delayed until submission."
+      title="Practise under test conditions"
+      description="Take a full official-format Core mock or choose a shorter custom test. Answers are saved and feedback stays hidden until submission."
     >
       {onDemandEnabled ? (
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-primary bg-primary-muted">
           <CardHeader>
             <div className="flex items-center gap-3">
               <span className="rounded-2xl bg-blue-100 p-3 text-blue-700">
                 <Sparkles aria-hidden="true" className="h-5 w-5" />
               </span>
               <div>
-                <Badge variant="success">Generated Core Mock</Badge>
-                <CardTitle className="mt-2">Create a fresh full Core mock</CardTitle>
+                <Badge variant="success">Official Core format</Badge>
+                <CardTitle className="mt-2">Full Core mock</CardTitle>
               </div>
             </div>
             <CardDescription className="max-w-3xl pt-2">
-              {coreQuestionCount} questions across {coreSections.length} Core sections. Each section has {Math.round(coreSections[0].durationSeconds / 60)} minutes and uses recent-mock history to reduce near-term structural repetition.
+              {coreQuestionCount} questions across {coreSections.length} sections · {Math.round(coreSections[0].durationSeconds / 60)} minutes per section · approximately 90 minutes including transitions.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -77,31 +76,25 @@ export default async function TestsPage() {
         </Card>
       ) : null}
 
-      {loadError || !tests ? (
+      {loadError || !visibleTests ? (
         <ErrorState
           title="Test catalog unavailable"
           description={loadError ?? "Unable to load published tests."}
         />
-      ) : tests.length === 0 ? (
+      ) : visibleTests.length === 0 ? (
         <EmptyState
           title="No tests are published yet"
-          description="Create test sections, assign approved questions, and publish the test to make it available here."
+          description="Your available custom mocks will appear here. You can start with the full Core mock above."
         />
       ) : (
-        <div className="grid gap-5 md:grid-cols-2">
-          {tests.map((test) => (
+        <section aria-labelledby="other-mocks" className="space-y-4">
+          <div><h2 className="text-xl font-semibold" id="other-mocks">Other mock tests</h2><p className="mt-1 text-sm text-muted-foreground">Shorter and custom tests for extra practice.</p></div>
+          <div className="grid gap-5 md:grid-cols-2">
+          {visibleTests.map((test) => (
             <Card className="flex flex-col" key={test.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <Badge>{test.testType.replaceAll("_", " ")}</Badge>
-                  {test.isPremium ? (
-                    <Badge variant="warning">
-                      <Crown aria-hidden="true" className="mr-1 h-3 w-3" />
-                      Premium
-                    </Badge>
-                  ) : (
-                    <Badge variant="success">Free</Badge>
-                  )}
                 </div>
                 <CardTitle className="pt-2 text-xl">{test.title}</CardTitle>
                 <CardDescription>
@@ -129,16 +122,17 @@ export default async function TestsPage() {
                     </p>
                   </div>
                 </div>
-                <Button asChild variant={test.hasAccess ? "default" : "secondary"}>
+                <Button asChild>
                   <Link href={`/tests/${test.id}` as Route}>
-                    {test.hasAccess ? "View test" : "View premium test"}
+                    View test
                     <ArrowRight aria-hidden="true" className="h-4 w-4" />
                   </Link>
                 </Button>
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        </section>
       )}
     </PageShell>
   );

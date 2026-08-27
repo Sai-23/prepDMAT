@@ -1,6 +1,11 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/guards";
+import { safeActionFailure } from "@/lib/security/public-errors";
+import {
+  enforceSecurityRateLimit,
+  rateLimitActionError,
+} from "@/lib/security/rate-limit";
 import {
   advanceDiagnosticQuestion,
   completeInitialDiagnostic,
@@ -15,10 +20,6 @@ import {
   practiceQuestionIdentitySchema,
 } from "@/lib/practice/schemas";
 
-function message(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
-
 export async function finishOnboardingAction(preference: "practice_first" | "explore") {
   const user = await requireUser();
   if (preference !== "practice_first" && preference !== "explore") {
@@ -28,17 +29,22 @@ export async function finishOnboardingAction(preference: "practice_first" | "exp
     await completeOnboardingWithoutDiagnostic(user.id, preference);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to save your choice.") };
+    return safeActionFailure(error, "Unable to save your choice.");
   }
 }
 
 export async function startDiagnosticAction() {
   const user = await requireUser();
   try {
+    await enforceSecurityRateLimit("generation:diagnostic", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
+  try {
     await startInitialDiagnostic(user.id);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to start the diagnostic.") };
+    return safeActionFailure(error, "Unable to start the diagnostic.");
   }
 }
 
@@ -50,7 +56,7 @@ export async function showDiagnosticQuestionAction(input: unknown) {
     await showDiagnosticQuestion(user.id, parsed.data.sessionId, parsed.data.questionId);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to start response timing.") };
+    return safeActionFailure(error, "Unable to start response timing.");
   }
 }
 
@@ -62,7 +68,7 @@ export async function submitDiagnosticAnswerAction(input: unknown) {
     await saveDiagnosticAnswer(user.id, parsed.data);
     return { error: null, saved: true as const };
   } catch (error) {
-    return { error: message(error, "Unable to save this answer.") };
+    return safeActionFailure(error, "Unable to save this answer.");
   }
 }
 
@@ -73,7 +79,7 @@ export async function nextDiagnosticQuestionAction(input: unknown) {
   try {
     return { error: null, session: await advanceDiagnosticQuestion(user.id, parsed.data.sessionId) };
   } catch (error) {
-    return { error: message(error, "Unable to load the next question.") };
+    return safeActionFailure(error, "Unable to load the next question.");
   }
 }
 
@@ -85,6 +91,6 @@ export async function completeDiagnosticAction(input: unknown) {
     await completeInitialDiagnostic(user.id, parsed.data.sessionId);
     return { error: null };
   } catch (error) {
-    return { error: message(error, "Unable to complete the diagnostic.") };
+    return safeActionFailure(error, "Unable to complete the diagnostic.");
   }
 }

@@ -14,6 +14,6 @@ Audited 1,000 completed Core mocks across eleven declared profiles.
 
 | Mocks | Milliseconds |
 | ---: | ---: |
-| 1 | 0.059 |
-| 10 | 0.318 |
-| 100 | 5.49 |
+| 1 | 0.078 |
+| 10 | 0.486 |
+| 100 | 6.93 |

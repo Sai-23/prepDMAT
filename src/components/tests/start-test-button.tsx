@@ -9,10 +9,8 @@ import { Button } from "@/components/ui/button";
 
 export function StartTestButton({
   testId,
-  hasAccess,
 }: {
   testId: string;
-  hasAccess: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +33,8 @@ export function StartTestButton({
 
   return (
     <div className="space-y-3">
-      <Button className="w-full" disabled={!hasAccess || pending} onClick={start}>
-        {hasAccess
-          ? pending
-            ? "Preparing test..."
-            : "Start or resume test"
-          : "Premium access required"}
+      <Button className="w-full" disabled={pending} onClick={start}>
+        {pending ? "Preparing test..." : "Start or resume test"}
       </Button>
       {error ? (
         <p className="text-sm text-red-700" role="alert">

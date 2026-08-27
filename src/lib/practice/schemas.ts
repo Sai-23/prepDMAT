@@ -3,6 +3,9 @@ import { z } from "zod";
 import { DIFFICULTIES, MODULES, QUESTION_TYPES } from "../../types/questions";
 import { CORE_SKILLS } from "../progress/skills";
 import type { EducationalExplanation } from "./educational-explanation";
+import type { FigureExplanationTrace } from "./figure-sequence-explanation-trace";
+import type { LatinExplanationTrace } from "./latin-square-explanation-trace";
+import type { EquationExplanationTrace } from "./mathematical-equation-explanation";
 
 export const PRACTICE_MODULES = QUESTION_TYPES;
 export const PRACTICE_DIFFICULTIES = ["easy", "medium", "hard", "mixed"] as const;
@@ -87,6 +90,9 @@ export type PracticeFeedback = {
   correctAnswer: unknown;
   explanation: string;
   explanationTrace?: unknown;
+  figureExplanationTrace?: FigureExplanationTrace;
+  latinExplanationTrace?: LatinExplanationTrace;
+  mathematicalExplanationTrace?: EquationExplanationTrace;
   educationalExplanation?: EducationalExplanation;
 };
 

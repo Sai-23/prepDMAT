@@ -9,10 +9,12 @@ import { createPracticeSnapshots, gradePracticeAnswer } from "./native";
 describe("native practice snapshots", () => {
   it("removes figure answer identifiers from the browser snapshot", () => {
     const question = generateValidatedFigureSequence({ seed: "practice-figure", difficulty: "easy" });
-    const result = createPracticeSnapshots({ id: "id", module: "core", questionType: "figure_sequence", topic: "Figure", subtopic: null, difficulty: "easy", questionText: "Next?", passage: null, code: null, formula: null, tableData: null, imageUrl: null, estimatedTimeSeconds: 60, structuredData: { task: question.structuredData, sequence: question.sequence, response: question.response }, metadata: { generation: question.metadata, correctAnswer: question.correctAnswer }, explanation: question.explanation, options: [], correctOptionId: null, sourceType: "generated" });
+    const result = createPracticeSnapshots({ id: "id", module: "core", questionType: "figure_sequence", topic: "Figure", subtopic: null, difficulty: "easy", questionText: "Next?", passage: null, code: null, formula: null, tableData: null, imageUrl: null, estimatedTimeSeconds: 60, structuredData: { task: question.structuredData, sequence: question.sequence, solutionFrames: question.solutionFrames, response: question.response }, metadata: { generation: question.metadata, correctAnswer: question.correctAnswer }, explanation: question.explanation, options: [], correctOptionId: null, sourceType: "generated" });
     expect(JSON.stringify(result.publicQuestion)).not.toContain("-correct");
     expect(JSON.stringify(result.publicQuestion)).not.toContain("rules");
+    expect(JSON.stringify(result.publicQuestion)).not.toContain("figure-sequence-explanation-trace@1");
     expect(result.privateSnapshot.explanationTrace).toEqual({ rules: question.structuredData.rules });
+    expect(result.privateSnapshot.figureExplanationTrace?.version).toBe("figure-sequence-explanation-trace@1");
     expect(result.privateSnapshot.educationalExplanation?.version).toBe("educational-explanation@1");
     expect(JSON.stringify(result.publicQuestion)).not.toContain("educational-explanation@1");
     expect(gradePracticeAnswer({ kind: "two_stage_single_choice", optionIds: result.privateSnapshot.correctAnswer as [string, string] }, result.privateSnapshot)).toBe(true);
@@ -37,13 +39,17 @@ describe("native practice snapshots", () => {
         task: question.structuredData,
         response: question.response,
         deductionTrace: question.deductionTrace,
+        completedGrid: question.completedGrid,
       },
       metadata: { generation: question.metadata, correctAnswer: question.correctAnswer },
       explanation: question.explanation, options: [], correctOptionId: null, sourceType: "generated",
     });
     expect(JSON.stringify(result.publicQuestion)).not.toContain("deductionTrace");
     expect(JSON.stringify(result.publicQuestion)).not.toContain("correctAnswer");
+    expect(JSON.stringify(result.publicQuestion)).not.toContain("completedGrid");
+    expect(JSON.stringify(result.publicQuestion)).not.toContain("latin-square-explanation-trace@1");
     expect(result.privateSnapshot.explanationTrace).toEqual(question.deductionTrace);
+    expect(result.privateSnapshot.latinExplanationTrace?.completedGrid).toEqual(question.completedGrid);
     expect(result.privateSnapshot.educationalExplanation?.validation.source).toBe("deduction_graph");
   });
 
@@ -69,6 +75,8 @@ describe("native practice snapshots", () => {
     expect(JSON.stringify(result.publicQuestion)).not.toContain("dependencyModel");
     expect(JSON.stringify(result.publicQuestion)).not.toContain("solveOrder");
     expect(result.privateSnapshot.explanationTrace).toEqual(question.solutionPath);
+    expect(result.privateSnapshot.mathematicalExplanationTrace?.version).toBe("mathematical-equation-explanation-trace@1");
+    expect(result.privateSnapshot.mathematicalExplanationTrace?.solveTrace.resolvedAssignment).toEqual(question.correctAnswer);
     expect(result.privateSnapshot.educationalExplanation?.validation.source).toBe("solver");
   });
 });

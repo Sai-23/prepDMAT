@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { latinSquareGenerator } from "./generator";
-import { latinSquareSolver } from "./solver";
+import { findUniqueLatinGridSolution, latinSquareSolver } from "./solver";
+import type { VisibleLatinGrid } from "./types";
 
 describe("LatinSquareSolver", () => {
   it("proves a target value from visible clues only", () => {
@@ -40,5 +41,17 @@ describe("LatinSquareSolver", () => {
     candidate.structuredData.grid[0][0] = "A";
     candidate.structuredData.grid[0][1] = "A";
     expect(latinSquareSolver.solve(candidate).status).toBe("invalid");
+  });
+
+  it("reconstructs a complete grid only when the visible grid has one completion", () => {
+    const candidate = latinSquareGenerator.generate(
+      { seed: "solver-reconstruct-legacy", difficulty: "easy" },
+      1,
+    );
+    const { target } = candidate.structuredData;
+    const nearlyComplete: VisibleLatinGrid = candidate.completedGrid.map((row) => [...row]);
+    nearlyComplete[target.row][target.column] = null;
+    expect(findUniqueLatinGridSolution(nearlyComplete)).toEqual(candidate.completedGrid);
+    expect(findUniqueLatinGridSolution(Array.from({ length: 5 }, () => Array(5).fill(null)))).toBeNull();
   });
 });

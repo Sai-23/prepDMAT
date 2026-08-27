@@ -1,7 +1,6 @@
 import {
   CheckCircle2,
   Clock3,
-  Crown,
   FileQuestion,
   Layers3,
   ShieldCheck,
@@ -35,10 +34,11 @@ export default async function TestOverviewPage({
   let loadError: string | null = null;
   try {
     test = await getTestOverview(user.id, parsed.data);
-  } catch (error) {
-    loadError = error instanceof Error ? error.message : "Unable to load this test.";
+  } catch {
+    loadError = "Unable to load this test.";
   }
   if (!loadError && !test) notFound();
+  if (!loadError && test && !test.hasAccess) notFound();
 
   return (
     <PageShell
@@ -61,14 +61,6 @@ export default async function TestOverviewPage({
               <CardHeader>
                 <div className="flex flex-wrap gap-2">
                   <Badge>{test.testType.replaceAll("_", " ")}</Badge>
-                  {test.isPremium ? (
-                    <Badge variant="warning">
-                      <Crown aria-hidden="true" className="mr-1 h-3 w-3" />
-                      Premium
-                    </Badge>
-                  ) : (
-                    <Badge variant="success">Free access</Badge>
-                  )}
                 </div>
                 <CardTitle className="pt-2">Before you begin</CardTitle>
               </CardHeader>
@@ -111,6 +103,7 @@ export default async function TestOverviewPage({
                     <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                     The attempt is automatically submitted when time expires.
                   </li>
+                  {test.sectionCount > 1 ? <li className="flex gap-3"><Layers3 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />When a timed section ends, the test moves forward and you cannot return to that section.</li> : null}
                 </ul>
               </CardContent>
             </Card>
@@ -153,7 +146,7 @@ export default async function TestOverviewPage({
                 Starting creates a timed attempt. If you already have an active attempt,
                 it will resume from your saved responses.
               </p>
-              <StartTestButton testId={test.id} hasAccess={test.hasAccess} />
+              <StartTestButton testId={test.id} />
             </CardContent>
           </Card>
         </div>

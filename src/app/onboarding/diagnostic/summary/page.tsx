@@ -23,7 +23,7 @@ export default async function OnboardingDiagnosticSummaryPage() {
     <PageShell
       eyebrow="Initial signal"
       title="Your starting Core profile"
-      description="This short diagnostic is an initial guide, not an official score prediction. Practice and Core Mocks will build stronger evidence over time."
+      description="This short diagnostic is a starting guide, not an official score prediction. Practice and Core Mocks will make your next steps more useful over time."
     >
       <div className="mx-auto max-w-5xl space-y-6">
         <Card>

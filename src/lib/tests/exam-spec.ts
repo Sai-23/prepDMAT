@@ -42,3 +42,31 @@ export function activeSectionAt(
   }
   return null;
 }
+
+export function activeSectionFromCursor(
+  sections: ExamSectionSnapshot[],
+  cursor: {
+    currentSectionId: string | null;
+    sectionStartedAtMs: number | null;
+    sectionExpiresAtMs: number | null;
+  },
+  nowMs: number,
+) {
+  if (!sections.length) return null;
+  let sectionIndex = Math.max(
+    0,
+    sections.findIndex((section) => section.id === cursor.currentSectionId),
+  );
+  let startedAt = cursor.sectionStartedAtMs ?? nowMs;
+  let expiresAt = cursor.sectionExpiresAtMs ??
+    startedAt + sections[sectionIndex].durationSeconds * 1000;
+
+  while (nowMs >= expiresAt) {
+    sectionIndex += 1;
+    if (sectionIndex >= sections.length) return null;
+    startedAt = expiresAt;
+    expiresAt = startedAt + sections[sectionIndex].durationSeconds * 1000;
+  }
+
+  return { section: sections[sectionIndex], sectionIndex, startedAt, expiresAt };
+}

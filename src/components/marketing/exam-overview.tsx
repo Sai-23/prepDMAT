@@ -6,8 +6,8 @@ const modules = [
   {
     title: "Core Module",
     description:
-      "Figure sequences, mathematical equations, and 5×5 Latin Squares with structured generation and validation pipelines.",
-    tags: ["SVG figures", "Deterministic logic", "Timed drills"],
+      "Figure Sequences, Mathematical Equations, and 5×5 Latin Squares in the same formats you use in Practice.",
+    tags: ["Visual patterns", "Number reasoning", "Timed practice"],
   },
 ];
 
@@ -17,7 +17,7 @@ export function ExamOverview() {
       <SectionHeading
         eyebrow="Exam structure"
         title="A focused foundation for the Core Module"
-        description="Phase 1 establishes the shared architecture needed for SVG-based figures, structured data payloads, review workflows, and realistic test delivery."
+        description="Learn the three Core formats before you practise against the clock."
       />
       <div className="grid gap-5">
         {modules.map((module) => (

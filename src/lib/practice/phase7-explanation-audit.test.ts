@@ -16,6 +16,9 @@ import {
   type EducationalExplanation,
   type MistakeFeedback,
 } from "./educational-explanation";
+import { createVerifiedEquationExplanationTrace } from "./mathematical-equation-explanation-trace";
+import { createVerifiedFigureExplanationTrace } from "./figure-sequence-explanation-trace";
+import { createVerifiedLatinExplanationTrace } from "./latin-square-explanation-trace";
 
 const ENABLED = process.env.RUN_PHASE7_EXPLANATION_AUDIT === "1";
 const MODULE = process.env.PHASE7_AUDIT_MODULE ?? "figure_sequence";
@@ -53,7 +56,7 @@ function prohibitedClaim(explanation: EducationalExplanation): boolean {
 function makeOne(module: string, difficulty: Difficulty, seed: string) {
   if (module === "figure_sequence") {
     const question = generateValidatedFigureSequence({ seed, difficulty, maxAttempts: 5_000 });
-    const trace = { rules: question.structuredData.rules };
+    const trace = createVerifiedFigureExplanationTrace(question.sequence, { rules: question.structuredData.rules }, question.correctAnswer, question.solutionFrames);
     const explanation = buildFigureEducationalExplanation(question.sequence, trace, question.correctAnswer, difficulty);
     const wrong = question.sequence.missingMatrices.map((matrix, index) =>
       matrix.candidates.find((candidate) => candidate.id !== question.correctAnswer[index])?.id ?? "",
@@ -63,19 +66,20 @@ function makeOne(module: string, difficulty: Difficulty, seed: string) {
       correctAnswer: question.correctAnswer,
       wrong,
       diagnosis: diagnoseFigureMistake(question.sequence, wrong, question.correctAnswer),
-      internalMetadata: { rules: trace.rules, generatorVersion: question.metadata.generatorVersion },
+      internalMetadata: { rules: question.structuredData.rules, generatorVersion: question.metadata.generatorVersion },
     };
   }
   if (module === "mathematical_equation") {
     const question = generateValidatedMathematicalEquation({ seed, difficulty, maxAttempts: 100 });
-    const explanation = buildEquationEducationalExplanation(question.structuredData, question.solutionPath, question.correctAnswer, difficulty);
+    const trace = createVerifiedEquationExplanationTrace(question.structuredData, question.solutionPath, question.correctAnswer);
+    const explanation = buildEquationEducationalExplanation(question.structuredData, trace, question.correctAnswer, difficulty);
     const wrong = { ...question.correctAnswer };
     wrong[question.structuredData.variables[0]] += 1;
     return {
       explanation,
       correctAnswer: question.correctAnswer,
       wrong,
-      diagnosis: diagnoseEquationMistake(question.structuredData, question.solutionPath, wrong, question.correctAnswer),
+      diagnosis: diagnoseEquationMistake(question.structuredData, trace, wrong, question.correctAnswer),
       internalMetadata: {
         solutionPath: question.solutionPath,
         dependencyModel: question.structuredData.dependencyModel,
@@ -85,7 +89,8 @@ function makeOne(module: string, difficulty: Difficulty, seed: string) {
     };
   }
   const question = generateValidatedLatinSquare({ seed, difficulty, maxAttempts: 5_000 });
-  const explanation = buildLatinEducationalExplanation(question.structuredData, question.deductionTrace, question.correctAnswer, difficulty);
+  const trace = createVerifiedLatinExplanationTrace(question.structuredData, question.deductionTrace, question.correctAnswer, question.completedGrid);
+  const explanation = buildLatinEducationalExplanation(question.structuredData, trace, question.correctAnswer, difficulty);
   const wrong = DEFAULT_LATIN_SYMBOLS.find((symbol) => symbol !== question.correctAnswer) ?? null;
   return {
     explanation,
