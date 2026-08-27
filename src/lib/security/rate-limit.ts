@@ -35,17 +35,17 @@ const POLICIES: Record<SecurityRateLimitOperation, RateLimitPolicy> = {
   },
   "auth:signup": {
     global: { maxAttempts: 100, windowSeconds: 60 },
-    account: { maxAttempts: 3, windowSeconds: 3600 },
+    account: { maxAttempts: 10, windowSeconds: 3600 },
     ip: { maxAttempts: 10, windowSeconds: 3600 },
   },
   "auth:resend": {
     global: { maxAttempts: 100, windowSeconds: 60 },
-    account: { maxAttempts: 3, windowSeconds: 3600 },
+    account: { maxAttempts: 10, windowSeconds: 3600 },
     ip: { maxAttempts: 10, windowSeconds: 3600 },
   },
   "auth:password-reset": {
     global: { maxAttempts: 100, windowSeconds: 60 },
-    account: { maxAttempts: 3, windowSeconds: 3600 },
+    account: { maxAttempts: 10, windowSeconds: 3600 },
     ip: { maxAttempts: 10, windowSeconds: 3600 },
   },
   "auth:phone-request": {
