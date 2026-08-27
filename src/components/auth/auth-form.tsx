@@ -136,9 +136,9 @@ function ResendVerificationForm({
 
 export function CheckEmail({ email, message }: { email: string; message: string }) {
   const router = useRouter();
-  const [verificationState, setVerificationState] = useState<"checking" | "waiting" | "verified">(
-    "checking",
-  );
+  const [verificationState, setVerificationState] = useState<
+    "checking" | "waiting" | "timed_out" | "verified"
+  >("checking");
 
   useEffect(() => {
     // Client Components are also prerendered by Next.js. Instantiate the
@@ -159,10 +159,11 @@ export function CheckEmail({ email, message }: { email: string; message: string 
         return () => data.subscription.unsubscribe();
       },
       onCheckingChange: (checking) => {
-        setVerificationState((current) => current === "verified"
+        setVerificationState((current) => current === "verified" || current === "timed_out"
           ? current
           : checking ? "checking" : "waiting");
       },
+      onTimeout: () => setVerificationState("timed_out"),
       onVerified: () => setVerificationState("verified"),
     });
   }, []);
@@ -184,11 +185,24 @@ export function CheckEmail({ email, message }: { email: string; message: string 
       )}
       <div className="space-y-2">
         <h2 className="text-xl font-semibold text-on-surface">
-          {verificationState === "verified" ? "Email verified" : "Check your email"}
+          {verificationState === "verified"
+            ? "Email verified"
+            : verificationState === "timed_out"
+              ? "Still waiting?"
+              : "Check your email"}
         </h2>
         <p className="text-sm leading-6 text-muted-foreground">
-          {verificationState === "verified" ? "You're all set." : message}
+          {verificationState === "verified"
+            ? "You're all set."
+            : verificationState === "timed_out"
+              ? "Already confirmed on another device? Sign in to continue on this device."
+              : message}
         </p>
+        {verificationState === "verified" ? null : (
+          <p className="text-sm leading-6 text-muted-foreground">
+            If you open the link in this browser, we&apos;ll continue automatically.
+          </p>
+        )}
         <p className="break-all text-sm font-semibold text-on-surface">
           {maskEmailAddress(email)}
         </p>
@@ -200,6 +214,8 @@ export function CheckEmail({ email, message }: { email: string; message: string 
             </>
           ) : verificationState === "verified" ? (
             "Taking you to your dashboard…"
+          ) : verificationState === "timed_out" ? (
+            "Automatic checking has stopped"
           ) : (
             "Waiting for verification"
           )}
@@ -208,6 +224,11 @@ export function CheckEmail({ email, message }: { email: string; message: string 
       {verificationState === "verified" ? null : (
         <ResendVerificationForm email={email} initialCooldown={60} />
       )}
+      {verificationState === "timed_out" ? (
+        <Button asChild className="min-h-11 w-full">
+          <Link href="/login">Sign in to continue</Link>
+        </Button>
+      ) : null}
       {verificationState === "verified" ? null : <a
         className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         href="/register"
@@ -248,7 +269,7 @@ export function AuthForm({
   const [state, formAction, pending] = useActionState(action, initialAuthState);
 
   if (state.status === "success" && state.view === "check_email" && state.email) {
-    return <CheckEmail email={state.email} message={state.message ?? "Confirm your email to continue."} />;
+    return <CheckEmail email={state.email} message={state.message ?? "Confirm your email to finish creating your account."} />;
   }
 
   return (

@@ -5,6 +5,7 @@ type VerificationMonitorOptions = {
   checkAuthenticated: () => Promise<boolean>;
   subscribeToAuthChanges: (notify: () => void) => () => void;
   onCheckingChange: (checking: boolean) => void;
+  onTimeout: () => void;
   onVerified: () => void;
 };
 
@@ -12,6 +13,7 @@ export function startVerificationMonitor({
   checkAuthenticated,
   subscribeToAuthChanges,
   onCheckingChange,
+  onTimeout,
   onVerified,
 }: VerificationMonitorOptions) {
   if (typeof window === "undefined" || typeof document === "undefined") {
@@ -22,6 +24,7 @@ export function startVerificationMonitor({
   let completed = false;
   let disposed = false;
   let pollCount = 0;
+  let timedOut = false;
 
   const check = async () => {
     if (checking || completed || disposed) return;
@@ -54,6 +57,10 @@ export function startVerificationMonitor({
     pollCount += 1;
     if (pollCount >= VERIFICATION_MAX_POLLS) {
       window.clearInterval(interval);
+      if (!completed && !disposed && !timedOut) {
+        timedOut = true;
+        onTimeout();
+      }
       return;
     }
     void check();

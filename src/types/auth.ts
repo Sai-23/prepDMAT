@@ -8,6 +8,12 @@ export type AuthUserSummary = {
   roles: UserRole[];
 };
 
+export type HeaderAccountState = {
+  userId: string;
+  displayName: string;
+  workspace: "admin" | "reviewer" | null;
+};
+
 export type Profile = {
   id: string;
   displayName: string | null;

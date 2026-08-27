@@ -2,19 +2,20 @@ import "server-only";
 
 import type { Route } from "next";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasAnyRole } from "@/lib/auth/roles";
 import type { UserRole } from "@/types/auth";
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   return user;
-}
+});
 
 export async function requireUser(redirectTo: Route = "/login") {
   const user = await getCurrentUser();

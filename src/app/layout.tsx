@@ -5,8 +5,7 @@ import "@fontsource-variable/jetbrains-mono";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isThemePreference, type ThemePreference } from "@/lib/theme";
+import { resolveRootAuthState } from "@/lib/auth/root-auth-state";
 import { getEnv } from "@/lib/validators/env";
 
 import "./globals.css";
@@ -20,31 +19,10 @@ export const metadata: Metadata = {
     "Independent preparation platform for realistic dMAT Core practice, mock tests, and performance analytics.",
 };
 
-async function getProfileTheme(): Promise<ThemePreference> {
-  try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return "system";
-
-    const { data } = await supabase
-      .from("profiles")
-      .select("theme_preference")
-      .eq("id", user.id)
-      .maybeSingle();
-    return isThemePreference(data?.theme_preference)
-      ? data.theme_preference
-      : "system";
-  } catch {
-    return "system";
-  }
-}
-
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const profileTheme = await getProfileTheme();
+  const authState = await resolveRootAuthState();
 
   return (
     <html
@@ -53,9 +31,9 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full bg-background text-foreground antialiased">
-        <ThemeProvider defaultTheme={profileTheme}>
+        <ThemeProvider defaultTheme={authState.theme}>
           <div className="relative flex min-h-screen flex-col bg-background">
-            <SiteHeader />
+            <SiteHeader initialAccount={authState.account} />
             <main className="flex-1">{children}</main>
             <SiteFooter />
           </div>

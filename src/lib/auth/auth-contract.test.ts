@@ -21,13 +21,36 @@ describe("authentication contracts", () => {
     const form = source("src/components/auth/auth-form.tsx");
     const monitor = source("src/lib/auth/verification-monitor.ts");
     expect(actions).toContain('getAuthCallbackUrl("email_verification")');
+    expect(actions).toContain("Confirm your email to finish creating your account.");
     expect(form).toContain("maskEmailAddress(email)");
     expect(form).toContain("Resend available in ${cooldown}s");
+    expect(form).toContain("Already confirmed on another device?");
+    expect(form).toContain('onTimeout: () => setVerificationState("timed_out")');
+    expect(form).toContain('router.replace("/dashboard")');
     expect(form).not.toContain("useMemo(() => createSupabaseBrowserClient()");
     expect(form).not.toContain("router.refresh()");
     expect(monitor).toContain('addEventListener("focus"');
     expect(monitor).toContain('addEventListener("visibilitychange"');
     expect(monitor).toContain("VERIFICATION_POLL_INTERVAL_MS = 8_000");
+    expect(monitor).toContain("VERIFICATION_MAX_POLLS = 15");
+    expect(monitor).toContain("onTimeout()");
+  });
+
+  it("shares one server auth interpretation and reconciles header session changes", () => {
+    const guards = source("src/lib/auth/guards.ts");
+    const layout = source("src/app/layout.tsx");
+    const header = source("src/components/layout/site-header-account.tsx");
+    const actions = source("src/app/auth/actions.ts");
+
+    expect(guards).toContain("getCurrentUser = cache(async () =>");
+    expect(layout).toContain("resolveRootAuthState()");
+    expect(layout).toContain("initialAccount={authState.account}");
+    expect(header).toContain('event !== "SIGNED_IN"');
+    expect(header).toContain('event !== "SIGNED_OUT"');
+    expect(header).toContain('event !== "TOKEN_REFRESHED"');
+    expect(header).toContain('event === "SIGNED_OUT" ? null : session?.user ?? null');
+    expect(header).toContain("reconcileHeaderAccount(current, user)");
+    expect(actions).toContain('revalidatePath("/", "layout")');
   });
 
   it("keeps provider entry points disabled unless explicitly configured", () => {

@@ -40,6 +40,7 @@ describe("verification monitor", () => {
         return vi.fn();
       },
       onCheckingChange: vi.fn(),
+      onTimeout: vi.fn(),
       onVerified,
     });
     await vi.advanceTimersByTimeAsync(0);
@@ -61,6 +62,7 @@ describe("verification monitor", () => {
       checkAuthenticated: async () => authenticated,
       subscribeToAuthChanges: () => vi.fn(),
       onCheckingChange: vi.fn(),
+      onTimeout: vi.fn(),
       onVerified,
     });
     await vi.advanceTimersByTimeAsync(0);
@@ -75,11 +77,13 @@ describe("verification monitor", () => {
 
   it("bounds background polling and cleans up all listeners", async () => {
     const unsubscribe = vi.fn();
+    const onTimeout = vi.fn();
     const checkAuthenticated = vi.fn(async () => false);
     const cleanup = startVerificationMonitor({
       checkAuthenticated,
       subscribeToAuthChanges: () => unsubscribe,
       onCheckingChange: vi.fn(),
+      onTimeout,
       onVerified: vi.fn(),
     });
 
@@ -89,6 +93,7 @@ describe("verification monitor", () => {
 
     expect(callsAfterBound).toBe(VERIFICATION_MAX_POLLS);
     expect(checkAuthenticated).toHaveBeenCalledTimes(callsAfterBound);
+    expect(onTimeout).toHaveBeenCalledOnce();
     cleanup();
     expect(unsubscribe).toHaveBeenCalledOnce();
   });
@@ -102,6 +107,7 @@ describe("verification monitor", () => {
       }),
       subscribeToAuthChanges: () => vi.fn(),
       onCheckingChange: vi.fn(),
+      onTimeout: vi.fn(),
       onVerified,
     });
 

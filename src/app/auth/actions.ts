@@ -134,6 +134,7 @@ export async function loginAction(
   } catch {
     return loginUnavailable("post_auth_route", "profile_route_unavailable");
   }
+  revalidatePath("/", "layout");
   redirect(destination);
 }
 
@@ -181,6 +182,7 @@ export async function registerAction(
   }
 
   if (data.session && data.user) {
+    revalidatePath("/", "layout");
     redirect(await getPostAuthRoute(data.user.id));
   }
 
@@ -188,7 +190,7 @@ export async function registerAction(
     status: "success",
     view: "check_email",
     email: result.data.email,
-    message: "Confirm your email to continue. We will sign you in automatically.",
+    message: "Confirm your email to finish creating your account.",
   };
 }
 
@@ -333,6 +335,7 @@ export async function verifyPhoneOtpAction(
     };
   }
 
+  revalidatePath("/", "layout");
   redirect(await getPostAuthRoute(data.user.id));
 }
 

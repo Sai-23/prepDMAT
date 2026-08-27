@@ -24,12 +24,13 @@ describe("pending verification server prerender", () => {
     const html = renderToStaticMarkup(
       <CheckEmail
         email="sachin36@gmail.com"
-        message="Confirm your email to continue."
+        message="Confirm your email to finish creating your account."
       />,
     );
     const visibleHtml = html.replace(/<input[^>]+type="hidden"[^>]*>/g, "");
 
     expect(html).toContain("Check your email");
+    expect(html).toContain("If you open the link in this browser");
     expect(html).toContain("sa***36@gmail.com");
     expect(visibleHtml).not.toContain("sachin36@gmail.com");
     expect(mocks.createBrowserClient).not.toHaveBeenCalled();
