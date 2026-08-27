@@ -23,6 +23,8 @@ describe("authentication contracts", () => {
     expect(actions).toContain('getAuthCallbackUrl("email_verification")');
     expect(form).toContain("maskEmailAddress(email)");
     expect(form).toContain("Resend available in ${cooldown}s");
+    expect(form).not.toContain("useMemo(() => createSupabaseBrowserClient()");
+    expect(form).not.toContain("router.refresh()");
     expect(monitor).toContain('addEventListener("focus"');
     expect(monitor).toContain('addEventListener("visibilitychange"');
     expect(monitor).toContain("VERIFICATION_POLL_INTERVAL_MS = 8_000");

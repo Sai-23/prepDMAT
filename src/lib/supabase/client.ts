@@ -4,9 +4,10 @@ import { createBrowserClient } from "@supabase/ssr";
 
 import type { Database } from "@/types/database";
 
-function getBrowserEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY") {
-  const value = process.env[name];
-
+function requireBrowserEnv(
+  value: string | undefined,
+  name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+) {
   if (!value) {
     throw new Error(`Missing public environment variable: ${name}`);
   }
@@ -16,7 +17,9 @@ function getBrowserEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_
 
 export function createSupabaseBrowserClient() {
   return createBrowserClient<Database>(
-    getBrowserEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    getBrowserEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    // Next.js only substitutes browser environment variables when their
+    // property names are statically referenced at build time.
+    requireBrowserEnv(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL"),
+    requireBrowserEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   );
 }

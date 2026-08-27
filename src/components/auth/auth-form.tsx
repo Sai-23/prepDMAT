@@ -4,7 +4,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Eye, EyeOff, LoaderCircle, MailCheck } from "lucide-react";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { resendVerificationAction, type AuthActionState } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -134,37 +134,43 @@ function ResendVerificationForm({
   );
 }
 
-function CheckEmail({ email, message }: { email: string; message: string }) {
+export function CheckEmail({ email, message }: { email: string; message: string }) {
   const router = useRouter();
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [verificationState, setVerificationState] = useState<"checking" | "waiting" | "verified">(
     "checking",
   );
 
-  useEffect(() => startVerificationMonitor({
-    checkAuthenticated: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      return Boolean(user);
-    },
-    subscribeToAuthChanges: (notify) => {
-      const { data } = supabase.auth.onAuthStateChange(() => notify());
-      return () => data.subscription.unsubscribe();
-    },
-    onCheckingChange: (checking) => {
-      setVerificationState((current) => current === "verified"
-        ? current
-        : checking ? "checking" : "waiting");
-    },
-    onVerified: () => setVerificationState("verified"),
-  }), [supabase]);
+  useEffect(() => {
+    // Client Components are also prerendered by Next.js. Instantiate the
+    // cookie-backed browser client only after the component reaches a browser.
+    const supabase = createSupabaseBrowserClient();
+    return startVerificationMonitor({
+      checkAuthenticated: async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        return Boolean(user);
+      },
+      subscribeToAuthChanges: (notify) => {
+        const { data } = supabase.auth.onAuthStateChange(() => {
+          // Do not call another Supabase Auth method from inside its callback.
+          window.setTimeout(notify, 0);
+        });
+        return () => data.subscription.unsubscribe();
+      },
+      onCheckingChange: (checking) => {
+        setVerificationState((current) => current === "verified"
+          ? current
+          : checking ? "checking" : "waiting");
+      },
+      onVerified: () => setVerificationState("verified"),
+    });
+  }, []);
 
   useEffect(() => {
     if (verificationState !== "verified") return;
     const timer = window.setTimeout(() => {
       router.replace("/dashboard");
-      router.refresh();
     }, 900);
     return () => window.clearTimeout(timer);
   }, [router, verificationState]);

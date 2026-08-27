@@ -11,7 +11,10 @@ type ErrorPageProps = {
 
 export default function GlobalError({ error, reset }: ErrorPageProps) {
   useEffect(() => {
-    console.error("Unexpected client error", {
+    console.error("[route.render] failed", {
+      category: "unexpected_render_error",
+      operation: "render",
+      route: window.location.pathname,
       digest: error.digest ?? "unavailable",
     });
   }, [error]);

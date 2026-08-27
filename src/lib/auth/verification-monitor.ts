@@ -28,7 +28,9 @@ export function startVerificationMonitor({
     checking = true;
     onCheckingChange(true);
     try {
-      if (await checkAuthenticated()) {
+      const authenticated = await checkAuthenticated();
+      if (disposed) return;
+      if (authenticated) {
         completed = true;
         onVerified();
       }
@@ -67,4 +69,3 @@ export function startVerificationMonitor({
     unsubscribe();
   };
 }
-

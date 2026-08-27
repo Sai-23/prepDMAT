@@ -92,4 +92,23 @@ describe("verification monitor", () => {
     cleanup();
     expect(unsubscribe).toHaveBeenCalledOnce();
   });
+
+  it("does not update verification state after unmounting an in-flight check", async () => {
+    let finishCheck: (authenticated: boolean) => void = () => {};
+    const onVerified = vi.fn();
+    const cleanup = startVerificationMonitor({
+      checkAuthenticated: () => new Promise<boolean>((resolve) => {
+        finishCheck = resolve;
+      }),
+      subscribeToAuthChanges: () => vi.fn(),
+      onCheckingChange: vi.fn(),
+      onVerified,
+    });
+
+    cleanup();
+    finishCheck(true);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(onVerified).not.toHaveBeenCalled();
+  });
 });
