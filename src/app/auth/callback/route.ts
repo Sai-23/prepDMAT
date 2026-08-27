@@ -1,39 +1,135 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getApplicationUrl } from "@/lib/auth/config";
+import {
+  getApplicationUrl,
+  type AuthCallbackFlow,
+} from "@/lib/auth/config";
+import { parseEmailVerificationOtpType } from "@/lib/auth/email-verification";
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-function callbackErrorUrl() {
-  const errorUrl = getApplicationUrl("/login");
-  errorUrl.searchParams.set("error", "auth_callback");
-  return errorUrl;
+type CallbackClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+function parseCallbackFlow(value: string | null): AuthCallbackFlow {
+  if (value === "recovery" || value === "email_verification") return value;
+  return "authentication";
 }
 
-export async function GET(request: NextRequest) {
-  const code = request.nextUrl.searchParams.get("code");
-  const flow = request.nextUrl.searchParams.get("flow");
-  const providerError = request.nextUrl.searchParams.has("error");
-  const supabase = await createSupabaseServerClient();
-
-  if (code && !providerError) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error && data.user) {
-      if (flow === "recovery") {
-        return NextResponse.redirect(getApplicationUrl("/reset-password"));
-      }
-      return NextResponse.redirect(getApplicationUrl(await getPostAuthRoute(data.user.id)));
-    }
+function loginOutcomeUrl(outcome: "expired" | "session_required" | "unavailable") {
+  const url = getApplicationUrl("/login");
+  if (outcome === "unavailable") {
+    url.searchParams.set("error", "auth_unavailable");
+  } else {
+    url.searchParams.set("verification", outcome);
   }
+  return url;
+}
 
-  if (!providerError) {
+function codeExchangeFailureOutcome(
+  flow: AuthCallbackFlow,
+  error: { code?: string; status?: number } | null,
+) {
+  if (flow !== "email_verification") return "unavailable" as const;
+  if (
+    error?.code === "pkce_code_verifier_not_found"
+    || error?.code === "bad_code_verifier"
+    || error?.code === "flow_state_not_found"
+    || error?.code === "flow_state_expired"
+  ) {
+    return "session_required" as const;
+  }
+  if (error?.status && error.status >= 500) return "unavailable" as const;
+  return "expired" as const;
+}
+
+async function currentUserId(supabase: CallbackClient) {
+  try {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) {
-      return NextResponse.redirect(getApplicationUrl(await getPostAuthRoute(user.id)));
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function authenticatedDestination(flow: AuthCallbackFlow, userId: string) {
+  if (flow === "recovery") return getApplicationUrl("/reset-password");
+  if (flow === "email_verification") return getApplicationUrl("/dashboard");
+
+  try {
+    return getApplicationUrl(await getPostAuthRoute(userId));
+  } catch {
+    // The session is valid even if the profile route lookup is temporarily unavailable.
+    return getApplicationUrl("/dashboard");
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const otpType = parseEmailVerificationOtpType(searchParams.get("type"));
+  const flow = parseCallbackFlow(searchParams.get("flow"));
+  const providerError = searchParams.has("error");
+
+  let supabase: CallbackClient;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch {
+    return NextResponse.redirect(loginOutcomeUrl("unavailable"));
+  }
+
+  // An already authenticated callback is complete. Do not consume a one-time
+  // code or token again; recovery is the sole flow that must replace a session.
+  if (flow !== "recovery") {
+    const existingUserId = await currentUserId(supabase);
+    if (existingUserId) {
+      return NextResponse.redirect(await authenticatedDestination(flow, existingUserId));
     }
   }
 
-  return NextResponse.redirect(callbackErrorUrl());
+  if (providerError) {
+    return NextResponse.redirect(loginOutcomeUrl("expired"));
+  }
+
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      return NextResponse.redirect(await authenticatedDestination(flow, data.user.id));
+    }
+
+    const existingUserId = await currentUserId(supabase);
+    if (existingUserId) {
+      return NextResponse.redirect(await authenticatedDestination(flow, existingUserId));
+    }
+
+    // Supabase can confirm the email before a new browser context discovers
+    // that it does not have the original PKCE verifier needed for a session.
+    return NextResponse.redirect(
+      loginOutcomeUrl(codeExchangeFailureOutcome(flow, error)),
+    );
+  }
+
+  if (tokenHash && otpType) {
+    const effectiveFlow = otpType === "recovery"
+      ? "recovery"
+      : otpType === "email" || otpType === "signup"
+        ? "email_verification"
+        : flow;
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: otpType,
+    });
+    if (!error && data.user) {
+      return NextResponse.redirect(await authenticatedDestination(effectiveFlow, data.user.id));
+    }
+
+    const existingUserId = await currentUserId(supabase);
+    if (existingUserId) {
+      return NextResponse.redirect(await authenticatedDestination(effectiveFlow, existingUserId));
+    }
+  }
+
+  return NextResponse.redirect(loginOutcomeUrl("expired"));
 }

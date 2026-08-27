@@ -6,11 +6,16 @@ const mocks = vi.hoisted(() => ({
   getPostAuthRoute: vi.fn(),
   redirect: vi.fn(),
   revalidatePath: vi.fn(),
+  getAuthCallbackUrl: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/lib/auth/post-auth", () => ({ getPostAuthRoute: mocks.getPostAuthRoute }));
+vi.mock("@/lib/auth/config", () => ({
+  getAuthCallbackUrl: mocks.getAuthCallbackUrl,
+  getAuthProviderAvailability: () => ({ google: false, phone: false }),
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createServerClient,
 }));
@@ -22,7 +27,12 @@ vi.mock("@/lib/security/rate-limit", async (importOriginal) => {
   return { ...actual, enforceSecurityRateLimit: mocks.enforceRateLimit };
 });
 
-import { loginAction, type AuthActionState } from "./actions";
+import {
+  loginAction,
+  registerAction,
+  resendVerificationAction,
+  type AuthActionState,
+} from "./actions";
 import {
   RateLimitExceededError,
   SecurityControlUnavailableError,
@@ -176,3 +186,68 @@ describe("loginAction security regression", () => {
   });
 });
 
+describe("email signup verification", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.enforceRateLimit.mockResolvedValue(undefined);
+    mocks.getAuthCallbackUrl.mockImplementation(
+      (flow: string) => `https://prep-dmat.vercel.app/auth/callback?flow=${flow}`,
+    );
+  });
+
+  it("creates a pending signup with the dedicated production verification callback", async () => {
+    const signUp = vi.fn().mockResolvedValue({
+      data: { user: { id: "pending-user" }, session: null },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { signUp } });
+    const formData = new FormData();
+    formData.set("fullName", "Student Name");
+    formData.set("email", "student@example.test");
+    formData.set("password", "password1");
+    formData.set("confirmPassword", "password1");
+
+    const result = await registerAction(idle, formData);
+
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith("auth:signup", {
+      account: "student@example.test",
+    });
+    expect(mocks.getAuthCallbackUrl).toHaveBeenCalledWith("email_verification");
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({
+        emailRedirectTo:
+          "https://prep-dmat.vercel.app/auth/callback?flow=email_verification",
+      }),
+    }));
+    expect(result).toEqual(expect.objectContaining({
+      status: "success",
+      view: "check_email",
+      email: "student@example.test",
+    }));
+  });
+
+  it("resends through the same callback and returns a 60-second client cooldown", async () => {
+    const resend = vi.fn().mockResolvedValue({ data: {}, error: null });
+    mocks.createServerClient.mockResolvedValue({ auth: { resend } });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+
+    const result = await resendVerificationAction(idle, formData);
+
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith("auth:resend", {
+      account: "student@example.test",
+    });
+    expect(resend).toHaveBeenCalledWith(expect.objectContaining({
+      type: "signup",
+      options: {
+        emailRedirectTo:
+          "https://prep-dmat.vercel.app/auth/callback?flow=email_verification",
+      },
+    }));
+    expect(result).toEqual({
+      status: "success",
+      retryAfterSeconds: 60,
+      message: "Verification email sent. Check your inbox and spam folder.",
+    });
+  });
+});

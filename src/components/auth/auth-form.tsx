@@ -2,11 +2,15 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { Eye, EyeOff, MailCheck } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Eye, EyeOff, LoaderCircle, MailCheck } from "lucide-react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 
 import { resendVerificationAction, type AuthActionState } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
+import { maskEmailAddress } from "@/lib/auth/email-verification";
+import { startVerificationMonitor } from "@/lib/auth/verification-monitor";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Field = {
   name: string;
@@ -61,19 +65,68 @@ function PasswordInput({
   );
 }
 
-function ResendVerificationForm({ email }: { email: string }) {
-  const [state, action, pending] = useActionState(resendVerificationAction, initialAuthState);
+function ResendVerificationForm({
+  email,
+  initialCooldown = 0,
+}: {
+  email?: string;
+  initialCooldown?: number;
+}) {
+  const [cooldown, setCooldown] = useState(initialCooldown);
+  const [state, action, pending] = useActionState(async (
+    previousState: AuthActionState,
+    formData: FormData,
+  ) => {
+    const nextState = await resendVerificationAction(previousState, formData);
+    if (nextState.status === "success") {
+      setCooldown(nextState.retryAfterSeconds ?? 60);
+    }
+    return nextState;
+  }, initialAuthState);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setCooldown((current) => Math.max(0, current - 1));
+    }, 1_000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  const unavailable = pending || cooldown > 0;
   return (
     <form action={action} className="space-y-3">
-      <input name="email" type="hidden" value={email} />
-      <Button className="min-h-11 w-full" disabled={pending} type="submit" variant="outline">
-        {pending ? "Sending email..." : "Resend email"}
+      {email ? (
+        <input name="email" type="hidden" value={email} />
+      ) : (
+        <div className="space-y-2 text-left">
+          <label className="text-sm font-semibold text-on-surface" htmlFor="verification-email">
+            Email
+          </label>
+          <input
+            autoComplete="email"
+            className="h-12 w-full rounded-md border border-input-border bg-input-background px-4 text-on-surface outline-none transition placeholder:text-input-placeholder focus:border-primary focus:ring-2 focus:ring-primary-muted"
+            id="verification-email"
+            name="email"
+            placeholder="you@example.com"
+            type="email"
+          />
+        </div>
+      )}
+      <Button className="min-h-11 w-full" disabled={unavailable} type="submit" variant="outline">
+        {pending
+          ? "Sending email..."
+          : cooldown > 0
+            ? `Resend available in ${cooldown}s`
+            : "Resend email"}
       </Button>
       {state.message ? (
         <p
-          className={state.status === "error" ? "text-sm text-error" : "text-sm text-success"}
+          className={state.status === "error"
+            ? "text-sm text-error"
+            : "flex items-center justify-center gap-2 text-sm text-success"}
           role={state.status === "error" ? "alert" : "status"}
         >
+          {state.status === "success" ? <CheckCircle2 aria-hidden="true" className="size-4" /> : null}
           {state.message}
         </p>
       ) : null}
@@ -82,20 +135,96 @@ function ResendVerificationForm({ email }: { email: string }) {
 }
 
 function CheckEmail({ email, message }: { email: string; message: string }) {
+  const router = useRouter();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [verificationState, setVerificationState] = useState<"checking" | "waiting" | "verified">(
+    "checking",
+  );
+
+  useEffect(() => startVerificationMonitor({
+    checkAuthenticated: async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      return Boolean(user);
+    },
+    subscribeToAuthChanges: (notify) => {
+      const { data } = supabase.auth.onAuthStateChange(() => notify());
+      return () => data.subscription.unsubscribe();
+    },
+    onCheckingChange: (checking) => {
+      setVerificationState((current) => current === "verified"
+        ? current
+        : checking ? "checking" : "waiting");
+    },
+    onVerified: () => setVerificationState("verified"),
+  }), [supabase]);
+
+  useEffect(() => {
+    if (verificationState !== "verified") return;
+    const timer = window.setTimeout(() => {
+      router.replace("/dashboard");
+      router.refresh();
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [router, verificationState]);
+
   return (
     <div className="space-y-6 text-center">
-      <MailCheck aria-hidden="true" className="mx-auto size-11 text-primary" />
+      {verificationState === "verified" ? (
+        <CheckCircle2 aria-hidden="true" className="mx-auto size-11 text-success" />
+      ) : (
+        <MailCheck aria-hidden="true" className="mx-auto size-11 text-primary" />
+      )}
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-on-surface">Check your email</h2>
-        <p className="text-sm leading-6 text-muted-foreground">{message}</p>
-        <p className="break-all text-sm font-semibold text-on-surface">{email}</p>
+        <h2 className="text-xl font-semibold text-on-surface">
+          {verificationState === "verified" ? "Email verified" : "Check your email"}
+        </h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          {verificationState === "verified" ? "You're all set." : message}
+        </p>
+        <p className="break-all text-sm font-semibold text-on-surface">
+          {maskEmailAddress(email)}
+        </p>
+        <p className="flex min-h-6 items-center justify-center gap-2 text-xs text-muted-foreground" role="status">
+          {verificationState === "checking" ? (
+            <>
+              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+              Checking verification…
+            </>
+          ) : verificationState === "verified" ? (
+            "Taking you to your dashboard…"
+          ) : (
+            "Waiting for verification"
+          )}
+        </p>
       </div>
-      <ResendVerificationForm email={email} />
-      <Link
+      {verificationState === "verified" ? null : (
+        <ResendVerificationForm email={email} initialCooldown={60} />
+      )}
+      {verificationState === "verified" ? null : <a
         className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         href="/register"
       >
         Change email
+      </a>}
+    </div>
+  );
+}
+
+export function VerificationRecovery() {
+  return (
+    <div className="mb-5 space-y-4 rounded-md bg-error-container p-4 text-error-container-foreground">
+      <div className="space-y-1">
+        <p className="font-semibold">Verification link expired</p>
+        <p className="text-sm">This link may have expired or already been used.</p>
+      </div>
+      <ResendVerificationForm />
+      <Link
+        className="inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        href="/login"
+      >
+        Sign in
       </Link>
     </div>
   );
@@ -117,7 +246,7 @@ export function AuthForm({
   }
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form action={formAction} className="space-y-5" id="email-sign-in" noValidate>
       {fields.map((field) => {
         const errorId = `${field.name}-error`;
         const helpId = field.name === "password" && field.autoComplete === "new-password"

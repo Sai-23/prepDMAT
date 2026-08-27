@@ -17,23 +17,23 @@
   "aggregationBenchmarks": [
     {
       "questions": 0,
-      "milliseconds": 0.797
+      "milliseconds": 0.397
     },
     {
       "questions": 10,
-      "milliseconds": 0.46
+      "milliseconds": 0.447
     },
     {
       "questions": 100,
-      "milliseconds": 0.72
+      "milliseconds": 0.719
     },
     {
       "questions": 1000,
-      "milliseconds": 6.889
+      "milliseconds": 5.629
     },
     {
       "questions": 5000,
-      "milliseconds": 21.904
+      "milliseconds": 10.569
     }
   ]
 }

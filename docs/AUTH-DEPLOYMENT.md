@@ -48,6 +48,14 @@ These controls cannot be proven from repository code and must be checked indepen
 - Set `NEXT_PUBLIC_APP_URL` to the matching application origin for each deployment.
 - Keep email confirmation enabled if verification is required. Configure production SMTP and review Supabase email and resend rate limits.
 
+For cookie-based SSR confirmation, configure the **Confirm signup** email template to send the token hash to the one authoritative server callback:
+
+```text
+{{ .SiteURL }}/auth/callback?flow=email_verification&token_hash={{ .TokenHash }}&type=email
+```
+
+Configure the **Reset password** template equivalently with `flow=recovery` and `type=recovery`. The callback also retains PKCE `code` exchange for OAuth and existing links, but it never exchanges a code and verifies a token hash in the same request. Confirm that the production project Site URL is exactly `https://prep-dmat.vercel.app` and that `https://prep-dmat.vercel.app/auth/callback` is allowed. Local Supabase development must use its own localhost Site URL rather than placing localhost in production configuration.
+
 ## Google configuration
 
 1. In Google Cloud / Google Auth Platform, create a Web application OAuth client.

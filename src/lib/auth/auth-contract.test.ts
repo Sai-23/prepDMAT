@@ -10,9 +10,22 @@ describe("authentication contracts", () => {
   it("exchanges callback codes into cookie-backed sessions and uses only centralized routes", () => {
     const callback = source("src/app/auth/callback/route.ts");
     expect(callback).toContain("exchangeCodeForSession(code)");
-    expect(callback).toContain("getPostAuthRoute(data.user.id)");
+    expect(callback).toContain("verifyOtp({");
+    expect(callback).toContain("getPostAuthRoute(userId)");
     expect(callback).not.toContain('searchParams.get("next")');
     expect(callback).not.toContain("provider_token");
+  });
+
+  it("uses a dedicated verification callback and bounded pending-tab detection", () => {
+    const actions = source("src/app/auth/actions.ts");
+    const form = source("src/components/auth/auth-form.tsx");
+    const monitor = source("src/lib/auth/verification-monitor.ts");
+    expect(actions).toContain('getAuthCallbackUrl("email_verification")');
+    expect(form).toContain("maskEmailAddress(email)");
+    expect(form).toContain("Resend available in ${cooldown}s");
+    expect(monitor).toContain('addEventListener("focus"');
+    expect(monitor).toContain('addEventListener("visibilitychange"');
+    expect(monitor).toContain("VERIFICATION_POLL_INTERVAL_MS = 8_000");
   });
 
   it("keeps provider entry points disabled unless explicitly configured", () => {

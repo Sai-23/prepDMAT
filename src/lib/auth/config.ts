@@ -15,7 +15,9 @@ export function getAuthProviderAvailability(): AuthProviderAvailability {
   };
 }
 
-export function getAuthCallbackUrl(flow: "authentication" | "recovery" = "authentication") {
+export type AuthCallbackFlow = "authentication" | "email_verification" | "recovery";
+
+export function getAuthCallbackUrl(flow: AuthCallbackFlow = "authentication") {
   const callbackUrl = new URL("/auth/callback", getEnv().NEXT_PUBLIC_APP_URL);
   callbackUrl.searchParams.set("flow", flow);
   return callbackUrl.toString();

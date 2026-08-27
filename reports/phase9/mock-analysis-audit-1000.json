@@ -25,15 +25,15 @@
   "pureAnalysisBenchmarks": [
     {
       "mockCount": 1,
-      "milliseconds": 0.078
+      "milliseconds": 0.07
     },
     {
       "mockCount": 10,
-      "milliseconds": 0.486
+      "milliseconds": 0.766
     },
     {
       "mockCount": 100,
-      "milliseconds": 6.93
+      "milliseconds": 5.246
     }
   ]
 }

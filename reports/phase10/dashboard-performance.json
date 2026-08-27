@@ -15,22 +15,22 @@
   "benchmarks": [
     {
       "answerCount": 0,
-      "phase8ProgressPreparationMedianMs": 0.343,
-      "dashboardAssemblyMedianMs": 0.07
+      "phase8ProgressPreparationMedianMs": 0.356,
+      "dashboardAssemblyMedianMs": 0.096
     },
     {
       "answerCount": 100,
-      "phase8ProgressPreparationMedianMs": 1.101,
-      "dashboardAssemblyMedianMs": 0.091
+      "phase8ProgressPreparationMedianMs": 0.933,
+      "dashboardAssemblyMedianMs": 0.085
     },
     {
       "answerCount": 1000,
-      "phase8ProgressPreparationMedianMs": 4.46,
-      "dashboardAssemblyMedianMs": 0.07
+      "phase8ProgressPreparationMedianMs": 3.842,
+      "dashboardAssemblyMedianMs": 0.066
     },
     {
       "answerCount": 5000,
-      "phase8ProgressPreparationMedianMs": 15.876,
+      "phase8ProgressPreparationMedianMs": 14.675,
       "dashboardAssemblyMedianMs": 0.065
     }
   ],

@@ -166,7 +166,7 @@ export async function registerAction(
         display_name: result.data.fullName,
         marketing_email_opt_in: result.data.marketingEmailOptIn,
       },
-      emailRedirectTo: getAuthCallbackUrl(),
+      emailRedirectTo: getAuthCallbackUrl("email_verification"),
     },
   });
 
@@ -209,7 +209,7 @@ export async function resendVerificationAction(
   const { error } = await supabase.auth.resend({
     type: "signup",
     email: result.data.email,
-    options: { emailRedirectTo: getAuthCallbackUrl() },
+    options: { emailRedirectTo: getAuthCallbackUrl("email_verification") },
   });
 
   return error
@@ -219,6 +219,7 @@ export async function resendVerificationAction(
       }
     : {
         status: "success",
+        retryAfterSeconds: 60,
         message: "Verification email sent. Check your inbox and spam folder.",
       };
 }
