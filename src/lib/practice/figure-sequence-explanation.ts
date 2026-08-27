@@ -1,5 +1,5 @@
 import {
-  replayFigureSequence,
+  replayFigureSequenceDetailed,
   visibleFrameValue,
   type FigureFrame,
   type FigureSequencePresentation,
@@ -19,6 +19,13 @@ export type FigureChange = {
   after: string;
 };
 
+export type FigureTransitionPresentation = {
+  fromFrame: number;
+  toFrame: number;
+  changes: FigureChange[];
+  boundaryBehavior: "bounce" | "follow" | null;
+};
+
 export type FigureExplanationStep =
   | {
       id: string;
@@ -31,6 +38,7 @@ export type FigureExplanationStep =
       beforeFrame: FigureFrame;
       afterFrame: FigureFrame;
       changes: FigureChange[];
+      transitions: FigureTransitionPresentation[];
       ruleSummary: string;
       rulesFound: FigureRulePresentation[];
       isFinal: false;
@@ -93,10 +101,12 @@ function ruleSummary(rule: FigureSymbolRuleSet, label: string): string {
   const parts: string[] = [];
   if (rule.movement?.kind === "linear") {
     parts.push(`move ${rule.movement.steps} ${rule.movement.steps === 1 ? "cell" : "cells"} ${rule.movement.direction.replaceAll("_", " ")}`);
+    if (rule.movement.boundary === "bounce") parts.push("reverse direction when the edge is reached");
   } else if (rule.movement?.kind === "border") {
     parts.push(`move ${rule.movement.steps} ${rule.movement.steps === 1 ? "step" : "steps"} ${rule.movement.direction.replace("_", "-")} around the border`);
   } else if (rule.movement?.kind === "direction_cycle") {
     parts.push(`follow ${rule.movement.directions.map((direction) => direction.replaceAll("_", " ")).join(" → ")}`);
+    if (rule.movement.boundary === "bounce") parts.push("reverse any move that reaches an edge");
   }
   if (rule.movement?.progression === "incrementing") parts.push("increase the move by one each frame");
   if (rule.rotation) {
@@ -168,8 +178,11 @@ export function buildFigureSequenceWalkthrough(
   ) return fallback(correctLabels);
 
   let replayed: FigureFrame[];
+  let boundaryEvents: ReturnType<typeof replayFigureSequenceDetailed>["boundaryEvents"];
   try {
-    replayed = replayFigureSequence(sequence.grid, firstFrame, rules, 5);
+    const simulation = replayFigureSequenceDetailed(sequence.grid, firstFrame, rules, 5);
+    replayed = simulation.frames;
+    boundaryEvents = simulation.boundaryEvents;
   } catch {
     return fallback(correctLabels);
   }
@@ -206,6 +219,20 @@ export function buildFigureSequenceWalkthrough(
       beforeFrame: replayed[0],
       afterFrame: replayed[1],
       changes: changesBetween(beforeSymbol!, afterSymbol!),
+      transitions: replayed.slice(0, -1).map((frame, transitionIndex) => {
+        const next = replayed[transitionIndex + 1];
+        const before = frame.symbols.find((symbol) => symbol.id === rule.symbolId)!;
+        const after = next.symbols.find((symbol) => symbol.id === rule.symbolId)!;
+        const boundary = boundaryEvents.find((event) =>
+          event.symbolId === rule.symbolId && event.transitionIndex === transitionIndex
+        );
+        return {
+          fromFrame: frame.index,
+          toFrame: next.index,
+          changes: changesBetween(before, after),
+          boundaryBehavior: boundary?.behavior ?? null,
+        };
+      }),
       ruleSummary: rulePresentations[index].summary,
       rulesFound: rulePresentations.slice(0, index + 1),
       isFinal: false,

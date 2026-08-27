@@ -1,0 +1,2485 @@
+{
+  "version": "phase7-explanation-audit@1",
+  "module": "figure_sequence",
+  "requested": 1000,
+  "accepted": 1000,
+  "failures": [],
+  "failureCount": 0,
+  "unsupportedClaims": 0,
+  "missingReasoningData": 0,
+  "fallbackExplanations": 0,
+  "diagnosis": {
+    "supported": 1000,
+    "neutralOrUnsupported": 0
+  },
+  "averageSteps": 4.352,
+  "byDifficulty": {
+    "easy": {
+      "requested": 334,
+      "accepted": 334,
+      "failed": 0,
+      "totalSteps": 1099,
+      "averageSteps": 3.29
+    },
+    "medium": {
+      "requested": 333,
+      "accepted": 333,
+      "failed": 0,
+      "totalSteps": 1469,
+      "averageSteps": 4.411
+    },
+    "hard": {
+      "requested": 333,
+      "accepted": 333,
+      "failed": 0,
+      "totalSteps": 1784,
+      "averageSteps": 5.357
+    }
+  },
+  "samples": [
+    {
+      "seed": "phase7-figure_sequence-easy-0",
+      "module": "figure_sequence",
+      "difficulty": "easy",
+      "classification": "single_object_transformation",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-2"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track the object, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the pink square",
+          "description": "Pink Square: move 1 step clockwise around the border. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Pink Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Pink Square: move 1 step clockwise around the border."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Confirm a rule across the whole sequence before using it to predict the missing frames.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-medium-1",
+      "module": "figure_sequence",
+      "difficulty": "medium",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-2"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck colour",
+        "description": "In missing matrix 1, your option differs from the simulated result in colour.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the green triangle",
+          "description": "Green Triangle: follow right → up → left → down; reverse any move that reaches an edge; rotate 90° clockwise; cycle colour Green → Black. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Green Triangle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Green Triangle: follow right → up → left → down; reverse any move that reaches an edge; rotate 90° clockwise; cycle colour Green → Black."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the orange circle",
+          "description": "Orange Circle: move 1 cell left; reverse direction when the edge is reached; increase the move by one each frame. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Orange Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Orange Circle: move 1 cell left; reverse direction when the edge is reached; increase the move by one each frame."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "direction_cycle",
+              "directions": [
+                "right",
+                "up",
+                "left",
+                "down"
+              ],
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "green",
+                "black"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "linear",
+              "direction": "left",
+              "steps": 1,
+              "progression": "incrementing",
+              "boundary": "bounce"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-hard-2",
+      "module": "figure_sequence",
+      "difficulty": "hard",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-2"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position and orientation and colour",
+        "description": "In missing matrix 1, your option differs from the simulated result in position and orientation and colour.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the yellow triangle",
+          "description": "Yellow Triangle: move 1 cell left; reverse direction when the edge is reached; rotate 90° clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Yellow Triangle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Yellow Triangle: move 1 cell left; reverse direction when the edge is reached; rotate 90° clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the blue square",
+          "description": "Blue Square: move 1 step clockwise around the border; rotate 90° clockwise; cycle colour Black → Green → Blue → Yellow. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Blue Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Blue Square: move 1 step clockwise around the border; rotate 90° clockwise; cycle colour Black → Green → Blue → Yellow."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the pink arrow",
+          "description": "Pink Arrow: move 2 cells up; reverse direction when the edge is reached; rotate 90° counter-clockwise; increase the rotation each frame. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Pink Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Pink Arrow: move 2 cells up; reverse direction when the edge is reached; rotate 90° counter-clockwise; increase the rotation each frame."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:3",
+          "title": "Track the black circle",
+          "description": "Black Circle: move 2 cells down; reverse direction when the edge is reached. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "delta",
+              "label": "Black Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:3",
+              "label": "Black Circle: move 2 cells down; reverse direction when the edge is reached."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "left",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "black",
+                "green",
+                "blue",
+                "yellow"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "linear",
+              "direction": "up",
+              "steps": 2,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "incrementing"
+            }
+          },
+          {
+            "symbolId": "delta",
+            "movement": {
+              "kind": "linear",
+              "direction": "down",
+              "steps": 2,
+              "progression": "fixed",
+              "boundary": "bounce"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-easy-3",
+      "module": "figure_sequence",
+      "difficulty": "easy",
+      "classification": "single_object_transformation",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track the object, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the green square",
+          "description": "Green Square: move 1 cell down; reverse direction when the edge is reached. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Green Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Green Square: move 1 cell down; reverse direction when the edge is reached."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Confirm a rule across the whole sequence before using it to predict the missing frames.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "down",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-medium-4",
+      "module": "figure_sequence",
+      "difficulty": "medium",
+      "classification": "single_object_transformation",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck orientation",
+        "description": "In missing matrix 1, your option differs from the simulated result in orientation.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track the object, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the orange arrow",
+          "description": "Orange Arrow: move 1 cell up; reverse direction when the edge is reached; rotate 90° counter-clockwise; cycle colour Orange → Pink → Green. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Orange Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Orange Arrow: move 1 cell up; reverse direction when the edge is reached; rotate 90° counter-clockwise; cycle colour Orange → Pink → Green."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Confirm a rule across the whole sequence before using it to predict the missing frames.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "up",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "orange",
+                "pink",
+                "green"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-hard-5",
+      "module": "figure_sequence",
+      "difficulty": "hard",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-2"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck orientation",
+        "description": "In missing matrix 1, your option differs from the simulated result in orientation.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the pink triangle",
+          "description": "Pink Triangle: move 1 step counter-clockwise around the border. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Pink Triangle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Pink Triangle: move 1 step counter-clockwise around the border."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the green diamond",
+          "description": "Green Diamond: follow right → down → left → up; reverse any move that reaches an edge; rotate 90° counter-clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Green Diamond"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Green Diamond: follow right → down → left → up; reverse any move that reaches an edge; rotate 90° counter-clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the black square",
+          "description": "Black Square: move 2 cells up right; reverse direction when the edge is reached; rotate 90° counter-clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Black Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Black Square: move 2 cells up right; reverse direction when the edge is reached; rotate 90° counter-clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:3",
+          "title": "Track the orange circle",
+          "description": "Orange Circle: move 1 step clockwise around the border; increase the move by one each frame; cycle colour Green → Orange → Blue. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "delta",
+              "label": "Orange Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:3",
+              "label": "Orange Circle: move 1 step clockwise around the border; increase the move by one each frame; cycle colour Green → Orange → Blue."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "direction_cycle",
+              "directions": [
+                "right",
+                "down",
+                "left",
+                "up"
+              ],
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "linear",
+              "direction": "up_right",
+              "steps": 2,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "delta",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 1,
+              "progression": "incrementing"
+            },
+            "colour": {
+              "cycle": [
+                "green",
+                "orange",
+                "blue"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-easy-6",
+      "module": "figure_sequence",
+      "difficulty": "easy",
+      "classification": "single_object_transformation",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track the object, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the blue square",
+          "description": "Blue Square: move 1 cell left; reverse direction when the edge is reached; cycle colour Blue → Pink. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Blue Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Blue Square: move 1 cell left; reverse direction when the edge is reached; cycle colour Blue → Pink."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Confirm a rule across the whole sequence before using it to predict the missing frames.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "left",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "colour": {
+              "cycle": [
+                "blue",
+                "pink"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-medium-7",
+      "module": "figure_sequence",
+      "difficulty": "medium",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-2"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the orange arrow",
+          "description": "Orange Arrow: move 2 cells up; reverse direction when the edge is reached; cycle colour Orange → Yellow. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Orange Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Orange Arrow: move 2 cells up; reverse direction when the edge is reached; cycle colour Orange → Yellow."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the yellow square",
+          "description": "Yellow Square: follow right → down → left → up; reverse any move that reaches an edge; cycle colour Blue → Pink → Yellow. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Yellow Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Yellow Square: follow right → down → left → up; reverse any move that reaches an edge; cycle colour Blue → Pink → Yellow."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "up",
+              "steps": 2,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "colour": {
+              "cycle": [
+                "orange",
+                "yellow"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "direction_cycle",
+              "directions": [
+                "right",
+                "down",
+                "left",
+                "up"
+              ],
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "colour": {
+              "cycle": [
+                "blue",
+                "pink",
+                "yellow"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-hard-8",
+      "module": "figure_sequence",
+      "difficulty": "hard",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the orange square",
+          "description": "Orange Square: follow right → down → left → up; reverse any move that reaches an edge; rotate 90° clockwise; increase the rotation each frame; cycle colour Black → Orange → Green → Pink. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Orange Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Orange Square: follow right → down → left → up; reverse any move that reaches an edge; rotate 90° clockwise; increase the rotation each frame; cycle colour Black → Orange → Green → Pink."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the orange diamond",
+          "description": "Orange Diamond: move 2 cells right; reverse direction when the edge is reached; rotate 90° counter-clockwise; cycle colour Green → Black → Yellow → Orange. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Orange Diamond"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Orange Diamond: move 2 cells right; reverse direction when the edge is reached; rotate 90° counter-clockwise; cycle colour Green → Black → Yellow → Orange."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the green circle",
+          "description": "Green Circle: move 1 step counter-clockwise around the border; increase the move by one each frame; cycle colour Orange → Green → Blue. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Green Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Green Circle: move 1 step counter-clockwise around the border; increase the move by one each frame; cycle colour Orange → Green → Blue."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:3",
+          "title": "Track the yellow arrow",
+          "description": "Yellow Arrow: move 1 step clockwise around the border; increase the move by one each frame. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "delta",
+              "label": "Yellow Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:3",
+              "label": "Yellow Arrow: move 1 step clockwise around the border; increase the move by one each frame."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "direction_cycle",
+              "directions": [
+                "right",
+                "down",
+                "left",
+                "up"
+              ],
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "incrementing"
+            },
+            "colour": {
+              "cycle": [
+                "black",
+                "orange",
+                "green",
+                "pink"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "linear",
+              "direction": "right",
+              "steps": 2,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "green",
+                "black",
+                "yellow",
+                "orange"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "incrementing"
+            },
+            "colour": {
+              "cycle": [
+                "orange",
+                "green",
+                "blue"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "delta",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 1,
+              "progression": "incrementing"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-easy-9",
+      "module": "figure_sequence",
+      "difficulty": "easy",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-2",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the black arrow",
+          "description": "Black Arrow: move 1 cell right; reverse direction when the edge is reached. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Black Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Black Arrow: move 1 cell right; reverse direction when the edge is reached."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the green circle",
+          "description": "Green Circle: move 1 step counter-clockwise around the border. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Green Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Green Circle: move 1 step counter-clockwise around the border."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "right",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-medium-10",
+      "module": "figure_sequence",
+      "difficulty": "medium",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the blue triangle",
+          "description": "Blue Triangle: move 2 steps counter-clockwise around the border; rotate 90° clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Blue Triangle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Blue Triangle: move 2 steps counter-clockwise around the border; rotate 90° clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the orange arrow",
+          "description": "Orange Arrow: move 1 cell down; reverse direction when the edge is reached; rotate 90° counter-clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Orange Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Orange Arrow: move 1 cell down; reverse direction when the edge is reached; rotate 90° counter-clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the yellow circle",
+          "description": "Yellow Circle: move 1 cell up; reverse direction when the edge is reached. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Yellow Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Yellow Circle: move 1 cell up; reverse direction when the edge is reached."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 2,
+              "progression": "fixed"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "linear",
+              "direction": "down",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "linear",
+              "direction": "up",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-hard-11",
+      "module": "figure_sequence",
+      "difficulty": "hard",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the pink square",
+          "description": "Pink Square: move 2 steps clockwise around the border; rotate 90° clockwise; cycle colour Pink → Black → Green → Blue. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Pink Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Pink Square: move 2 steps clockwise around the border; rotate 90° clockwise; cycle colour Pink → Black → Green → Blue."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the pink circle",
+          "description": "Pink Circle: move 1 cell down left; reverse direction when the edge is reached; increase the move by one each frame; cycle colour Pink → Black. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Pink Circle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Pink Circle: move 1 cell down left; reverse direction when the edge is reached; increase the move by one each frame; cycle colour Pink → Black."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the pink arrow",
+          "description": "Pink Arrow: move 1 step counter-clockwise around the border; cycle colour Pink → Black → Orange → Green. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Pink Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Pink Arrow: move 1 step counter-clockwise around the border; cycle colour Pink → Black → Orange → Green."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:3",
+          "title": "Track the pink triangle",
+          "description": "Pink Triangle: move 1 step counter-clockwise around the border; rotate 90° clockwise; cycle colour Green → Pink → Black. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "delta",
+              "label": "Pink Triangle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:3",
+              "label": "Pink Triangle: move 1 step counter-clockwise around the border; rotate 90° clockwise; cycle colour Green → Pink → Black."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 2,
+              "progression": "fixed"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "pink",
+                "black",
+                "green",
+                "blue"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "linear",
+              "direction": "down_left",
+              "steps": 1,
+              "progression": "incrementing",
+              "boundary": "bounce"
+            },
+            "colour": {
+              "cycle": [
+                "pink",
+                "black"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "pink",
+                "black",
+                "orange",
+                "green"
+              ],
+              "steps": 1,
+              "progression": "incrementing"
+            }
+          },
+          {
+            "symbolId": "delta",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            },
+            "colour": {
+              "cycle": [
+                "green",
+                "pink",
+                "black"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-easy-12",
+      "module": "figure_sequence",
+      "difficulty": "easy",
+      "classification": "single_object_transformation",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track the object, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the yellow diamond",
+          "description": "Yellow Diamond: move 1 cell up; reverse direction when the edge is reached. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Yellow Diamond"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Yellow Diamond: move 1 cell up; reverse direction when the edge is reached."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Confirm a rule across the whole sequence before using it to predict the missing frames.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "linear",
+              "direction": "up",
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-medium-13",
+      "module": "figure_sequence",
+      "difficulty": "medium",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-1"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the orange square",
+          "description": "Orange Square: move 1 step clockwise around the border. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Orange Square"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Orange Square: move 1 step clockwise around the border."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the green diamond",
+          "description": "Green Diamond: move 1 step counter-clockwise around the border; rotate 90° clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Green Diamond"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Green Diamond: move 1 step counter-clockwise around the border; rotate 90° clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the yellow arrow",
+          "description": "Yellow Arrow: move 1 step counter-clockwise around the border. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Yellow Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Yellow Arrow: move 1 step counter-clockwise around the border."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option B.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "border",
+              "direction": "counter_clockwise",
+              "steps": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    },
+    {
+      "seed": "phase7-figure_sequence-hard-14",
+      "module": "figure_sequence",
+      "difficulty": "hard",
+      "classification": "independent_object_streams",
+      "correctAnswer": [
+        "slot-1-correct",
+        "slot-2-correct"
+      ],
+      "sampleStudentAnswer": [
+        "slot-1-distractor-1",
+        "slot-2-distractor-2"
+      ],
+      "feedback": {
+        "supported": true,
+        "title": "Recheck position",
+        "description": "In missing matrix 1, your option differs from the simulated result in position.",
+        "references": [
+          {
+            "kind": "frame",
+            "id": "4",
+            "label": "Missing matrix 1"
+          }
+        ]
+      },
+      "summary": "Track each object separately, then apply every verified rule to both missing frames.",
+      "steps": [
+        {
+          "id": "rule:0",
+          "title": "Track the pink diamond",
+          "description": "Pink Diamond: move 1 step clockwise around the border; increase the move by one each frame; cycle colour Pink → Yellow. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "alpha",
+              "label": "Pink Diamond"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:0",
+              "label": "Pink Diamond: move 1 step clockwise around the border; increase the move by one each frame; cycle colour Pink → Yellow."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:1",
+          "title": "Track the blue triangle",
+          "description": "Blue Triangle: follow right → down → left → up; reverse any move that reaches an edge; rotate 90° clockwise; increase the rotation each frame; cycle colour Blue → Pink → Yellow. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "beta",
+              "label": "Blue Triangle"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:1",
+              "label": "Blue Triangle: follow right → down → left → up; reverse any move that reaches an edge; rotate 90° clockwise; increase the rotation each frame; cycle colour Blue → Pink → Yellow."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "rule:2",
+          "title": "Track the pink arrow",
+          "description": "Pink Arrow: follow left → down → right → up; reverse any move that reaches an edge; rotate 90° counter-clockwise. Check the same change across every simulated transition.",
+          "references": [
+            {
+              "kind": "object",
+              "id": "gamma",
+              "label": "Pink Arrow"
+            },
+            {
+              "kind": "rule",
+              "id": "rule:2",
+              "label": "Pink Arrow: follow left → down → right → up; reverse any move that reaches an edge; rotate 90° counter-clockwise."
+            }
+          ],
+          "visual": {
+            "transitionCount": 5
+          }
+        },
+        {
+          "id": "prediction:0",
+          "title": "Predict missing matrix 1",
+          "description": "Apply every discovered rule once to the last visible frame. The simulated result matches Option A.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "3",
+              "label": "Frame 4"
+            },
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            }
+          ],
+          "visual": {
+            "missingIndex": 0
+          }
+        },
+        {
+          "id": "prediction:1",
+          "title": "Predict missing matrix 2",
+          "description": "Apply the same rules one more time. The simulated result matches Option C.",
+          "references": [
+            {
+              "kind": "frame",
+              "id": "4",
+              "label": "Frame 5"
+            },
+            {
+              "kind": "frame",
+              "id": "5",
+              "label": "Frame 6"
+            }
+          ],
+          "visual": {
+            "missingIndex": 1
+          }
+        }
+      ],
+      "takeaway": "Keep one rule stream per object; combine the streams only after each one is clear.",
+      "internalMetadata": {
+        "rules": [
+          {
+            "symbolId": "alpha",
+            "movement": {
+              "kind": "border",
+              "direction": "clockwise",
+              "steps": 1,
+              "progression": "incrementing"
+            },
+            "colour": {
+              "cycle": [
+                "pink",
+                "yellow"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "beta",
+            "movement": {
+              "kind": "direction_cycle",
+              "directions": [
+                "right",
+                "down",
+                "left",
+                "up"
+              ],
+              "steps": 2,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "clockwise",
+              "quarterTurns": 1,
+              "progression": "incrementing"
+            },
+            "colour": {
+              "cycle": [
+                "blue",
+                "pink",
+                "yellow"
+              ],
+              "steps": 1,
+              "progression": "fixed"
+            }
+          },
+          {
+            "symbolId": "gamma",
+            "movement": {
+              "kind": "direction_cycle",
+              "directions": [
+                "left",
+                "down",
+                "right",
+                "up"
+              ],
+              "steps": 1,
+              "progression": "fixed",
+              "boundary": "bounce"
+            },
+            "rotation": {
+              "direction": "counter_clockwise",
+              "quarterTurns": 1,
+              "progression": "fixed"
+            }
+          }
+        ],
+        "generatorVersion": "figure-sequences@4.0.0"
+      }
+    }
+  ]
+}

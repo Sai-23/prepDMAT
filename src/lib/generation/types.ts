@@ -53,6 +53,15 @@ export type GenerationMetadata = {
   generatedAt: string;
   attemptCount: number;
   fingerprint: string;
+  /** Normalized reasoning structure; excludes cosmetic values such as symbols and colours. */
+  ruleFingerprint?: string;
+  structuralProfile?: JsonValue;
+  novelty?: {
+    maximumReferenceSimilarity: number | null;
+    maximumRecentSimilarity: number | null;
+    referenceThreshold: number;
+    recentThreshold: number;
+  };
 };
 
 export type GeneratedQuestion<

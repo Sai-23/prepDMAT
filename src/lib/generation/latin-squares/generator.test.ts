@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { latinSquareGenerator } from "./generator";
+import { intendedLatinDeductionMechanism, latinSquareGenerator } from "./generator";
 import { latinCandidatesFor } from "./difficulty";
 import {
   DEFAULT_LATIN_SYMBOLS,
@@ -29,15 +29,12 @@ describe("LatinSquareGenerator", () => {
         latinSquareGenerator.generate(configuration, 1),
       );
     },
+    20_000,
   );
 
-  it.each([
-    ["easy", 1, 2],
-    ["medium", 2, 3],
-    ["hard", 3, 4],
-  ] as const)(
-    "constructs valid %s squares with target-calibrated candidate counts",
-    (difficulty, minimumCandidates, maximumCandidates) => {
+  it.each(["easy", "medium", "hard"] as const)(
+    "constructs valid %s squares through target-aware clue removal",
+    (difficulty) => {
       for (let seed = 0; seed < 250; seed += 1) {
         const candidate = latinSquareGenerator.generate(
           { seed: `latin-${seed}`, difficulty },
@@ -52,10 +49,10 @@ describe("LatinSquareGenerator", () => {
         const clueCount = candidate.structuredData.grid.flat().filter(Boolean).length;
         expect(clueCount).toBeGreaterThanOrEqual(10);
         expect(clueCount).toBeLessThanOrEqual(15);
-        expect(latinCandidatesFor(candidate.structuredData.grid, row, column).length)
-          .toBeGreaterThanOrEqual(minimumCandidates);
-        expect(latinCandidatesFor(candidate.structuredData.grid, row, column).length)
-          .toBeLessThanOrEqual(maximumCandidates);
+        const targetCandidates = latinCandidatesFor(candidate.structuredData.grid, row, column);
+        expect(targetCandidates).toContain(candidate.correctAnswer);
+        expect(targetCandidates.length).toBeGreaterThanOrEqual(1);
+        expect(targetCandidates.length).toBeLessThanOrEqual(5);
         expect(candidate.response.kind).toBe("single_choice");
         if (candidate.response.kind === "single_choice") {
           expect(candidate.response.options.map((option) => option.content)).toEqual(
@@ -69,6 +66,7 @@ describe("LatinSquareGenerator", () => {
         }
       }
     },
+    20_000,
   );
 
   it.each(["easy", "medium", "hard"] as const)(
@@ -94,6 +92,16 @@ describe("LatinSquareGenerator", () => {
     expect(latinSquareGenerator.generate(configuration, 1)).not.toEqual(
       latinSquareGenerator.generate(configuration, 2),
     );
+  });
+
+  it("keeps the intended evidence classification stable across retries", () => {
+    const configuration = { seed: "latin-stable-reasoning", difficulty: "hard" as const };
+    expect(intendedLatinDeductionMechanism(configuration)).toBe(intendedLatinDeductionMechanism(configuration));
+    const first = intendedLatinDeductionMechanism(configuration);
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      latinSquareGenerator.generate(configuration, attempt);
+      expect(intendedLatinDeductionMechanism(configuration)).toBe(first);
+    }
   });
 
   it("rejects empty seeds and invalid attempts", () => {

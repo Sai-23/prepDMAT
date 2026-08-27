@@ -116,12 +116,19 @@ export type ReviewQueueQuestion = {
 };
 
 export type AdminMetrics = {
+  totalUsers: number;
   totalQuestions: number;
   underReview: number;
   approvedDrafts: number;
   publishedQuestions: number;
   openReports: number;
   publishedTests: number;
+  generatedQuestions: number;
+  generatedTodayUtc: number;
+  totalAttempts: number;
+  completedAttempts: number;
+  generatedByType: Record<"figure_sequence" | "mathematical_equation" | "latin_square", number>;
+  generatedByDifficulty: Record<"easy" | "medium" | "hard", number>;
 };
 
 export type EditableQuestion = {

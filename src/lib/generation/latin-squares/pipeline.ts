@@ -1,5 +1,7 @@
 import type { ValidationCheck, ValidationIssue } from "../types";
-import { fingerprintLatinSquare } from "./fingerprint";
+import { assessStructuralNovelty, fingerprintStructuralProfile, type StructuralProfile } from "../novelty";
+import { referenceProfilesFor } from "../reference-protection";
+import { fingerprintLatinSquare, LATIN_SQUARE_NOVELTY_POLICY, LATIN_SQUARE_SIMILARITY_WEIGHTS, latinSquareStructuralProfile } from "./fingerprint";
 import { latinSquareGenerator } from "./generator";
 import {
   LATIN_SQUARE_VALIDATOR_VERSION,
@@ -36,6 +38,7 @@ function acceptedQuestion(
     );
   }
   const fingerprint = fingerprintLatinSquare(candidate);
+  const structuralProfile = latinSquareStructuralProfile(candidate);
   const timestamp = new Date().toISOString();
   return {
     ...candidate,
@@ -50,6 +53,8 @@ function acceptedQuestion(
       generatedAt: timestamp,
       attemptCount: attempt,
       fingerprint,
+      ruleFingerprint: fingerprintStructuralProfile(structuralProfile),
+      structuralProfile: structuralProfile as never,
     },
     validation: {
       valid: true,
@@ -67,8 +72,11 @@ export function reproduceValidatedLatinSquare(
     throw new RangeError(`attempt must be an integer from 1 through ${MAX_GENERATION_ATTEMPTS}.`);
   }
   const question = acceptedQuestion(configuration, attempt);
+  const novelty = assessStructuralNovelty(latinSquareStructuralProfile(question), { references: referenceProfilesFor("latin_square"), weights: LATIN_SQUARE_SIMILARITY_WEIGHTS, ...LATIN_SQUARE_NOVELTY_POLICY });
+  if (!novelty.accepted) throw new LatinSquareGenerationError("The reproduced Latin square matches a protected reference structure.", attempt, [{ stage: "duplicate", code: "reference_near_clone", message: "The reproduced structure exceeds the reference-similarity threshold." }]);
   return {
     ...question,
+    metadata: { ...question.metadata, novelty },
     validation: {
       ...question.validation,
       checks: [
@@ -87,6 +95,7 @@ export function reproduceValidatedLatinSquare(
 export function generateValidatedLatinSquare(
   configuration: LatinSquareGenerationConfiguration,
   acceptedFingerprints: ReadonlySet<string> = new Set(),
+  recentStructuralProfiles: readonly StructuralProfile[] = [],
 ): LatinSquareQuestion {
   const maxAttempts = configuration.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > MAX_GENERATION_ATTEMPTS) {
@@ -110,14 +119,26 @@ export function generateValidatedLatinSquare(
       lastIssues = [{ stage: "duplicate", code: "duplicate_fingerprint", message: "The Latin-square clue structure duplicates accepted content." }];
       continue;
     }
+    const novelty = assessStructuralNovelty(latinSquareStructuralProfile(question), {
+      references: referenceProfilesFor("latin_square"),
+      recent: recentStructuralProfiles,
+      weights: LATIN_SQUARE_SIMILARITY_WEIGHTS,
+      ...LATIN_SQUARE_NOVELTY_POLICY,
+    });
+    if (!novelty.accepted) {
+      const referenceRejected = novelty.maximumReferenceSimilarity !== null && novelty.maximumReferenceSimilarity >= novelty.referenceThreshold;
+      lastIssues = [{ stage: "duplicate", code: referenceRejected ? "reference_near_clone" : "recent_near_clone", message: referenceRejected ? "The Latin-square reasoning structure is too similar to a protected reference." : "The Latin-square deduction structure is too similar to recent content." }];
+      continue;
+    }
     const duplicateCheck: ValidationCheck = {
       stage: "duplicate",
       passed: true,
       validatorVersion: LATIN_SQUARE_VALIDATOR_VERSION,
-      details: { fingerprint },
+      details: { fingerprint, ...novelty },
     };
     return {
       ...question,
+      metadata: { ...question.metadata, novelty },
       validation: {
         ...question.validation,
         checks: [...question.validation.checks, duplicateCheck],

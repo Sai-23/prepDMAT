@@ -1,0 +1,2841 @@
+{
+  "version": "phase7-explanation-audit@1",
+  "module": "mathematical_equation",
+  "requested": 1000,
+  "accepted": 1000,
+  "failures": [],
+  "failureCount": 0,
+  "unsupportedClaims": 0,
+  "missingReasoningData": 0,
+  "fallbackExplanations": 0,
+  "diagnosis": {
+    "supported": 1000,
+    "neutralOrUnsupported": 0
+  },
+  "averageSteps": 2.999,
+  "byDifficulty": {
+    "easy": {
+      "requested": 334,
+      "accepted": 334,
+      "failed": 0,
+      "totalSteps": 668,
+      "averageSteps": 2
+    },
+    "medium": {
+      "requested": 333,
+      "accepted": 333,
+      "failed": 0,
+      "totalSteps": 999,
+      "averageSteps": 3
+    },
+    "hard": {
+      "requested": 333,
+      "accepted": 333,
+      "failed": 0,
+      "totalSteps": 1332,
+      "averageSteps": 4
+    }
+  },
+  "samples": [
+    {
+      "seed": "phase7-mathematical_equation-easy-0",
+      "module": "mathematical_equation",
+      "difficulty": "easy",
+      "classification": "dependency_order_substitution",
+      "correctAnswer": {
+        "A": 4,
+        "B": 16
+      },
+      "sampleStudentAnswer": {
+        "A": 5,
+        "B": 16
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 2 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          }
+        ]
+      },
+      "summary": "Start with A, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:A",
+          "title": "Find A",
+          "description": "Start here because only one letter is unknown. Rewrite A = 4 as A = 4; this gives A = 4.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "1:B",
+          "title": "Find B",
+          "description": "Use A = 4 here. Rewrite 20 − A = B as 16 = B; this gives B = 16.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "Choose the relationship with the fewest unknowns first, then substitute solved values forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 1,
+            "targetSymbol": "A",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "solve_variable"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "chain",
+          "solveOrder": [
+            "A",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 0,
+          "relationshipReversalCount": 0,
+          "meaningfulReasoningSteps": 2,
+          "relationshipPrimitives": [
+            "complement",
+            "direct_value"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "direct",
+          "targetSymbol": "A"
+        },
+        "fastestMethod": "Start from the cleanest direct constraint, then substitute through the composed relationships in dependency order.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-medium-1",
+      "module": "mathematical_equation",
+      "difficulty": "medium",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 2,
+        "B": 10,
+        "C": 8
+      },
+      "sampleStudentAnswer": {
+        "A": 3,
+        "B": 10,
+        "C": 8
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 1 and Equation 3 and Equation 2 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "0",
+            "label": "Equation 1"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          }
+        ]
+      },
+      "summary": "Start with A, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:A",
+          "title": "Find A",
+          "description": "Use equations 1 and 3 and 2 together to eliminate the other unknown. Rewrite Eq. 1: 3 × A + C + B = 24  •  Eq. 3: C = 4 × A  •  Eq. 2: B = 5 × A as Eq. 1: 3 × A + C + B = 24  •  Eq. 3: C = 4 × A  •  Eq. 2: B = 5 × A; this gives A = 2.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0,
+              2,
+              1
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "1:C",
+          "title": "Find C",
+          "description": "Use A = 2 here. Rewrite C = 4 × A as C = 8; this gives C = 8.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "2:B",
+          "title": "Find B",
+          "description": "Use A = 2 and C = 8 here. Rewrite B = 5 × A as B = 10; this gives B = 10.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "supportingEquationIndices": [
+              2,
+              1
+            ],
+            "targetSymbol": "A",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "C",
+            "knownSymbols": [
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "A",
+              "C"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "branch",
+          "solveOrder": [
+            "A",
+            "C",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "A",
+              "target": "C"
+            },
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 2,
+          "relationshipReversalCount": 2,
+          "meaningfulReasoningSteps": 5,
+          "relationshipPrimitives": [
+            "weighted_sum",
+            "scale",
+            "scale"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "C"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-hard-2",
+      "module": "mathematical_equation",
+      "difficulty": "hard",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 6,
+        "B": 8,
+        "C": 1,
+        "D": 11
+      },
+      "sampleStudentAnswer": {
+        "A": 7,
+        "B": 8,
+        "C": 1,
+        "D": 11
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 4 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "3",
+            "label": "Equation 4"
+          }
+        ]
+      },
+      "summary": "Start with B, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:B",
+          "title": "Find B",
+          "description": "Use equations 3 and 4 and 2 and 1 together to eliminate the other unknown. Rewrite Eq. 3: B + A + D + C = 26  •  Eq. 4: 14 − B = A  •  Eq. 2: 19 − B = D  •  Eq. 1: 20 = 3 × C + A + D as Eq. 3: B + A + D + C = 26  •  Eq. 4: 14 − B = A  •  Eq. 2: 19 − B = D  •  Eq. 1: 20 = 3 × C + A + D; this gives B = 8.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2,
+              3,
+              1,
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "1:A",
+          "title": "Find A",
+          "description": "Use B = 8 here. Rewrite 14 − B = A as 6 = A; this gives A = 6.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              3
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "2:D",
+          "title": "Find D",
+          "description": "Use B = 8 and A = 6 here. Rewrite 19 − B = D as 11 = D; this gives D = 11.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "D",
+              "label": "D"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "D"
+          }
+        },
+        {
+          "id": "3:C",
+          "title": "Find C",
+          "description": "Use B = 8 and A = 6 and D = 11 here. Rewrite 20 = 3 × C + A + D as 20 = 3 × C + 6 + 11; this gives C = 1.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "C"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 2,
+            "supportingEquationIndices": [
+              3,
+              1,
+              0
+            ],
+            "targetSymbol": "B",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 3,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "B"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "D",
+            "knownSymbols": [
+              "B",
+              "A"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "C",
+            "knownSymbols": [
+              "B",
+              "A",
+              "D"
+            ],
+            "dependencySymbols": [
+              "A",
+              "D"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "branch_recombine",
+          "solveOrder": [
+            "B",
+            "A",
+            "D",
+            "C"
+          ],
+          "edges": [
+            {
+              "source": "B",
+              "target": "A"
+            },
+            {
+              "source": "B",
+              "target": "D"
+            },
+            {
+              "source": "A",
+              "target": "C"
+            },
+            {
+              "source": "D",
+              "target": "C"
+            }
+          ],
+          "hiddenGroupingCount": 3,
+          "relationshipReversalCount": 1,
+          "meaningfulReasoningSteps": 7,
+          "relationshipPrimitives": [
+            "weighted_sum",
+            "complement",
+            "multi_variable_sum",
+            "complement"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "C"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-easy-3",
+      "module": "mathematical_equation",
+      "difficulty": "easy",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 12,
+        "B": 3
+      },
+      "sampleStudentAnswer": {
+        "A": 13,
+        "B": 3
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 1 and Equation 2 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "0",
+            "label": "Equation 1"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          }
+        ]
+      },
+      "summary": "Start with A, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:A",
+          "title": "Find A",
+          "description": "Use equations 1 and 2 together to eliminate the other unknown. Rewrite Eq. 1: A ÷ 4 = B  •  Eq. 2: 27 = A + 5 × B as Eq. 1: A ÷ 4 = B  •  Eq. 2: 27 = A + 5 × B; this gives A = 12.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0,
+              1
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "1:B",
+          "title": "Find B",
+          "description": "Use A = 12 here. Rewrite A ÷ 4 = B as 3 = B; this gives B = 3.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "supportingEquationIndices": [
+              1
+            ],
+            "targetSymbol": "A",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "direct",
+          "solveOrder": [
+            "A",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 0,
+          "relationshipReversalCount": 1,
+          "meaningfulReasoningSteps": 3,
+          "relationshipPrimitives": [
+            "divide_by_constant",
+            "weighted_sum"
+          ],
+          "evidenceLevel": "official",
+          "rootStrategy": "coupled",
+          "targetSymbol": "B"
+        },
+        "fastestMethod": "Combine the independent entry constraints, then substitute each solved value through the remaining dependency graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-medium-4",
+      "module": "mathematical_equation",
+      "difficulty": "medium",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 20,
+        "B": 15,
+        "C": 3
+      },
+      "sampleStudentAnswer": {
+        "A": 21,
+        "B": 15,
+        "C": 3
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 3 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          }
+        ]
+      },
+      "summary": "Start with B, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:B",
+          "title": "Find B",
+          "description": "Use equations 2 and 1 together to eliminate the other unknown. Rewrite Eq. 2: C = 18 − B  •  Eq. 1: B ÷ 5 = C as Eq. 2: C = 18 − B  •  Eq. 1: B ÷ 5 = C; this gives B = 15.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1,
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "1:C",
+          "title": "Find C",
+          "description": "Use B = 15 here. Rewrite C = 18 − B as C = 3; this gives C = 3.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "2:A",
+          "title": "Find A",
+          "description": "Use B = 15 and C = 3 here. Rewrite A + C − B = 8 as A + 3 − 15 = 8; this gives A = 20.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "A"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 1,
+            "supportingEquationIndices": [
+              0
+            ],
+            "targetSymbol": "B",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "C",
+            "knownSymbols": [
+              "B"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "B",
+              "C"
+            ],
+            "dependencySymbols": [
+              "B",
+              "C"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "triangle",
+          "solveOrder": [
+            "B",
+            "C",
+            "A"
+          ],
+          "edges": [
+            {
+              "source": "B",
+              "target": "C"
+            },
+            {
+              "source": "B",
+              "target": "A"
+            },
+            {
+              "source": "C",
+              "target": "A"
+            }
+          ],
+          "hiddenGroupingCount": 1,
+          "relationshipReversalCount": 1,
+          "meaningfulReasoningSteps": 4,
+          "relationshipPrimitives": [
+            "divide_by_constant",
+            "complement",
+            "multi_variable_balance"
+          ],
+          "evidenceLevel": "third_party_supported",
+          "rootStrategy": "coupled",
+          "targetSymbol": "A"
+        },
+        "fastestMethod": "Combine the independent entry constraints, then substitute each solved value through the remaining dependency graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-hard-5",
+      "module": "mathematical_equation",
+      "difficulty": "hard",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 9,
+        "B": 2,
+        "C": 8,
+        "D": 9
+      },
+      "sampleStudentAnswer": {
+        "A": 10,
+        "B": 2,
+        "C": 8,
+        "D": 9
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 1 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "0",
+            "label": "Equation 1"
+          }
+        ]
+      },
+      "summary": "Start with C, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:C",
+          "title": "Find C",
+          "description": "Use equations 3 and 2 and 1 and 4 together to eliminate the other unknown. Rewrite Eq. 3: 6 = C + A − D − B  •  Eq. 2: 17 = C + D  •  Eq. 1: 25 = 2 × C + A  •  Eq. 4: A − 7 = B as Eq. 3: 6 = C + A − D − B  •  Eq. 2: 17 = C + D  •  Eq. 1: 25 = 2 × C + A  •  Eq. 4: A − 7 = B; this gives C = 8.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2,
+              1,
+              0,
+              3
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "1:D",
+          "title": "Find D",
+          "description": "Use C = 8 here. Rewrite 17 = C + D as 17 = 8 + D; this gives D = 9.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "D",
+              "label": "D"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "D"
+          }
+        },
+        {
+          "id": "2:A",
+          "title": "Find A",
+          "description": "Use C = 8 and D = 9 here. Rewrite 25 = 2 × C + A as 25 = 16 + A; this gives A = 9.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "3:B",
+          "title": "Find B",
+          "description": "Use C = 8 and D = 9 and A = 9 here. Rewrite A − 7 = B as 2 = B; this gives B = 2.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              3
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 2,
+            "supportingEquationIndices": [
+              1,
+              0,
+              3
+            ],
+            "targetSymbol": "C",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "D",
+            "knownSymbols": [
+              "C"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "C",
+              "D"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 3,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "C",
+              "D",
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "branch",
+          "solveOrder": [
+            "C",
+            "D",
+            "A",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "C",
+              "target": "D"
+            },
+            {
+              "source": "C",
+              "target": "A"
+            },
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 2,
+          "relationshipReversalCount": 3,
+          "meaningfulReasoningSteps": 7,
+          "relationshipPrimitives": [
+            "weighted_sum",
+            "sum",
+            "multi_variable_balance",
+            "offset_subtract"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "B"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-easy-6",
+      "module": "mathematical_equation",
+      "difficulty": "easy",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 20,
+        "B": 1
+      },
+      "sampleStudentAnswer": {
+        "A": 21,
+        "B": 1
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 2 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          }
+        ]
+      },
+      "summary": "Start with B, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:B",
+          "title": "Find B",
+          "description": "Use equations 1 and 2 together to eliminate the other unknown. Rewrite Eq. 1: B = A − 19  •  Eq. 2: 2 × B + A = 22 as Eq. 1: B = A − 19  •  Eq. 2: 2 × B + A = 22; this gives B = 1.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0,
+              1
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "1:A",
+          "title": "Find A",
+          "description": "Use B = 1 here. Rewrite 2 × B + A = 22 as 2 + A = 22; this gives A = 20.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "A"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "supportingEquationIndices": [
+              1
+            ],
+            "targetSymbol": "B",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "B"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "reverse_chain",
+          "solveOrder": [
+            "B",
+            "A"
+          ],
+          "edges": [
+            {
+              "source": "B",
+              "target": "A"
+            }
+          ],
+          "hiddenGroupingCount": 1,
+          "relationshipReversalCount": 1,
+          "meaningfulReasoningSteps": 3,
+          "relationshipPrimitives": [
+            "offset_subtract",
+            "weighted_sum"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "A"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-medium-7",
+      "module": "mathematical_equation",
+      "difficulty": "medium",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 7,
+        "B": 5,
+        "C": 18
+      },
+      "sampleStudentAnswer": {
+        "A": 8,
+        "B": 5,
+        "C": 18
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 1 and Equation 3 and Equation 2 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "0",
+            "label": "Equation 1"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          }
+        ]
+      },
+      "summary": "Start with A, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:A",
+          "title": "Find A",
+          "description": "Use equations 1 and 3 and 2 together to eliminate the other unknown. Rewrite Eq. 1: A + C + B = 30  •  Eq. 3: 11 = C − A  •  Eq. 2: B = C − 13 as Eq. 1: A + C + B = 30  •  Eq. 3: 11 = C − A  •  Eq. 2: B = C − 13; this gives A = 7.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0,
+              2,
+              1
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "1:C",
+          "title": "Find C",
+          "description": "Use A = 7 here. Rewrite 11 = C − A as 11 = C − 7; this gives C = 18.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "2:B",
+          "title": "Find B",
+          "description": "Use A = 7 and C = 18 here. Rewrite B = C − 13 as B = 5; this gives B = 5.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "supportingEquationIndices": [
+              2,
+              1
+            ],
+            "targetSymbol": "A",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "C",
+            "knownSymbols": [
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "A",
+              "C"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "reverse_chain",
+          "solveOrder": [
+            "A",
+            "C",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "A",
+              "target": "C"
+            },
+            {
+              "source": "C",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 2,
+          "relationshipReversalCount": 2,
+          "meaningfulReasoningSteps": 5,
+          "relationshipPrimitives": [
+            "multi_variable_sum",
+            "offset_subtract",
+            "difference"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "B"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-hard-8",
+      "module": "mathematical_equation",
+      "difficulty": "hard",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 1,
+        "B": 2,
+        "C": 5,
+        "D": 10
+      },
+      "sampleStudentAnswer": {
+        "A": 2,
+        "B": 2,
+        "C": 5,
+        "D": 10
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 3 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          }
+        ]
+      },
+      "summary": "Start with B, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:B",
+          "title": "Find B",
+          "description": "Use equations 2 and 3 and 1 and 4 together to eliminate the other unknown. Rewrite Eq. 2: 4 × B + A + D + C = 24  •  Eq. 3: A = B ÷ 2  •  Eq. 1: 2 × B + D = 14  •  Eq. 4: C = D − 5 as Eq. 2: 4 × B + A + D + C = 24  •  Eq. 3: A = B ÷ 2  •  Eq. 1: 2 × B + D = 14  •  Eq. 4: C = D − 5; this gives B = 2.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1,
+              2,
+              0,
+              3
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "1:A",
+          "title": "Find A",
+          "description": "Use B = 2 here. Rewrite A = B ÷ 2 as A = 1; this gives A = 1.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "2:D",
+          "title": "Find D",
+          "description": "Use B = 2 and A = 1 here. Rewrite 2 × B + D = 14 as 4 + D = 14; this gives D = 10.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "D",
+              "label": "D"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "D"
+          }
+        },
+        {
+          "id": "3:C",
+          "title": "Find C",
+          "description": "Use B = 2 and A = 1 and D = 10 here. Rewrite C = D − 5 as C = 5; this gives C = 5.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              3
+            ],
+            "targetSymbol": "C"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 1,
+            "supportingEquationIndices": [
+              2,
+              0,
+              3
+            ],
+            "targetSymbol": "B",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "B"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "D",
+            "knownSymbols": [
+              "B",
+              "A"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 3,
+            "targetSymbol": "C",
+            "knownSymbols": [
+              "B",
+              "A",
+              "D"
+            ],
+            "dependencySymbols": [
+              "D"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "branch",
+          "solveOrder": [
+            "B",
+            "A",
+            "D",
+            "C"
+          ],
+          "edges": [
+            {
+              "source": "B",
+              "target": "A"
+            },
+            {
+              "source": "B",
+              "target": "D"
+            },
+            {
+              "source": "D",
+              "target": "C"
+            }
+          ],
+          "hiddenGroupingCount": 2,
+          "relationshipReversalCount": 2,
+          "meaningfulReasoningSteps": 7,
+          "relationshipPrimitives": [
+            "weighted_sum",
+            "weighted_sum",
+            "divide_by_constant",
+            "offset_subtract"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "C"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-easy-9",
+      "module": "mathematical_equation",
+      "difficulty": "easy",
+      "classification": "dependency_order_substitution",
+      "correctAnswer": {
+        "A": 7,
+        "B": 14
+      },
+      "sampleStudentAnswer": {
+        "A": 8,
+        "B": 14
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 1 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "0",
+            "label": "Equation 1"
+          }
+        ]
+      },
+      "summary": "Start with A, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:A",
+          "title": "Find A",
+          "description": "Start here because only one letter is unknown. Rewrite A = 7 as A = 7; this gives A = 7.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "1:B",
+          "title": "Find B",
+          "description": "Use A = 7 here. Rewrite 2 × A = B as 14 = B; this gives B = 14.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "Choose the relationship with the fewest unknowns first, then substitute solved values forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "targetSymbol": "A",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "solve_variable"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "chain",
+          "solveOrder": [
+            "A",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 0,
+          "relationshipReversalCount": 0,
+          "meaningfulReasoningSteps": 2,
+          "relationshipPrimitives": [
+            "direct_value",
+            "scale"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "direct",
+          "targetSymbol": "B"
+        },
+        "fastestMethod": "Start from the cleanest direct constraint, then substitute through the composed relationships in dependency order.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-medium-10",
+      "module": "mathematical_equation",
+      "difficulty": "medium",
+      "classification": "dependency_order_substitution",
+      "correctAnswer": {
+        "A": 2,
+        "B": 20,
+        "C": 19
+      },
+      "sampleStudentAnswer": {
+        "A": 3,
+        "B": 20,
+        "C": 19
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 2 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          }
+        ]
+      },
+      "summary": "Start with C, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:C",
+          "title": "Find C",
+          "description": "Start here because only one letter is unknown. Rewrite C = 19 as C = 19; this gives C = 19.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "1:A",
+          "title": "Find A",
+          "description": "Use C = 19 here. Rewrite C + A = 21 as 19 + A = 21; this gives A = 2.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "2:B",
+          "title": "Find B",
+          "description": "Use C = 19 and A = 2 here. Rewrite 22 − A = B as 20 = B; this gives B = 20.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "Choose the relationship with the fewest unknowns first, then substitute solved values forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 2,
+            "targetSymbol": "C",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "solve_variable"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "C"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "C",
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "chain",
+          "solveOrder": [
+            "C",
+            "A",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "C",
+              "target": "A"
+            },
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 0,
+          "relationshipReversalCount": 0,
+          "meaningfulReasoningSteps": 3,
+          "relationshipPrimitives": [
+            "complement",
+            "sum",
+            "direct_value"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "direct",
+          "targetSymbol": "B"
+        },
+        "fastestMethod": "Start from the cleanest direct constraint, then substitute through the composed relationships in dependency order.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-hard-11",
+      "module": "mathematical_equation",
+      "difficulty": "hard",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 19,
+        "B": 16,
+        "C": 8,
+        "D": 7
+      },
+      "sampleStudentAnswer": {
+        "A": 20,
+        "B": 16,
+        "C": 8,
+        "D": 7
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 3 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          }
+        ]
+      },
+      "summary": "Start with C, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:C",
+          "title": "Find C",
+          "description": "Use equations 1 and 2 together to eliminate the other unknown. Rewrite Eq. 1: B − C = 8  •  Eq. 2: B = 2 × C as Eq. 1: B − C = 8  •  Eq. 2: B = 2 × C; this gives C = 8.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0,
+              1
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "1:B",
+          "title": "Find B",
+          "description": "Use C = 8 here. Rewrite B − C = 8 as B − 8 = 8; this gives B = 16.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "2:D",
+          "title": "Find D",
+          "description": "Use C = 8 and B = 16 here. Rewrite C + 2 × D = 22 as 8 + 2 × D = 22; this gives D = 7.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "D",
+              "label": "D"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              3
+            ],
+            "targetSymbol": "D"
+          }
+        },
+        {
+          "id": "3:A",
+          "title": "Find A",
+          "description": "Use C = 8 and B = 16 and D = 7 here. Rewrite 10 = A + D − B as 10 = A + 7 − 16; this gives A = 19.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "A"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "supportingEquationIndices": [
+              1
+            ],
+            "targetSymbol": "C",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "C"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 3,
+            "targetSymbol": "D",
+            "knownSymbols": [
+              "C",
+              "B"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "C",
+              "B",
+              "D"
+            ],
+            "dependencySymbols": [
+              "B",
+              "D"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "mixed",
+          "solveOrder": [
+            "C",
+            "B",
+            "D",
+            "A"
+          ],
+          "edges": [
+            {
+              "source": "C",
+              "target": "B"
+            },
+            {
+              "source": "C",
+              "target": "D"
+            },
+            {
+              "source": "B",
+              "target": "A"
+            },
+            {
+              "source": "D",
+              "target": "A"
+            }
+          ],
+          "hiddenGroupingCount": 1,
+          "relationshipReversalCount": 2,
+          "meaningfulReasoningSteps": 5,
+          "relationshipPrimitives": [
+            "difference",
+            "scale",
+            "multi_variable_balance",
+            "weighted_sum"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "coupled",
+          "targetSymbol": "A"
+        },
+        "fastestMethod": "Combine the independent entry constraints, then substitute each solved value through the remaining dependency graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-easy-12",
+      "module": "mathematical_equation",
+      "difficulty": "easy",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 15,
+        "B": 5
+      },
+      "sampleStudentAnswer": {
+        "A": 16,
+        "B": 5
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 2 and Equation 1 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "1",
+            "label": "Equation 2"
+          },
+          {
+            "kind": "equation",
+            "id": "0",
+            "label": "Equation 1"
+          }
+        ]
+      },
+      "summary": "Start with A, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:A",
+          "title": "Find A",
+          "description": "Use equations 2 and 1 together to eliminate the other unknown. Rewrite Eq. 2: 3 × B = A  •  Eq. 1: 20 − A = B as Eq. 2: 3 × B = A  •  Eq. 1: 20 − A = B; this gives A = 15.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1,
+              0
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "1:B",
+          "title": "Find B",
+          "description": "Use A = 15 here. Rewrite 20 − A = B as 5 = B; this gives B = 5.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 1,
+            "supportingEquationIndices": [
+              0
+            ],
+            "targetSymbol": "A",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "reverse_chain",
+          "solveOrder": [
+            "A",
+            "B"
+          ],
+          "edges": [
+            {
+              "source": "A",
+              "target": "B"
+            }
+          ],
+          "hiddenGroupingCount": 1,
+          "relationshipReversalCount": 0,
+          "meaningfulReasoningSteps": 3,
+          "relationshipPrimitives": [
+            "complement",
+            "scale"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "A"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-medium-13",
+      "module": "mathematical_equation",
+      "difficulty": "medium",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 7,
+        "B": 6,
+        "C": 12
+      },
+      "sampleStudentAnswer": {
+        "A": 8,
+        "B": 6,
+        "C": 12
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 3 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          }
+        ]
+      },
+      "summary": "Start with C, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:C",
+          "title": "Find C",
+          "description": "Use equations 1 and 2 and 3 together to eliminate the other unknown. Rewrite Eq. 1: C + A − B = 13  •  Eq. 2: C + B = 18  •  Eq. 3: B + A = 13 as Eq. 1: C + A − B = 13  •  Eq. 2: C + B = 18  •  Eq. 3: B + A = 13; this gives C = 12.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0,
+              1,
+              2
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "1:B",
+          "title": "Find B",
+          "description": "Use C = 12 here. Rewrite C + B = 18 as 12 + B = 18; this gives B = 6.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "2:A",
+          "title": "Find A",
+          "description": "Use C = 12 and B = 6 here. Rewrite B + A = 13 as 6 + A = 13; this gives A = 7.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "A"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 0,
+            "supportingEquationIndices": [
+              1,
+              2
+            ],
+            "targetSymbol": "C",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 1,
+            "targetSymbol": "B",
+            "knownSymbols": [
+              "C"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "C",
+              "B"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "reverse_chain",
+          "solveOrder": [
+            "C",
+            "B",
+            "A"
+          ],
+          "edges": [
+            {
+              "source": "C",
+              "target": "B"
+            },
+            {
+              "source": "B",
+              "target": "A"
+            }
+          ],
+          "hiddenGroupingCount": 2,
+          "relationshipReversalCount": 0,
+          "meaningfulReasoningSteps": 5,
+          "relationshipPrimitives": [
+            "multi_variable_balance",
+            "sum",
+            "sum"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "A"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    },
+    {
+      "seed": "phase7-mathematical_equation-hard-14",
+      "module": "mathematical_equation",
+      "difficulty": "hard",
+      "classification": "combine_then_substitute",
+      "correctAnswer": {
+        "A": 3,
+        "B": 5,
+        "C": 15,
+        "D": 2
+      },
+      "sampleStudentAnswer": {
+        "A": 4,
+        "B": 5,
+        "C": 15,
+        "D": 2
+      },
+      "feedback": {
+        "supported": true,
+        "title": "Recheck A first",
+        "description": "This is the earliest value in the verified solve order that differs. Rework Equation 3 before carrying values forward.",
+        "references": [
+          {
+            "kind": "variable",
+            "id": "A",
+            "label": "A"
+          },
+          {
+            "kind": "equation",
+            "id": "2",
+            "label": "Equation 3"
+          }
+        ]
+      },
+      "summary": "Start with B, then use each solved value to unlock the next relationship.",
+      "steps": [
+        {
+          "id": "0:B",
+          "title": "Find B",
+          "description": "Use equations 2 and 4 and 3 and 1 together to eliminate the other unknown. Rewrite Eq. 2: 3 × B + C + A + D = 35  •  Eq. 4: 3 × B = C  •  Eq. 3: A = C ÷ 5  •  Eq. 1: A − 1 = D as Eq. 2: 3 × B + C + A + D = 35  •  Eq. 4: 3 × B = C  •  Eq. 3: A = C ÷ 5  •  Eq. 1: A − 1 = D; this gives B = 5.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "1",
+              "label": "Equation 2"
+            },
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "B",
+              "label": "B"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              1,
+              3,
+              2,
+              0
+            ],
+            "targetSymbol": "B"
+          }
+        },
+        {
+          "id": "1:C",
+          "title": "Find C",
+          "description": "Use B = 5 here. Rewrite 3 × B = C as 15 = C; this gives C = 15.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "3",
+              "label": "Equation 4"
+            },
+            {
+              "kind": "variable",
+              "id": "C",
+              "label": "C"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              3
+            ],
+            "targetSymbol": "C"
+          }
+        },
+        {
+          "id": "2:A",
+          "title": "Find A",
+          "description": "Use B = 5 and C = 15 here. Rewrite A = C ÷ 5 as A = 3; this gives A = 3.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "2",
+              "label": "Equation 3"
+            },
+            {
+              "kind": "variable",
+              "id": "A",
+              "label": "A"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              2
+            ],
+            "targetSymbol": "A"
+          }
+        },
+        {
+          "id": "3:D",
+          "title": "Find D",
+          "description": "Use B = 5 and C = 15 and A = 3 here. Rewrite A − 1 = D as 2 = D; this gives D = 2.",
+          "references": [
+            {
+              "kind": "equation",
+              "id": "0",
+              "label": "Equation 1"
+            },
+            {
+              "kind": "variable",
+              "id": "D",
+              "label": "D"
+            }
+          ],
+          "visual": {
+            "equationIndices": [
+              0
+            ],
+            "targetSymbol": "D"
+          }
+        }
+      ],
+      "takeaway": "When no relationship starts cleanly, combine the smallest useful set; after that, substitute forward.",
+      "internalMetadata": {
+        "solutionPath": [
+          {
+            "equationIndex": 1,
+            "supportingEquationIndices": [
+              3,
+              2,
+              0
+            ],
+            "targetSymbol": "B",
+            "knownSymbols": [],
+            "dependencySymbols": [],
+            "reasoning": "combine_equations"
+          },
+          {
+            "equationIndex": 3,
+            "targetSymbol": "C",
+            "knownSymbols": [
+              "B"
+            ],
+            "dependencySymbols": [
+              "B"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 2,
+            "targetSymbol": "A",
+            "knownSymbols": [
+              "B",
+              "C"
+            ],
+            "dependencySymbols": [
+              "C"
+            ],
+            "reasoning": "substitute"
+          },
+          {
+            "equationIndex": 0,
+            "targetSymbol": "D",
+            "knownSymbols": [
+              "B",
+              "C",
+              "A"
+            ],
+            "dependencySymbols": [
+              "A"
+            ],
+            "reasoning": "substitute"
+          }
+        ],
+        "dependencyModel": {
+          "family": "cascade",
+          "solveOrder": [
+            "B",
+            "C",
+            "A",
+            "D"
+          ],
+          "edges": [
+            {
+              "source": "B",
+              "target": "C"
+            },
+            {
+              "source": "C",
+              "target": "A"
+            },
+            {
+              "source": "A",
+              "target": "D"
+            }
+          ],
+          "hiddenGroupingCount": 2,
+          "relationshipReversalCount": 1,
+          "meaningfulReasoningSteps": 7,
+          "relationshipPrimitives": [
+            "offset_subtract",
+            "weighted_sum",
+            "divide_by_constant",
+            "scale"
+          ],
+          "evidenceLevel": "official_composition",
+          "rootStrategy": "global_balance",
+          "targetSymbol": "D"
+        },
+        "fastestMethod": "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph.",
+        "generatorVersion": "mathematical-equations@7.0.0"
+      }
+    }
+  ]
+}

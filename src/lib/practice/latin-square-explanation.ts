@@ -1,7 +1,6 @@
 import {
   DEFAULT_LATIN_SYMBOLS,
   LATIN_SQUARE_SIZE,
-  type CompletedLatinGrid,
   type LatinCoordinate,
   type LatinDeduction,
   type LatinDeductionReason,
@@ -50,7 +49,7 @@ export type LatinWalkthroughSummary = {
 export type LatinWalkthrough = {
   valid: boolean;
   steps: LatinExplanationStep[];
-  completedGrid: CompletedLatinGrid | null;
+  proofGrid: VisibleLatinGrid | null;
   summary: LatinWalkthroughSummary | null;
   fallbackMessage: string | null;
 };
@@ -98,6 +97,18 @@ function parseDeduction(value: unknown): LatinDeduction | null {
     round: Number(deduction.round),
     depth: Number(deduction.depth),
     dependencies: Array.isArray(deduction.dependencies) ? deduction.dependencies : [],
+    axis: deduction.axis === "row" || deduction.axis === "column" || deduction.axis === "both"
+      ? deduction.axis
+      : deduction.reason === "only_position_in_row" ? "row" : deduction.reason === "only_position_in_column" ? "column" : "both",
+    clueDependencies: Array.isArray(deduction.clueDependencies) && deduction.clueDependencies.every(isCoordinate)
+      ? deduction.clueDependencies
+      : [],
+    candidatesBefore: Array.isArray(deduction.candidatesBefore) && deduction.candidatesBefore.every(isLatinSymbol)
+      ? deduction.candidatesBefore
+      : [deduction.symbol],
+    eliminatedCandidates: Array.isArray(deduction.eliminatedCandidates) && deduction.eliminatedCandidates.every(isLatinSymbol)
+      ? deduction.eliminatedCandidates
+      : DEFAULT_LATIN_SYMBOLS.filter((symbol) => symbol !== deduction.symbol),
   };
 }
 
@@ -219,51 +230,32 @@ function proofIsValid(
   return true;
 }
 
-function combinations(values: number[], count: number): number[][] {
-  if (count === 0) return [[]];
-  if (count > values.length) return [];
-  const result: number[][] = [];
-  const build = (start: number, chosen: number[]) => {
-    if (chosen.length === count) {
-      result.push([...chosen]);
-      return;
-    }
-    for (let index = start; index <= values.length - (count - chosen.length); index += 1) {
-      chosen.push(values[index]);
-      build(index + 1, chosen);
-      chosen.pop();
-    }
-  };
-  build(0, []);
-  return result;
-}
-
 function conciseProofIndices(
   originalGrid: VisibleLatinGrid,
   deductions: readonly LatinDeduction[],
   targetIndex: number,
-  closure: ReadonlySet<string>,
 ): number[] | null {
-  const eligible = deductions
-    .map((deduction, index) => ({ deduction, index }))
-    .filter(({ deduction, index }) =>
-      index < targetIndex && closure.has(coordinateKey(deduction.coordinate)),
-    )
-    .map(({ index }) => index);
-  for (let count = 0; count <= eligible.length; count += 1) {
-    for (const selection of combinations(eligible, count)) {
-      if (proofIsValid(originalGrid, deductions, new Set(selection), targetIndex)) {
-        return [...selection, targetIndex];
-      }
+  const selected = Array.from({ length: targetIndex }, (_, index) => index);
+  if (!proofIsValid(originalGrid, deductions, new Set(selected), targetIndex)) return null;
+
+  // A causal dependency closure can omit deductions that are needed to make a
+  // hidden-single explanation visually replayable. Start with the verified
+  // prefix and remove each dispensable step instead of assuming closure alone
+  // is a complete presentation proof.
+  for (const index of [...selected]) {
+    const trial = selected.filter((candidate) => candidate !== index);
+    if (proofIsValid(originalGrid, deductions, new Set(trial), targetIndex)) {
+      selected.splice(selected.indexOf(index), 1);
     }
   }
-  return null;
+  return [...selected, targetIndex];
 }
 
-function completedGrid(
+function proofGrid(
   data: LatinSquareStructuredData,
   answer: LatinSymbol,
-): CompletedLatinGrid | null {
+  requiredDeductions: readonly LatinDeduction[] = [],
+): VisibleLatinGrid | null {
   const grid = data.grid.map((row) => [...row]);
   if (
     grid.length !== LATIN_SQUARE_SIZE ||
@@ -271,38 +263,15 @@ function completedGrid(
     grid[data.target.row]?.[data.target.column] !== null ||
     !candidatesFor(grid, data.target).includes(answer)
   ) return null;
+  for (const deduction of requiredDeductions) {
+    const existing = grid[deduction.coordinate.row]?.[deduction.coordinate.column];
+    if (existing !== null && existing !== deduction.symbol) return null;
+    grid[deduction.coordinate.row][deduction.coordinate.column] = deduction.symbol;
+  }
+  const existingTarget = grid[data.target.row][data.target.column];
+  if (existingTarget !== null && existingTarget !== answer) return null;
   grid[data.target.row][data.target.column] = answer;
-
-  const solve = (): boolean => {
-    let next: { coordinate: LatinCoordinate; candidates: LatinSymbol[] } | null = null;
-    for (let row = 0; row < LATIN_SQUARE_SIZE; row += 1) {
-      for (let column = 0; column < LATIN_SQUARE_SIZE; column += 1) {
-        if (grid[row][column] !== null) continue;
-        const coordinate = { row, column };
-        const candidates = candidatesFor(grid, coordinate);
-        if (!candidates.length) return false;
-        if (!next || candidates.length < next.candidates.length) {
-          next = { coordinate, candidates };
-        }
-      }
-    }
-    if (!next) return true;
-    const { coordinate, candidates } = next;
-    for (const symbol of candidates) {
-      grid[coordinate.row][coordinate.column] = symbol;
-      if (solve()) return true;
-      grid[coordinate.row][coordinate.column] = null;
-    }
-    return false;
-  };
-
-  if (!solve()) return null;
-  const expected = [...DEFAULT_LATIN_SYMBOLS].sort().join("");
-  const valid = grid.every((row) => [...row].sort().join("") === expected) &&
-    Array.from({ length: LATIN_SQUARE_SIZE }, (_, column) =>
-      grid.map((row) => row[column]).sort().join(""),
-    ).every((column) => column === expected);
-  return valid ? grid as CompletedLatinGrid : null;
+  return grid;
 }
 
 function baseStep(
@@ -452,11 +421,11 @@ function targetSteps(
   };
 }
 
-function fallback(answer: LatinSymbol, solution: CompletedLatinGrid | null): LatinWalkthrough {
+function fallback(answer: LatinSymbol, solution: VisibleLatinGrid | null): LatinWalkthrough {
   return {
     valid: false,
     steps: [],
-    completedGrid: solution,
+    proofGrid: solution,
     summary: null,
     fallbackMessage: `The verified answer is ${answer}. A detailed walkthrough is unavailable for this question.`,
   };
@@ -471,12 +440,12 @@ export function buildLatinSquareWalkthrough(
     return {
       valid: false,
       steps: [],
-      completedGrid: null,
+      proofGrid: null,
       summary: null,
       fallbackMessage: "The verified answer is unavailable.",
     };
   }
-  const solution = completedGrid(data, correctAnswer);
+  const solution = proofGrid(data, correctAnswer);
   if (!solution) return fallback(correctAnswer, null);
 
   let trace: LatinDeduction[];
@@ -491,16 +460,13 @@ export function buildLatinSquareWalkthrough(
       Array.isArray((value as Record<string, unknown>).dependencies),
     );
     const closure = hasDependencies ? targetClosure(trace, data.target) : null;
-    const scope = closure ?? new Set(
-      trace.slice(0, targetIndex + 1).map((deduction) => coordinateKey(deduction.coordinate)),
-    );
     if (
       targetIndex < 0 ||
       (hasDependencies && !closure) ||
       !dependenciesAreOrdered(trace) ||
       trace[targetIndex].symbol !== correctAnswer
     ) return fallback(correctAnswer, solution);
-    proofIndices = conciseProofIndices(data.grid, trace, targetIndex, scope);
+    proofIndices = conciseProofIndices(data.grid, trace, targetIndex);
   } else {
     const direct: LatinDeduction = {
       coordinate: data.target,
@@ -509,17 +475,30 @@ export function buildLatinSquareWalkthrough(
       round: 1,
       depth: 1,
       dependencies: [],
+      axis: "both",
+      clueDependencies: [],
+      candidatesBefore: [correctAnswer],
+      eliminatedCandidates: DEFAULT_LATIN_SYMBOLS.filter((symbol) => symbol !== correctAnswer),
     };
     trace = [direct];
     proofIndices = deductionIsValid(data.grid, direct) ? [0] : null;
   }
   if (!proofIndices) return fallback(correctAnswer, solution);
 
+  // Keep the explanation strictly within the target's verified causal path.
+  // Unrelated blanks remain blank and are never solved by the walkthrough.
+  const proofSolution = proofGrid(
+    data,
+    correctAnswer,
+    proofIndices.map((index) => trace[index]),
+  );
+  if (!proofSolution) return fallback(correctAnswer, solution);
+
   const grid = data.grid.map((row) => [...row]);
   const steps: LatinExplanationStep[] = [];
   for (const [proofIndex, traceIndex] of proofIndices.entries()) {
     const deduction = trace[traceIndex];
-    if (!deductionIsValid(grid, deduction) || solution[deduction.coordinate.row][deduction.coordinate.column] !== deduction.symbol) {
+    if (!deductionIsValid(grid, deduction) || proofSolution[deduction.coordinate.row][deduction.coordinate.column] !== deduction.symbol) {
       return fallback(correctAnswer, solution);
     }
     const isTarget = sameCoordinate(deduction.coordinate, data.target);
@@ -531,7 +510,7 @@ export function buildLatinSquareWalkthrough(
       return {
         valid: true,
         steps: [...steps, ...targetPresentation.steps],
-        completedGrid: solution,
+        proofGrid: proofSolution,
         summary: targetPresentation.summary,
         fallbackMessage: null,
       };

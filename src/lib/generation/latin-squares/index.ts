@@ -1,4 +1,6 @@
 export * from "./difficulty";
+export * from "./distractors";
+export * from "./evidence";
 export * from "./fingerprint";
 export * from "./generator";
 export * from "./pipeline";

@@ -230,9 +230,9 @@ describe.skipIf(!ENABLED)("Latin Square 100-per-difficulty audit", () => {
 
     expect(rows.every((row) => row.accepted === SAMPLE_SIZE)).toBe(true);
     expect(rows.every((row) => row.clueCount.minimum >= 10 && row.clueCount.maximum <= 15)).toBe(true);
-    expect(rows[0].classificationDistribution.multi_stage).toBe(0);
-    expect(rows[1].classificationDistribution.indirect).toBe(SAMPLE_SIZE);
-    expect(rows[2].classificationDistribution.multi_stage).toBe(SAMPLE_SIZE);
+    expect(rows[0].classificationDistribution.direct).toBe(SAMPLE_SIZE);
+    expect(rows[1].classificationDistribution.direct).toBe(0);
+    expect(rows[2].classificationDistribution.direct).toBe(0);
     expect(rows[1].averageTargetDepth).toBeGreaterThan(rows[0].averageTargetDepth);
     expect(rows[2].averageTargetDepth).toBeGreaterThan(rows[1].averageTargetDepth);
     expect(rows[2].averageForcedPlacementsBeforeTarget).toBeGreaterThan(rows[1].averageForcedPlacementsBeforeTarget);

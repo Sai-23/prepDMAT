@@ -316,7 +316,9 @@ function runAdversarialAudit(): { attempted: number; rejected: number; rejection
   duplicateCandidate.sequence.missingMatrices[0].candidates[1].frame = structuredClone(duplicateCandidate.sequence.missingMatrices[0].candidates[0].frame);
   figureMutations.push(duplicateCandidate);
   const wrongRotation = structuredClone(figureBase);
-  wrongRotation.structuredData.rules[0].rotation!.quarterTurns += 1;
+  const rotator = wrongRotation.structuredData.rules.find((rule) => rule.rotation);
+  if (rotator?.rotation) rotator.rotation.quarterTurns += 1;
+  else wrongRotation.structuredData.rules[0].movement!.steps += 1;
   figureMutations.push(wrongRotation);
   figureMutations.forEach((candidate) => outcomes.push(!figureSequenceValidator.validate(candidate, "medium").valid));
 

@@ -14,7 +14,6 @@ import { type Ref, useMemo, useReducer, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import type {
-  CompletedLatinGrid,
   LatinCoordinate,
   LatinSquareStructuredData,
   LatinSymbol,
@@ -28,6 +27,11 @@ import {
   type LatinExplanationStep,
   type LatinWalkthroughSummary,
 } from "@/lib/practice/latin-square-explanation";
+import {
+  buildLatinEducationalExplanation,
+  diagnoseLatinMistake,
+  type EducationalExplanation,
+} from "@/lib/practice/educational-explanation";
 import { cn } from "@/lib/utils";
 
 export function LatinSquarePracticeFeedback({
@@ -39,6 +43,9 @@ export function LatinSquarePracticeFeedback({
   initiallyOpen = false,
   initialView = "step",
   initialStep = 0,
+  onExplanationOpen,
+  educationalExplanation,
+  difficulty,
 }: {
   data: LatinSquareStructuredData;
   trace: unknown;
@@ -48,10 +55,21 @@ export function LatinSquarePracticeFeedback({
   initiallyOpen?: boolean;
   initialView?: "step" | "all";
   initialStep?: number;
+  onExplanationOpen?: () => void;
+  educationalExplanation?: EducationalExplanation;
+  difficulty?: "easy" | "medium" | "hard";
 }) {
   const walkthrough = useMemo(
     () => buildLatinSquareWalkthrough(data, trace, correctAnswer),
     [correctAnswer, data, trace],
+  );
+  const education = useMemo(
+    () => educationalExplanation ?? buildLatinEducationalExplanation(data, trace, correctAnswer, difficulty),
+    [correctAnswer, data, difficulty, educationalExplanation, trace],
+  );
+  const mistake = useMemo(
+    () => isCorrect ? null : diagnoseLatinMistake(data, trace, selectedAnswer, correctAnswer),
+    [correctAnswer, data, isCorrect, selectedAnswer, trace],
   );
   const [navigation, dispatch] = useReducer(explanationNavigationReducer, {
     open: initiallyOpen,
@@ -93,10 +111,25 @@ export function LatinSquarePracticeFeedback({
             />
           </div>
         </div>
+        {education ? (
+          <div className="mt-4 rounded-lg border border-primary/30 bg-primary-muted px-4 py-3" data-explanation-level="quick">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Quick explanation</p>
+            <p className="mt-1 text-sm leading-6 text-on-surface">{education.summary}</p>
+          </div>
+        ) : null}
+        {!isCorrect && mistake ? (
+          <div className="mt-3 rounded-lg border border-warning bg-warning-container px-4 py-3" data-diagnosis-supported={mistake.supported}>
+            <p className="text-sm font-semibold text-warning-container-foreground">{mistake.title}</p>
+            <p className="mt-1 text-sm leading-6 text-warning-container-foreground">{mistake.description}</p>
+          </div>
+        ) : null}
         <Button
           aria-expanded={navigation.open}
           className="mt-4"
-          onClick={() => dispatch({ type: navigation.open ? "close" : "open" })}
+          onClick={() => {
+            if (!navigation.open) onExplanationOpen?.();
+            dispatch({ type: navigation.open ? "close" : "open" });
+          }}
           size="sm"
           type="button"
           variant="secondary"
@@ -134,6 +167,12 @@ export function LatinSquarePracticeFeedback({
               </Button>
             ) : null}
           </div>
+          {education ? (
+            <div className="mt-4 rounded-lg border border-workspace-border bg-surface-lowest px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What to notice</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface">{education.observation}</p>
+            </div>
+          ) : null}
 
           {currentStep ? (
             <>
@@ -172,7 +211,7 @@ export function LatinSquarePracticeFeedback({
                         </Button>
                         {navigation.stepIndex === walkthrough.steps.length - 1 ? (
                           <Button onClick={focusSolvedMatrix} size="sm" type="button">
-                            View solved matrix
+                            View proof cells
                             <Grid3X3 aria-hidden="true" className="h-4 w-4" />
                           </Button>
                         ) : (
@@ -193,12 +232,13 @@ export function LatinSquarePracticeFeedback({
                   )}
                 </div>
               </div>
-              {walkthrough.completedGrid ? (
+              {walkthrough.proofGrid ? (
                 <SolvedSection
                   answer={answer}
-                  completedGrid={walkthrough.completedGrid}
                   data={data}
+                  proofGrid={walkthrough.proofGrid}
                   ref={solvedSection}
+                  steps={walkthrough.steps}
                   summary={walkthrough.summary}
                 />
               ) : null}
@@ -208,17 +248,24 @@ export function LatinSquarePracticeFeedback({
               <p className="rounded-md border border-workspace-border bg-surface-lowest p-3 text-sm leading-6 text-on-surface">
                 {walkthrough.fallbackMessage}
               </p>
-              {walkthrough.completedGrid ? (
+              {walkthrough.proofGrid ? (
                 <SolvedSection
                   answer={answer}
-                  completedGrid={walkthrough.completedGrid}
                   data={data}
+                  proofGrid={walkthrough.proofGrid}
                   ref={solvedSection}
+                  steps={walkthrough.steps}
                   summary={walkthrough.summary}
                 />
               ) : null}
             </div>
           )}
+          {education ? (
+            <aside className="mt-4 rounded-lg border border-success/40 bg-success-container px-4 py-3" aria-label="Answer and takeaway">
+              <p className="text-sm font-semibold text-success-container-foreground">{education.answerConclusion}</p>
+              <p className="mt-2 text-sm leading-6 text-success-container-foreground"><span className="font-semibold">Remember:</span> {education.takeaway}</p>
+            </aside>
+          ) : null}
         </div>
       ) : null}
     </section>
@@ -569,16 +616,18 @@ function coordinateKey(coordinate: LatinCoordinate): string {
 }
 
 const SolvedSection = ({
-  completedGrid,
+  proofGrid,
   data,
   summary,
   answer,
+  steps,
   ref,
 }: {
-  completedGrid: CompletedLatinGrid;
+  proofGrid: VisibleLatinGrid;
   data: LatinSquareStructuredData;
   summary: LatinWalkthroughSummary | null;
   answer: string;
+  steps: readonly LatinExplanationStep[];
   ref: Ref<HTMLDivElement>;
 }) => (
   <div
@@ -586,46 +635,55 @@ const SolvedSection = ({
     ref={ref}
     tabIndex={-1}
   >
-    <CompletedMatrix completedGrid={completedGrid} data={data} />
+    <ProofMatrix data={data} proofGrid={proofGrid} steps={steps} />
     <SummaryCard answer={answer} data={data} summary={summary} />
   </div>
 );
 
-function CompletedMatrix({
-  completedGrid,
+function ProofMatrix({
+  proofGrid,
   data,
+  steps,
 }: {
-  completedGrid: CompletedLatinGrid;
+  proofGrid: VisibleLatinGrid;
   data: LatinSquareStructuredData;
+  steps: readonly LatinExplanationStep[];
 }) {
+  const proofCells = new Set(
+    steps
+      .filter((step) => step.type === "intermediate" || step.isTarget)
+      .map((step) => `${step.coordinate.row}:${step.coordinate.column}`),
+  );
   return (
     <figure className="rounded-lg border border-workspace-border bg-surface-lowest p-3">
       <figcaption className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface">
-        Completely solved matrix
+        Cells used in this proof
       </figcaption>
-      <div className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))] gap-px overflow-hidden rounded-md bg-workspace-border" role="grid" aria-label="Completely solved 5 by 5 Latin square">
+      <div className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))] gap-px overflow-hidden rounded-md bg-workspace-border" role="grid" aria-label="Latin square showing clues and cells used in the target proof">
         <span aria-hidden="true" className="bg-surface-low p-1" />
         {Array.from({ length: 5 }, (_, column) => (
           <span className="bg-surface-low p-1 text-center text-[10px] font-semibold text-muted-foreground" key={column}>C{column + 1}</span>
         ))}
-        {completedGrid.flatMap((row, rowIndex) => [
+        {proofGrid.flatMap((row, rowIndex) => [
           <span className="flex items-center bg-surface-low px-1 text-[10px] font-semibold text-muted-foreground" key={`row:${rowIndex}`}>R{rowIndex + 1}</span>,
           ...row.map((symbol, columnIndex) => {
             const original = data.grid[rowIndex][columnIndex] !== null;
             const target = rowIndex === data.target.row && columnIndex === data.target.column;
+            const usedInProof = proofCells.has(`${rowIndex}:${columnIndex}`);
+            const displayedSymbol = original || usedInProof ? symbol : null;
             return (
               <span
-                aria-label={`${target ? "Target cell, " : ""}Row ${rowIndex + 1} Column ${columnIndex + 1}, ${symbol}, ${original ? "given clue" : target ? "final answer" : "inferred value"}`}
+                aria-label={`${target ? "Target cell, " : ""}Row ${rowIndex + 1} Column ${columnIndex + 1}, ${displayedSymbol ?? "not needed for this proof"}, ${original ? "given clue" : target ? "final answer" : usedInProof ? "required intermediate" : "not shown"}`}
                 className={cn(
                   "relative flex aspect-square items-center justify-center bg-surface-lowest text-base font-semibold text-on-surface sm:text-lg",
-                  !original && "text-success",
+                  !original && usedInProof && "text-success",
                   target && "z-10 bg-success-container text-success-container-foreground ring-2 ring-inset ring-success",
                 )}
-                data-solved-cell-origin={original ? "given" : target ? "target" : "inferred"}
+                data-solved-cell-origin={original ? "given" : target ? "target" : usedInProof ? "required-intermediate" : "not-needed"}
                 key={`${rowIndex}:${columnIndex}`}
                 role="gridcell"
               >
-                {symbol}
+                {displayedSymbol}
                 {target ? <Check aria-hidden="true" className="absolute right-0.5 top-0.5 h-3 w-3" /> : null}
               </span>
             );
@@ -634,7 +692,7 @@ function CompletedMatrix({
       </div>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
         <span>Regular: given clue</span>
-        <span className="text-success">Green: inferred value</span>
+        <span className="text-success">Green: required proof cell</span>
         <span className="font-semibold text-success-container-foreground">Highlighted: target answer</span>
       </div>
     </figure>

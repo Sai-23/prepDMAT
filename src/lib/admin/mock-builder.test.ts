@@ -78,7 +78,7 @@ describe("Mock Builder", () => {
   });
 });
 
-describe("Practice session randomization", () => {
+describe("Legacy mock-builder randomization and practice separation", () => {
   const ids = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
   it("produces varied orders for independent session seeds", () => {
@@ -90,19 +90,20 @@ describe("Practice session randomization", () => {
     expect(seededShuffle(ids, "stable-session")).toEqual(seededShuffle(ids, "stable-session"));
   });
 
-  it("persists the seed and shuffled positions, then resumes by saved position", () => {
+  it("persists dedicated practice manifests and resumes by saved position", () => {
     const practice = source("src/lib/practice/data.ts");
-    expect(practice).toContain("seededShuffle((questionData ?? []) as QuestionRow[], randomizationSeed)");
-    expect(practice).toContain("randomization_seed: randomizationSeed");
-    expect(practice).toContain("position: index + 1");
-    expect(practice).toContain('.order("position")');
-    expect(practice).toContain("firstUnanswered");
+    expect(practice).toContain('admin.rpc("create_practice_session"');
+    expect(practice).toContain('from("practice_sessions")');
+    expect(practice).toContain('from("practice_session_items")');
+    expect(practice).toContain("current_position");
+    expect(practice).not.toContain('from("test_attempts")');
   });
 
-  it("applies selected type and difficulty before shuffling", () => {
-    const practice = source("src/lib/practice/data.ts");
-    const selection = practice.slice(practice.indexOf("export async function createPracticeAttempt"));
-    expect(selection.indexOf('.eq("question_type", config.questionType)')).toBeLessThan(selection.indexOf("seededShuffle"));
-    expect(selection.indexOf('.eq("difficulty", config.difficulty)')).toBeLessThan(selection.indexOf("seededShuffle"));
+  it("uses validated generators instead of bank selection for regular practice", () => {
+    const generation = source("src/lib/practice/generation.ts");
+    expect(generation).toContain("generateValidatedFigureSequence");
+    expect(generation).toContain("generateValidatedMathematicalEquation");
+    expect(generation).toContain("generateValidatedLatinSquare");
+    expect(generation).toContain("practiceDifficultyOrder");
   });
 });

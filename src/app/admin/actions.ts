@@ -7,9 +7,9 @@ import {
   createPublishedGeneratedLatin,
   createPublishedGeneratedFigure,
   createQuestion,
-  getGeneratedEquationFingerprints,
-  getGeneratedLatinFingerprints,
-  getGeneratedFigureFingerprints,
+  getGeneratedEquationNoveltyHistory,
+  getGeneratedLatinNoveltyHistory,
+  getGeneratedFigureNoveltyHistory,
   reviewQuestion,
   softDeleteQuestion,
   updateQuestionLifecycle,
@@ -26,6 +26,7 @@ import {
 import {
   generateValidatedMathematicalEquation,
   mathematicalEquationStructuralSignature,
+  mathematicalEquationStructuralProfile,
   reproduceValidatedMathematicalEquation,
   type MathematicalEquationQuestion,
 } from "@/lib/generation/mathematical-equations";
@@ -33,11 +34,13 @@ import {
   generateValidatedLatinSquare,
   reproduceValidatedLatinSquare,
   type LatinSquareQuestion,
+  latinSquareStructuralProfile,
 } from "@/lib/generation/latin-squares";
 import {
   generateValidatedFigureSequence,
   reproduceValidatedFigureSequence,
   type FigureSequenceQuestion,
+  figureSequenceStructuralProfile,
 } from "@/lib/generation/figure-sequences";
 import {
   saveAdminTest,
@@ -90,7 +93,9 @@ export async function generateEquationPreviewAction(
 
   try {
     const baseSeed = parsed.data.seed ?? crypto.randomUUID();
-    const fingerprints = await getGeneratedEquationFingerprints();
+    const history = await getGeneratedEquationNoveltyHistory();
+    const fingerprints = history.fingerprints;
+    const recentProfiles = [...history.structuralProfiles];
     const structuralSignatures = new Set<string>();
     const questions: MathematicalEquationQuestion[] = [];
     for (let index = 0; index < parsed.data.quantity; index += 1) {
@@ -100,9 +105,11 @@ export async function generateEquationPreviewAction(
         { seed, difficulty: parsed.data.difficulty },
         fingerprints,
         structuralSignatures,
+        recentProfiles.slice(-3),
       );
       fingerprints.add(question.metadata.fingerprint);
       structuralSignatures.add(mathematicalEquationStructuralSignature(question));
+      recentProfiles.push(mathematicalEquationStructuralProfile(question));
       questions.push(question);
     }
     return { error: null, baseSeed, questions };
@@ -154,15 +161,19 @@ export async function generateLatinPreviewAction(
 
   try {
     const baseSeed = parsed.data.seed ?? crypto.randomUUID();
-    const fingerprints = await getGeneratedLatinFingerprints();
+    const history = await getGeneratedLatinNoveltyHistory();
+    const fingerprints = history.fingerprints;
+    const recentProfiles = [...history.structuralProfiles];
     const questions: LatinSquareQuestion[] = [];
     for (let index = 0; index < parsed.data.quantity; index += 1) {
       const seed = parsed.data.quantity === 1 ? baseSeed : `${baseSeed}:${index + 1}`;
       const question = generateValidatedLatinSquare(
         { seed, difficulty: parsed.data.difficulty },
         fingerprints,
+        recentProfiles.slice(-3),
       );
       fingerprints.add(question.metadata.fingerprint);
+      recentProfiles.push(latinSquareStructuralProfile(question));
       questions.push(question);
     }
     return { error: null, baseSeed, questions };
@@ -209,12 +220,15 @@ export async function generateFigurePreviewAction(input: unknown): Promise<Figur
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid generation request." };
   try {
     const baseSeed = parsed.data.seed ?? crypto.randomUUID();
-    const fingerprints = await getGeneratedFigureFingerprints();
+    const history = await getGeneratedFigureNoveltyHistory();
+    const fingerprints = history.fingerprints;
+    const recentProfiles = [...history.structuralProfiles];
     const questions: FigureSequenceQuestion[] = [];
     for (let index = 0; index < parsed.data.quantity; index += 1) {
       const seed = parsed.data.quantity === 1 ? baseSeed : `${baseSeed}:${index + 1}`;
-      const question = generateValidatedFigureSequence({ seed, difficulty: parsed.data.difficulty }, fingerprints);
+      const question = generateValidatedFigureSequence({ seed, difficulty: parsed.data.difficulty }, fingerprints, recentProfiles.slice(-3));
       fingerprints.add(question.metadata.fingerprint);
+      recentProfiles.push(figureSequenceStructuralProfile(question));
       questions.push(question);
     }
     return { error: null, baseSeed, questions };

@@ -1,0 +1,39 @@
+{
+  "version": "phase9-mock-analysis-audit@1",
+  "syntheticMocks": 1000,
+  "profiles": [
+    "balanced",
+    "weak_equations",
+    "weak_figure",
+    "weak_latin",
+    "easy_strong_hard_weak",
+    "fast_inaccurate",
+    "slow_accurate",
+    "section_timeout",
+    "many_unanswered",
+    "near_tied",
+    "sparse_curated"
+  ],
+  "sectionSummaryAccuracy": 1,
+  "skillAttributionAccuracy": 1,
+  "mistakeRankingAccuracy": 1,
+  "timingClassificationAccuracy": 1,
+  "insightAccuracy": 1,
+  "falseInsightAvoidance": 1,
+  "falseInsightRate": 0,
+  "recommendationAccuracy": 1,
+  "pureAnalysisBenchmarks": [
+    {
+      "mockCount": 1,
+      "milliseconds": 0.059
+    },
+    {
+      "mockCount": 10,
+      "milliseconds": 0.318
+    },
+    {
+      "mockCount": 100,
+      "milliseconds": 5.49
+    }
+  ]
+}

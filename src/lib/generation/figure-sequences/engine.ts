@@ -1,12 +1,14 @@
 import { validateFigureFrameStructure } from "./validation";
 import type {
   FigureColourRule,
+  FigureBoundaryEvent,
   FigureDirection,
   FigureFrame,
   FigureGridDefinition,
   FigureMovementRule,
   FigureProgression,
   FigureRotationRule,
+  FigureSimulation,
   FigureSymbolRuleSet,
   FigureSymbolState,
 } from "./types";
@@ -42,10 +44,11 @@ function moveWithVector(
   vector: { rowDelta: -1 | 0 | 1; columnDelta: -1 | 0 | 1 },
   steps: number,
   boundary: "bounce" | "reject",
-): FigureSymbolState {
+): { symbol: FigureSymbolState; boundaryInteractions: number } {
   let row = symbol.row;
   let column = symbol.column;
   let { rowDelta, columnDelta } = vector;
+  let boundaryInteractions = 0;
   for (let step = 0; step < steps; step += 1) {
     let nextRow = row + rowDelta;
     let nextColumn = column + columnDelta;
@@ -55,6 +58,7 @@ function moveWithVector(
       if (boundary === "reject") {
         throw new Error(`Movement would take symbol ${symbol.id} outside the matrix.`);
       }
+      boundaryInteractions += 1;
       if (rowOutside) rowDelta = (rowDelta * -1) as -1 | 0 | 1;
       if (columnOutside) columnDelta = (columnDelta * -1) as -1 | 0 | 1;
       nextRow = row + rowDelta;
@@ -63,7 +67,10 @@ function moveWithVector(
     row = nextRow;
     column = nextColumn;
   }
-  return { ...symbol, row, column, motionState: { rowDelta, columnDelta } };
+  return {
+    symbol: { ...symbol, row, column, motionState: { rowDelta, columnDelta } },
+    boundaryInteractions,
+  };
 }
 
 function perimeter(grid: FigureGridDefinition): Array<{ row: number; column: number }> {
@@ -84,7 +91,7 @@ function applyMovement(
   symbol: FigureSymbolState,
   rule: FigureMovementRule,
   transitionIndex: number,
-): FigureSymbolState {
+): { symbol: FigureSymbolState; event: FigureBoundaryEvent | null } {
   const steps = progressedValue(rule.steps, rule.progression, transitionIndex);
   if (rule.kind === "border") {
     const positions = perimeter(grid);
@@ -98,7 +105,10 @@ function applyMovement(
     const nextIndex =
       (currentIndex + direction * (steps % positions.length) + positions.length) %
       positions.length;
-    return { ...symbol, ...positions[nextIndex], motionState: undefined };
+    return {
+      symbol: { ...symbol, ...positions[nextIndex], motionState: undefined },
+      event: { symbolId: symbol.id, transitionIndex, behavior: "follow", count: 1 },
+    };
   }
 
   const direction =
@@ -111,7 +121,13 @@ function applyMovement(
     rule.kind === "linear" && symbol.motionState
       ? symbol.motionState
       : configuredVector;
-  return moveWithVector(grid, symbol, vector, steps, rule.boundary);
+  const moved = moveWithVector(grid, symbol, vector, steps, rule.boundary);
+  return {
+    symbol: moved.symbol,
+    event: moved.boundaryInteractions > 0
+      ? { symbolId: symbol.id, transitionIndex, behavior: "bounce", count: moved.boundaryInteractions }
+      : null,
+  };
 }
 
 function applyRotation(
@@ -144,12 +160,12 @@ function applyColour(
   };
 }
 
-export function evolveFigureFrame(
+export function evolveFigureFrameDetailed(
   grid: FigureGridDefinition,
   frame: FigureFrame,
   rules: readonly FigureSymbolRuleSet[],
   transitionIndex: number,
-): FigureFrame {
+): { frame: FigureFrame; boundaryEvents: FigureBoundaryEvent[] } {
   if (!Number.isSafeInteger(transitionIndex) || transitionIndex < 0) {
     throw new RangeError("Transition index must be a non-negative safe integer.");
   }
@@ -165,11 +181,16 @@ export function evolveFigureFrame(
     }
   }
 
+  const boundaryEvents: FigureBoundaryEvent[] = [];
   const symbols = frame.symbols.map((original) => {
     const rule = ruleById.get(original.id);
     if (!rule) return { ...original };
     let symbol = { ...original };
-    if (rule.movement) symbol = applyMovement(grid, symbol, rule.movement, transitionIndex);
+    if (rule.movement) {
+      const moved = applyMovement(grid, symbol, rule.movement, transitionIndex);
+      symbol = moved.symbol;
+      if (moved.event) boundaryEvents.push(moved.event);
+    }
     if (rule.rotation) symbol = applyRotation(symbol, rule.rotation, transitionIndex);
     if (rule.colour) symbol = applyColour(symbol, rule.colour, transitionIndex);
     return symbol;
@@ -177,7 +198,16 @@ export function evolveFigureFrame(
   const next = { index: frame.index + 1, symbols };
   const validation = validateFigureFrameStructure(grid, next);
   if (!validation.valid) throw new Error(validation.issues.join(" "));
-  return next;
+  return { frame: next, boundaryEvents };
+}
+
+export function evolveFigureFrame(
+  grid: FigureGridDefinition,
+  frame: FigureFrame,
+  rules: readonly FigureSymbolRuleSet[],
+  transitionIndex: number,
+): FigureFrame {
+  return evolveFigureFrameDetailed(grid, frame, rules, transitionIndex).frame;
 }
 
 export function replayFigureSequence(
@@ -186,15 +216,29 @@ export function replayFigureSequence(
   rules: readonly FigureSymbolRuleSet[],
   transitionCount: number,
 ): FigureFrame[] {
+  return replayFigureSequenceDetailed(grid, initialFrame, rules, transitionCount).frames;
+}
+
+export function replayFigureSequenceDetailed(
+  grid: FigureGridDefinition,
+  initialFrame: FigureFrame,
+  rules: readonly FigureSymbolRuleSet[],
+  transitionCount: number,
+): FigureSimulation {
   if (!Number.isSafeInteger(transitionCount) || transitionCount < 0) {
     throw new RangeError("Transition count must be a non-negative safe integer.");
   }
   const frames = [structuredClone(initialFrame)];
+  const boundaryEvents: FigureBoundaryEvent[] = [];
   for (let transitionIndex = 0; transitionIndex < transitionCount; transitionIndex += 1) {
-    frames.push(
-      evolveFigureFrame(grid, frames[frames.length - 1], rules, transitionIndex),
+    const evolved = evolveFigureFrameDetailed(
+      grid,
+      frames[frames.length - 1],
+      rules,
+      transitionIndex,
     );
+    frames.push(evolved.frame);
+    boundaryEvents.push(...evolved.boundaryEvents);
   }
-  return frames;
+  return { frames, boundaryEvents };
 }
-

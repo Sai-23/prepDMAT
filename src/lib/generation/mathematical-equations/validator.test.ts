@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { mathematicalEquationGenerator } from "./generator";
+import { renderMathematicalEquation } from "./presentation";
+import { inspectMathematicalEquationStyle } from "./style";
 import { mathematicalEquationValidator } from "./validator";
 
 describe("MathematicalEquationValidator", () => {
@@ -73,6 +75,54 @@ describe("MathematicalEquationValidator", () => {
     if (!result.valid) expect(result.issues.some((item) => item.code === "invalid_divisor")).toBe(true);
   });
 
+  it("permanently rejects the observed out-of-range visible-total failure class", () => {
+    const candidate = mathematicalEquationGenerator.generate(
+      { seed: "observed-visible-total-regression", difficulty: "easy" },
+      1,
+    );
+    candidate.structuredData.equations[0].right = { kind: "constant", value: 31 };
+    candidate.presentation.blocks[0] = {
+      kind: "formula",
+      expression: renderMathematicalEquation(candidate.structuredData.equations[0]),
+    };
+    const result = mathematicalEquationValidator.validate(candidate, "easy");
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.issues.map((entry) => entry.code)).toContain("VISIBLE_CONSTANT_OUT_OF_RANGE");
+    }
+  });
+
+  it("rejects public formula tampering independently of structured metadata", () => {
+    const candidate = mathematicalEquationGenerator.generate(
+      { seed: "public-formula-regression", difficulty: "medium" },
+      1,
+    );
+    candidate.presentation.blocks[0] = { kind: "formula", expression: "A + B = 31" };
+    const result = mathematicalEquationValidator.validate(candidate, "medium");
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.issues.map((entry) => entry.code)).toEqual(expect.arrayContaining([
+        "PUBLIC_PRESENTATION_MISMATCH",
+        "VISIBLE_CONSTANT_OUT_OF_RANGE",
+      ]));
+    }
+  });
+
+  it("enforces the strict visible and hidden domains across generated candidates", () => {
+    for (const difficulty of ["easy", "medium", "hard"] as const) {
+      for (let seed = 0; seed < 100; seed += 1) {
+        const candidate = mathematicalEquationGenerator.generate(
+          { seed: `strict-domain-${difficulty}-${seed}`, difficulty },
+          1,
+        );
+        expect(Object.values(candidate.correctAnswer).every((value) =>
+          Number.isSafeInteger(value) && value >= 1 && value <= 20)).toBe(true);
+        expect(inspectMathematicalEquationStyle(candidate).visibleConstants.every((value) =>
+          Number.isSafeInteger(value) && value >= 1 && value <= 20)).toBe(true);
+      }
+    }
+  }, 20_000);
+
   it("rejects a solution explanation that does not reproduce its result", () => {
     const candidate = mathematicalEquationGenerator.generate(
       { seed: "explanation", difficulty: "medium" },
@@ -85,14 +135,16 @@ describe("MathematicalEquationValidator", () => {
   });
 
   it("requires both equations for an indirect first deduction", () => {
+    let seed = 0;
     let candidate = mathematicalEquationGenerator.generate(
-      { seed: "indirect-trace", difficulty: "hard" },
+      { seed: `indirect-trace-${seed}`, difficulty: "hard" },
       1,
     );
-    for (let attempt = 2; !candidate.solutionPath.some((step) => step.reasoning === "combine_equations"); attempt += 1) {
+    while (!candidate.solutionPath.some((step) => step.reasoning === "combine_equations")) {
+      seed += 1;
       candidate = mathematicalEquationGenerator.generate(
-        { seed: "indirect-trace", difficulty: "hard" },
-        attempt,
+        { seed: `indirect-trace-${seed}`, difficulty: "hard" },
+        1,
       );
     }
     const combineStep = candidate.solutionPath.find((step) => step.reasoning === "combine_equations");

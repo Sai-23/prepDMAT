@@ -1,22 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { latinSquareGenerator } from "./generator";
+import { generateValidatedLatinSquare } from "./pipeline";
 import { latinSquareValidator } from "./validator";
 
 describe("LatinSquareValidator", () => {
   it("accepts a direct, uniquely deducible target", () => {
-    const candidate = latinSquareGenerator.generate(
-      { seed: "validator-direct", difficulty: "easy" },
-      1,
-    );
-    const { target } = candidate.structuredData;
-    candidate.structuredData.grid = candidate.completedGrid.map((row) => [...row]);
-    candidate.structuredData.grid[target.row][target.column] = null;
+    const configuration = { seed: "validator-direct", difficulty: "easy" as const };
+    const accepted = generateValidatedLatinSquare(configuration);
+    const candidate = latinSquareGenerator.generate(configuration, accepted.metadata.attemptCount);
     const result = latinSquareValidator.validate(candidate, "easy");
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.solution.targetSymbol).toBe(candidate.correctAnswer);
-      expect(result.solution.metrics.targetStepIndex).toBe(0);
+      expect(result.solution.metrics.requiredIntermediateCells).toBe(0);
     }
   });
 
@@ -44,4 +41,3 @@ describe("LatinSquareValidator", () => {
     if (!result.valid) expect(result.issues[0].code).toBe("invalid_latin_domain");
   });
 });
-

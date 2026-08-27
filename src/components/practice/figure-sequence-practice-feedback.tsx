@@ -10,6 +10,11 @@ import {
   type FigureExplanationStep,
   type FigureRulePresentation,
 } from "@/lib/practice/figure-sequence-explanation";
+import {
+  buildFigureEducationalExplanation,
+  diagnoseFigureMistake,
+  type EducationalExplanation,
+} from "@/lib/practice/educational-explanation";
 import type { FigureSequencePresentation } from "@/lib/generation/figure-sequences";
 import { PracticeExplanationShell } from "./practice-explanation-shell";
 
@@ -22,6 +27,9 @@ export function FigureSequencePracticeFeedback({
   initiallyOpen = false,
   initialView = "step",
   initialStep = 0,
+  onExplanationOpen,
+  educationalExplanation,
+  difficulty,
 }: {
   sequence: FigureSequencePresentation;
   trace: unknown;
@@ -31,10 +39,21 @@ export function FigureSequencePracticeFeedback({
   initiallyOpen?: boolean;
   initialView?: "step" | "all";
   initialStep?: number;
+  onExplanationOpen?: () => void;
+  educationalExplanation?: EducationalExplanation;
+  difficulty?: "easy" | "medium" | "hard";
 }) {
   const walkthrough = useMemo(
     () => buildFigureSequenceWalkthrough(sequence, trace, correctAnswer),
     [correctAnswer, sequence, trace],
+  );
+  const education = useMemo(
+    () => educationalExplanation ?? buildFigureEducationalExplanation(sequence, trace, correctAnswer, difficulty),
+    [correctAnswer, difficulty, educationalExplanation, sequence, trace],
+  );
+  const mistake = useMemo(
+    () => isCorrect ? null : diagnoseFigureMistake(sequence, selectedAnswer, correctAnswer),
+    [correctAnswer, isCorrect, selectedAnswer, sequence],
   );
   const [inspectedSymbolId, setInspectedSymbolId] = useState<string | null>(null);
   const selectedLabels = sequence.missingMatrices.map((matrix, index) =>
@@ -43,6 +62,7 @@ export function FigureSequencePracticeFeedback({
 
   return (
     <PracticeExplanationShell
+      answerConclusion={education?.answerConclusion}
       dataFeedbackInterface="figure-sequence-guided"
       fallbackMessage={walkthrough.fallbackMessage}
       getStepKey={(step) => step.id}
@@ -50,6 +70,9 @@ export function FigureSequencePracticeFeedback({
       initialView={initialView}
       initiallyOpen={initiallyOpen}
       isCorrect={isCorrect}
+      mistakeFeedback={mistake}
+      observation={education?.observation}
+      onExplanationOpen={onExplanationOpen}
       renderStep={(step, index, total) => (
         <FigureStepCard
           correctAnswer={correctAnswer}
@@ -91,7 +114,9 @@ export function FigureSequencePracticeFeedback({
           </div>
         </dl>
       )}
+      quickSummary={education?.summary}
       steps={walkthrough.valid ? walkthrough.steps : []}
+      takeaway={education?.takeaway}
     />
   );
 }
@@ -227,6 +252,22 @@ function FigureStepCard({
                 <p className="mt-1 text-sm font-semibold text-on-surface">{change.before} → {change.after}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Verified across every transition
+            </p>
+            <ol className="mt-2 grid gap-2 sm:grid-cols-2" aria-label={`All transitions for ${step.symbolLabel}`}>
+              {step.transitions.map((transition) => (
+                <li className="rounded-md border border-workspace-border bg-surface-low p-3 text-sm text-on-surface" key={`${transition.fromFrame}:${transition.toFrame}`}>
+                  <span className="font-semibold">Frame {transition.fromFrame + 1} → {transition.toFrame + 1}:</span>{" "}
+                  {transition.changes.length
+                    ? transition.changes.map((change) => `${change.label.toLowerCase()} ${change.before} → ${change.after}`).join("; ")
+                    : "state remains unchanged"}
+                  {transition.boundaryBehavior === "bounce" ? "; edge reached, so direction reverses" : ""}
+                </li>
+              ))}
+            </ol>
           </div>
           <div className="mt-4 rounded-md border border-success bg-success-container px-3 py-2.5 text-sm font-semibold text-success-container-foreground">
             <Check aria-hidden="true" className="mr-2 inline h-4 w-4" />

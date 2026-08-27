@@ -5,6 +5,7 @@ import {
   Crown,
   FileCheck2,
   Layers3,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,6 +23,9 @@ import {
 } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/guards";
 import { getTestCatalog } from "@/lib/tests/data";
+import { GenerateCoreMockButton } from "@/components/tests/generate-core-mock-button";
+import { DMAT_CURRENT_CORE_PROTOCOL } from "@/lib/protocol";
+import { getEnv } from "@/lib/validators/env";
 
 function formatDuration(seconds: number) {
   const minutes = Math.round(seconds / 60);
@@ -32,6 +36,9 @@ function formatDuration(seconds: number) {
 
 export default async function TestsPage() {
   const user = await requireUser();
+  const onDemandEnabled = getEnv().ENABLE_ON_DEMAND_CORE_MOCKS;
+  const coreSections = DMAT_CURRENT_CORE_PROTOCOL.core;
+  const coreQuestionCount = coreSections.reduce((sum, section) => sum + section.questionCount, 0);
   let tests = null;
   let loadError: string | null = null;
 
@@ -48,6 +55,28 @@ export default async function TestsPage() {
       title="Timed tests built for realistic preparation"
       description="Choose a diagnostic, mini mock, sectional test, or full simulation. Answers are autosaved and feedback is delayed until submission."
     >
+      {onDemandEnabled ? (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <span className="rounded-2xl bg-blue-100 p-3 text-blue-700">
+                <Sparkles aria-hidden="true" className="h-5 w-5" />
+              </span>
+              <div>
+                <Badge variant="success">Generated Core Mock</Badge>
+                <CardTitle className="mt-2">Create a fresh full Core mock</CardTitle>
+              </div>
+            </div>
+            <CardDescription className="max-w-3xl pt-2">
+              {coreQuestionCount} questions across {coreSections.length} Core sections. Each section has {Math.round(coreSections[0].durationSeconds / 60)} minutes and uses recent-mock history to reduce near-term structural repetition.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GenerateCoreMockButton />
+          </CardContent>
+        </Card>
+      ) : null}
+
       {loadError || !tests ? (
         <ErrorState
           title="Test catalog unavailable"

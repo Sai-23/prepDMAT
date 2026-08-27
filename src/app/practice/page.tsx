@@ -2,64 +2,70 @@ import { PageShell } from "@/components/layout/page-shell";
 import { PracticeExperience } from "@/components/practice/practice-experience";
 import { ErrorState } from "@/components/shared/error-state";
 import { requireUser } from "@/lib/auth/guards";
-import { getActivePracticeAttempt, getPracticeFilters } from "@/lib/practice/data";
+import { getActivePracticeSession, getExactPracticeModule, getPracticeLandingData } from "@/lib/practice/data";
 import type { PracticeConfig } from "@/lib/practice/schemas";
+import { CORE_SKILLS, coreSkill, type CoreSkillId } from "@/lib/progress/skills";
 
 export default async function PracticePage({
   searchParams,
 }: {
-  searchParams: Promise<{ question?: string; module?: string }>;
+  searchParams: Promise<{ question?: string; module?: string; focus?: string; focusName?: string; difficulty?: string; count?: string; fromMock?: string }>;
 }) {
   const user = await requireUser();
   const query = await searchParams;
-  const validQuestionId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    query.question ?? "",
-  )
+  const questionId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query.question ?? "")
     ? query.question
     : undefined;
-  const validModule = query.module === "core" ? query.module : undefined;
-  const initialConfig: Partial<PracticeConfig> | undefined = validQuestionId
-    ? {
-        questionId: validQuestionId,
-        module: validModule ?? "core",
-        quantity: 1,
-        timingMode: "untimed",
-      }
-    : undefined;
-
-  let filters;
   let initialSession = null;
+  let performance = null;
+  let initialConfig: PracticeConfig | undefined;
   let loadError: string | null = null;
 
   try {
-    filters = await getPracticeFilters();
-    if (!validQuestionId) {
-      initialSession = await getActivePracticeAttempt(user.id);
+    const [landing, active, exactModule] = await Promise.all([
+      getPracticeLandingData(user.id),
+      getActivePracticeSession(user.id),
+      questionId ? getExactPracticeModule(questionId) : Promise.resolve(null),
+    ]);
+    performance = landing;
+    initialSession = active;
+    if (questionId && exactModule) {
+      initialConfig = { questionId, module: exactModule, difficulty: "mixed", questionCount: 1, timingMode: "untimed" };
+    } else if (
+      query.module === "figure_sequence" || query.module === "mathematical_equation" || query.module === "latin_square"
+    ) {
+      const publicFocus = CORE_SKILLS.find(
+        (skill) => skill.label === query.focusName && skill.module === query.module,
+      );
+      const focusFamilies = publicFocus
+        ? [publicFocus.id]
+        : query.focus?.split(",").map((value) => value.trim())
+          .filter((value): value is CoreSkillId => coreSkill(value)?.module === query.module).slice(0, 3);
+      initialConfig = {
+        module: query.module,
+        difficulty: query.difficulty === "easy" || query.difficulty === "medium" || query.difficulty === "hard" || query.difficulty === "mixed"
+          ? query.difficulty : "mixed",
+        questionCount: query.count === "5" || query.count === "20" ? Number(query.count) as 5 | 20 : 10,
+        timingMode: "untimed",
+        focusFamilies,
+        sourceAttemptId: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query.fromMock ?? "")
+          ? query.fromMock : undefined,
+      };
     }
   } catch (error) {
-    loadError =
-      error instanceof Error
-        ? error.message
-        : "Unable to load practice configuration.";
+    loadError = error instanceof Error ? error.message : "Unable to load practice.";
   }
 
   return (
     <PageShell
       eyebrow="Practice mode"
-      title="Build a focused practice session"
-      description="Choose a module, topic, difficulty, source, session size, and timing mode. Answers are checked securely after each submission."
+      title="Focused Core practice"
+      description="Choose a single Core module, generate a validated session, check each answer, and learn from immediate worked feedback."
     >
-      {loadError || !filters ? (
-        <ErrorState
-          title="Practice is not ready"
-          description={loadError ?? "Unable to load practice configuration."}
-        />
+      {loadError || !performance ? (
+        <ErrorState title="Practice is not ready" description={loadError ?? "Unable to load practice."} />
       ) : (
-        <PracticeExperience
-          filters={filters}
-          initialConfig={initialConfig}
-          initialSession={initialSession}
-        />
+        <PracticeExperience initialConfig={initialConfig} initialSession={initialSession} performance={performance} />
       )}
     </PageShell>
   );

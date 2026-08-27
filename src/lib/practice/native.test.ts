@@ -13,6 +13,8 @@ describe("native practice snapshots", () => {
     expect(JSON.stringify(result.publicQuestion)).not.toContain("-correct");
     expect(JSON.stringify(result.publicQuestion)).not.toContain("rules");
     expect(result.privateSnapshot.explanationTrace).toEqual({ rules: question.structuredData.rules });
+    expect(result.privateSnapshot.educationalExplanation?.version).toBe("educational-explanation@1");
+    expect(JSON.stringify(result.publicQuestion)).not.toContain("educational-explanation@1");
     expect(gradePracticeAnswer({ kind: "two_stage_single_choice", optionIds: result.privateSnapshot.correctAnswer as [string, string] }, result.privateSnapshot)).toBe(true);
   });
 
@@ -42,6 +44,7 @@ describe("native practice snapshots", () => {
     expect(JSON.stringify(result.publicQuestion)).not.toContain("deductionTrace");
     expect(JSON.stringify(result.publicQuestion)).not.toContain("correctAnswer");
     expect(result.privateSnapshot.explanationTrace).toEqual(question.deductionTrace);
+    expect(result.privateSnapshot.educationalExplanation?.validation.source).toBe("deduction_graph");
   });
 
   it("keeps the Equation solution path private until answer feedback", () => {
@@ -63,6 +66,9 @@ describe("native practice snapshots", () => {
       explanation: question.explanation, options: [], correctOptionId: null, sourceType: "generated",
     });
     expect(JSON.stringify(result.publicQuestion)).not.toContain("solutionPath");
+    expect(JSON.stringify(result.publicQuestion)).not.toContain("dependencyModel");
+    expect(JSON.stringify(result.publicQuestion)).not.toContain("solveOrder");
     expect(result.privateSnapshot.explanationTrace).toEqual(question.solutionPath);
+    expect(result.privateSnapshot.educationalExplanation?.validation.source).toBe("solver");
   });
 });

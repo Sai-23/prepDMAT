@@ -18,6 +18,19 @@ function totalDuration(input: AdminTestBuilderInput) {
   );
 }
 
+function validatePublishedFullMock(input: AdminTestBuilderInput): void {
+  if (input.intent !== "publish" || input.testType !== "full_mock") return;
+  const structureError = validateOfficialFullMockSections(input.sections.map((section, index) => ({
+    id: `pending-${index + 1}`,
+    title: section.title,
+    sectionType: section.sectionType,
+    durationSeconds: section.durationSeconds,
+    sortOrder: index + 1,
+    questionCount: section.questionIds.length,
+  })));
+  if (structureError) throw new Error(structureError);
+}
+
 async function writeTestAudit(
   actorId: string,
   action: string,
@@ -309,6 +322,7 @@ export async function saveAdminTest(
   input: AdminTestBuilderInput,
   testId?: string,
 ) {
+  validatePublishedFullMock(input);
   await validateQuestionAssignments(input);
   const admin = createSupabaseAdminClient();
   const durationSeconds = totalDuration(input);

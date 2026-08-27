@@ -1,6 +1,8 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/guards";
+import { generateOnDemandCoreMock } from "@/lib/mocks/on-demand";
+import { getEnv } from "@/lib/validators/env";
 import {
   gradeAndSubmitTest,
   processTestClock,
@@ -11,7 +13,24 @@ import {
   saveTestResponseSchema,
   submitTestSchema,
   testIdSchema,
+  generatedMockRequestSchema,
 } from "@/lib/tests/schemas";
+
+export async function generateCoreMockForCurrentUser(input: unknown) {
+  const user = await requireUser();
+  const parsed = generatedMockRequestSchema.safeParse(input);
+  if (!parsed.success) return { state: "failed" as const, error: "The generation request is invalid." };
+  const env = getEnv();
+  if (!env.ENABLE_ON_DEMAND_CORE_MOCKS) {
+    return { state: "failed" as const, error: "On-demand Core mocks are not enabled yet." };
+  }
+  return generateOnDemandCoreMock({
+    userId: user.id,
+    requestId: parsed.data.generationRequestId,
+    historyWindow: env.CORE_MOCK_HISTORY_WINDOW,
+    cooldownSeconds: env.CORE_MOCK_GENERATION_COOLDOWN_SECONDS,
+  });
+}
 
 export async function startTestAction(testId: unknown) {
   const user = await requireUser();

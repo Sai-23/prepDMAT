@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   fingerprintMathematicalEquation,
+  mathematicalEquationStructuralProfile,
   mathematicalEquationStructuralSignature,
+  MATHEMATICAL_EQUATION_SIMILARITY_WEIGHTS,
 } from "./fingerprint";
+import { calculateStructuralSimilarity } from "../novelty";
 import { mathematicalEquationGenerator } from "./generator";
 import type { MathematicalExpression } from "./types";
 
@@ -21,6 +24,9 @@ describe("mathematical-equation fingerprints", () => {
     );
     const reordered = structuredClone(candidate);
     reordered.structuredData.equations.reverse();
+    reordered.structuredData.equations.forEach((equation) => {
+      [equation.left, equation.right] = [equation.right, equation.left];
+    });
     reordered.presentation.prompt = "Different display wording";
     reordered.explanation = "Different explanation wording";
     expect(fingerprintMathematicalEquation(reordered)).toBe(
@@ -28,7 +34,23 @@ describe("mathematical-equation fingerprints", () => {
     );
   });
 
-  it("changes semantic and structural fingerprints when constants change", () => {
+  it("separates genuinely different graph architectures", () => {
+    const findFamily = (family: "chain" | "triangle") => {
+      for (let seed = 0; seed < 200; seed += 1) {
+        const candidate = mathematicalEquationGenerator.generate({ seed: `graph-v2-${seed}`, difficulty: "medium" }, 1);
+        if (candidate.structuredData.dependencyModel.family === family) return candidate;
+      }
+      throw new Error(`Unable to find ${family} sample.`);
+    };
+    const similarity = calculateStructuralSimilarity(
+      mathematicalEquationStructuralProfile(findFamily("chain")),
+      mathematicalEquationStructuralProfile(findFamily("triangle")),
+      MATHEMATICAL_EQUATION_SIMILARITY_WEIGHTS,
+    );
+    expect(similarity).toBeLessThan(0.8);
+  });
+
+  it("changes semantic identity but not reasoning structure when only constants change", () => {
     const candidate = mathematicalEquationGenerator.generate(
       { seed: "fingerprint-change", difficulty: "easy" },
       1,
@@ -41,7 +63,7 @@ describe("mathematical-equation fingerprints", () => {
     expect(fingerprintMathematicalEquation(changed)).not.toBe(
       fingerprintMathematicalEquation(candidate),
     );
-    expect(mathematicalEquationStructuralSignature(changed)).not.toBe(
+    expect(mathematicalEquationStructuralSignature(changed)).toBe(
       mathematicalEquationStructuralSignature(candidate),
     );
   });

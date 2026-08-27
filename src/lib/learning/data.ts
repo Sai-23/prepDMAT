@@ -173,6 +173,7 @@ export async function getMistakes(userId: string): Promise<MistakeQuestion[]> {
     .from("user_responses")
     .select("question_id, selected_option_id, answered_at, created_at")
     .in("attempt_id", attemptIds)
+    .not("question_id", "is", null)
     .eq("is_correct", false)
     .eq("response_status", "answered")
     .order("answered_at", { ascending: false })

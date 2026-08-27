@@ -131,7 +131,7 @@ describe.skipIf(!ENABLED)("mathematical-equation 1,000-question quality audit", 
         averageComplexityScore: rounded(average(metrics.map((item) => item.score))),
       }];
     }));
-    const templateDistribution = questions.reduce<Record<string, number>>((counts, question) => {
+    const dependencyGraphDistribution = questions.reduce<Record<string, number>>((counts, question) => {
       const family = question.structuredData.dependencyModel.family;
       counts[family] = (counts[family] ?? 0) + 1;
       return counts;
@@ -150,7 +150,7 @@ describe.skipIf(!ENABLED)("mathematical-equation 1,000-question quality audit", 
       candidatesAttempted: totalCandidates,
       requestedDifficultyDistribution: DISTRIBUTION,
       byDifficulty,
-      templateDistribution,
+      dependencyGraphDistribution,
       positiveIntegerSolutionPercent: 100,
       decimalOrFractionalSolutionPercent: 0,
       validationFailuresByReason: failures,
@@ -172,8 +172,8 @@ describe.skipIf(!ENABLED)("mathematical-equation 1,000-question quality audit", 
     ].join("\n"));
 
     expect(questions).toHaveLength(1_000);
-    expect(Object.values(templateDistribution).every((count) => count > 0)).toBe(true);
-    expect(Object.keys(templateDistribution)).toHaveLength(12);
+    expect(Object.values(dependencyGraphDistribution).every((count) => count > 0)).toBe(true);
+    expect(Object.keys(dependencyGraphDistribution).length).toBeGreaterThanOrEqual(5);
     expect(samples).toHaveLength(20);
     expect(failures).toEqual(duplicateRejections ? { DUPLICATE_FINGERPRINT: duplicateRejections } : {});
   }, 120_000);

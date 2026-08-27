@@ -5,8 +5,8 @@ import type {
   GenerationDifficulty,
 } from "../types";
 
-export const FIGURE_SEQUENCE_GENERATOR_VERSION = "figure-sequences@2.0.0";
-export const FIGURE_SEQUENCE_VALIDATOR_VERSION = "figure-sequences-validator@2.0.0";
+export const FIGURE_SEQUENCE_GENERATOR_VERSION = "figure-sequences@5.0.0";
+export const FIGURE_SEQUENCE_VALIDATOR_VERSION = "figure-sequences-validator@4.0.0";
 
 export const FIGURE_SHAPES = [
   "circle",
@@ -179,7 +179,32 @@ export type FigureDifficultyMetrics = {
   advancedRuleCount: number;
   predictionDepth: number;
   distractorSimilarity: number;
+  activeRuleCount: number;
+  independentRuleStreams: number;
+  movementComplexity: number;
+  boundaryInteractionCount: number;
+  combinedStatePeriod: number;
+  rulePeriodMismatch: number;
+  simultaneousTransformationCount: number;
+  stateVariableCount: number;
+  collisionAvoidanceComplexity: number;
+  averageMovementPeriod: number;
+  averageRotationPeriod: number;
+  averageColourPeriod: number;
+  trivialCycleCount: number;
   score: number;
+};
+
+export type FigureBoundaryEvent = {
+  symbolId: string;
+  transitionIndex: number;
+  behavior: "bounce" | "follow";
+  count: number;
+};
+
+export type FigureSimulation = {
+  frames: FigureFrame[];
+  boundaryEvents: FigureBoundaryEvent[];
 };
 
 export type FigureValidationSolution = {

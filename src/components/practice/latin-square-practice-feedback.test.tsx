@@ -96,16 +96,17 @@ describe("LatinSquarePracticeFeedback", () => {
 
   it("renders a solver-derived completed matrix and concise summary", () => {
     const { question, html } = renderFeedback({ difficulty: "hard", initialView: "all" });
-    expect(html).toContain("Completely solved matrix");
+    expect(html).toContain("Cells used in this proof");
     expect(html).toContain("Summary");
     expect(html).toContain("given clue");
-    expect(html).toContain("inferred value");
+    expect(html).toContain("required proof cell");
+    expect(html).toContain("not needed for this proof");
     expect(html).toContain("final answer");
     expect(html).toContain(`Correct answer: ${question.correctAnswer}`);
     expect(html.match(/data-solved-cell-origin=/g)).toHaveLength(25);
   });
 
-  it("uses View solved matrix on the final step without adding an answer control", () => {
+  it("uses View proof cells on the final step without adding an answer control", () => {
     const question = fixture("medium");
     const walkthrough = buildLatinSquareWalkthrough(
       question.structuredData,
@@ -116,7 +117,7 @@ describe("LatinSquarePracticeFeedback", () => {
       difficulty: "medium",
       initialStep: walkthrough.steps.length - 1,
     });
-    expect(html).toContain("View solved matrix");
+    expect(html).toContain("View proof cells");
     expect(html).not.toContain(">Next<");
     expect(html).not.toContain('name="answer"');
   });
@@ -156,12 +157,19 @@ describe("Latin Square 15-sample explanation audit", () => {
       );
 
       expect(walkthrough.valid).toBe(true);
-      expect(walkthrough.completedGrid).toEqual(question.completedGrid);
+      expect(walkthrough.proofGrid).not.toBeNull();
+      walkthrough.proofGrid?.forEach((row, rowIndex) => {
+        expect(question.structuredData.grid[rowIndex].every((clue, columnIndex) =>
+          clue === null || row[columnIndex] === clue,
+        )).toBe(true);
+      });
+      expect(walkthrough.proofGrid?.flat().filter(Boolean).length)
+        .toBeLessThan(25);
       expect(html).toContain("Simple steps to the answer");
       expect(html).toContain("Missing from this row");
       expect(html).toContain("Missing from this column");
       expect(html).toContain("COMPARE THE TWO SETS");
-      expect(html).toContain("Completely solved matrix");
+      expect(html).toContain("Cells used in this proof");
       expect(html).toContain(`Correct answer: ${question.correctAnswer}`);
       expect(html).not.toContain("Candidate letters");
       expect(html).not.toContain("Why are letters eliminated?");

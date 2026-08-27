@@ -29,6 +29,12 @@ export function PracticeExplanationShell<Step>({
   initialStep = 0,
   dataFeedbackInterface,
   showOutcomeHeader = true,
+  onExplanationOpen,
+  quickSummary,
+  observation,
+  answerConclusion,
+  mistakeFeedback,
+  takeaway,
 }: {
   isCorrect: boolean;
   resultDetails: ReactNode;
@@ -42,6 +48,12 @@ export function PracticeExplanationShell<Step>({
   initialStep?: number;
   dataFeedbackInterface?: string;
   showOutcomeHeader?: boolean;
+  onExplanationOpen?: () => void;
+  quickSummary?: string;
+  observation?: string;
+  answerConclusion?: string;
+  mistakeFeedback?: { title: string; description: string; supported: boolean } | null;
+  takeaway?: string;
 }) {
   const [state, dispatch] = useReducer(explanationNavigationReducer, {
     open: initiallyOpen,
@@ -71,10 +83,25 @@ export function PracticeExplanationShell<Step>({
             </div>
           </div>
         ) : resultDetails}
+        {quickSummary ? (
+          <div className="mt-4 rounded-lg border border-primary/30 bg-primary-muted px-4 py-3" data-explanation-level="quick">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Quick explanation</p>
+            <p className="mt-1 text-sm leading-6 text-on-surface">{quickSummary}</p>
+          </div>
+        ) : null}
+        {!isCorrect && mistakeFeedback ? (
+          <div className="mt-3 rounded-lg border border-warning bg-warning-container px-4 py-3" data-diagnosis-supported={mistakeFeedback.supported}>
+            <p className="text-sm font-semibold text-warning-container-foreground">{mistakeFeedback.title}</p>
+            <p className="mt-1 text-sm leading-6 text-warning-container-foreground">{mistakeFeedback.description}</p>
+          </div>
+        ) : null}
         <Button
           aria-expanded={state.open}
           className="mt-5"
-          onClick={() => dispatch({ type: state.open ? "close" : "open" })}
+          onClick={() => {
+            if (!state.open) onExplanationOpen?.();
+            dispatch({ type: state.open ? "close" : "open" });
+          }}
           type="button"
           variant="secondary"
         >
@@ -110,6 +137,12 @@ export function PracticeExplanationShell<Step>({
               </Button>
             ) : null}
           </div>
+          {observation ? (
+            <div className="mt-4 rounded-lg border border-workspace-border bg-surface-lowest px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What to notice</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface">{observation}</p>
+            </div>
+          ) : null}
 
           {currentStep ? (
             state.view === "all" ? (
@@ -162,6 +195,16 @@ export function PracticeExplanationShell<Step>({
               {fallbackMessage}
             </p>
           )}
+          {answerConclusion || takeaway ? (
+            <aside className="mt-5 rounded-lg border border-success/40 bg-success-container px-4 py-3" aria-label="Answer and takeaway">
+              {answerConclusion ? <p className="text-sm font-semibold text-success-container-foreground">{answerConclusion}</p> : null}
+              {takeaway ? (
+                <p className="mt-2 text-sm leading-6 text-success-container-foreground">
+                  <span className="font-semibold">Remember:</span> {takeaway}
+                </p>
+              ) : null}
+            </aside>
+          ) : null}
         </div>
       ) : null}
     </section>

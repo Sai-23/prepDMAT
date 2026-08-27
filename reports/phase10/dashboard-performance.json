@@ -1,0 +1,39 @@
+{
+  "version": "phase10-dashboard-audit@1",
+  "generatedAt": "2026-08-22T12:00:00.000Z",
+  "benchmarkRunsPerHistory": 7,
+  "serviceQueryArchitecture": {
+    "historyQueriesBounded": true,
+    "independentPrimaryGroupsParallelized": true,
+    "secondaryServicesUseAllSettled": true,
+    "dashboardActivityLimit": 5,
+    "practiceHistoryRowLimit": 6,
+    "mockHistoryRowLimit": 6,
+    "mockResponseRowLimit": 600,
+    "nPlusOneQueries": 0
+  },
+  "benchmarks": [
+    {
+      "answerCount": 0,
+      "phase8ProgressPreparationMedianMs": 0.343,
+      "dashboardAssemblyMedianMs": 0.075
+    },
+    {
+      "answerCount": 100,
+      "phase8ProgressPreparationMedianMs": 1.293,
+      "dashboardAssemblyMedianMs": 0.099
+    },
+    {
+      "answerCount": 1000,
+      "phase8ProgressPreparationMedianMs": 3.703,
+      "dashboardAssemblyMedianMs": 0.07
+    },
+    {
+      "answerCount": 5000,
+      "phase8ProgressPreparationMedianMs": 13.936,
+      "dashboardAssemblyMedianMs": 0.072
+    }
+  ],
+  "databaseRoundTripMeasurement": "Not sampled without an authenticated test student; bounded query and no-N+1 contracts are verified instead.",
+  "serverRenderMeasurement": "The production server-rendered route compiled successfully; live browser timing requires a connected authenticated browser session."
+}

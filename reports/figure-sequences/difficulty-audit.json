@@ -1,90 +1,90 @@
 {
-  "generatedAt": "2026-08-09T11:30:54.244Z",
+  "generatedAt": "2026-08-25T08:13:36.061Z",
   "sampleSizePerDifficulty": 100,
   "rows": [
     {
       "difficulty": "easy",
       "accepted": 100,
-      "candidatesAttempted": 103,
-      "averageSymbolCount": 1.42,
+      "candidatesAttempted": 110,
+      "averageSymbolCount": 1.28,
       "symbolDistribution": {
-        "1": 58,
-        "2": 42,
+        "1": 72,
+        "2": 28,
         "3": 0,
         "4": 0
       },
-      "averageIndependentRuleCount": 1.42,
-      "orientationFrequency": 0,
+      "averageIndependentRuleCount": 1.22,
+      "orientationFrequency": 0.11,
       "pathRuleFrequency": {
-        "linear": 0.86,
-        "border": 0.14,
+        "linear": 0.65,
+        "border": 0.48,
         "directionCycle": 0,
-        "diagonal": 0
+        "diagonal": 0.24
       },
-      "averageCandidateSimilarity": 0.21,
-      "averageComplexityScore": 9.38,
-      "collisionRejections": 3,
+      "averageCandidateSimilarity": 0.14,
+      "averageComplexityScore": 20.17,
+      "collisionRejections": 0,
       "boundaryRejections": 0,
-      "validationRejections": 0,
-      "duplicateRejections": 0,
-      "structuralSignatureCount": 10,
-      "structuralSignatureDiversity": 0.1
+      "validationRejections": 7,
+      "duplicateRejections": 3,
+      "structuralSignatureCount": 39,
+      "structuralSignatureDiversity": 0.39
     },
     {
       "difficulty": "medium",
       "accepted": 100,
-      "candidatesAttempted": 152,
-      "averageSymbolCount": 2.94,
+      "candidatesAttempted": 771,
+      "averageSymbolCount": 2.34,
       "symbolDistribution": {
-        "1": 0,
-        "2": 6,
-        "3": 94,
+        "1": 9,
+        "2": 48,
+        "3": 43,
         "4": 0
       },
-      "averageIndependentRuleCount": 2.94,
-      "orientationFrequency": 1,
+      "averageIndependentRuleCount": 2.28,
+      "orientationFrequency": 0.74,
       "pathRuleFrequency": {
-        "linear": 1,
-        "border": 0.94,
-        "directionCycle": 0,
-        "diagonal": 0
+        "linear": 0.84,
+        "border": 0.66,
+        "directionCycle": 0.31,
+        "diagonal": 0.39
       },
-      "averageCandidateSimilarity": 0.657,
-      "averageComplexityScore": 20.58,
-      "collisionRejections": 52,
+      "averageCandidateSimilarity": 0.527,
+      "averageComplexityScore": 37.527,
+      "collisionRejections": 0,
       "boundaryRejections": 0,
-      "validationRejections": 0,
+      "validationRejections": 671,
       "duplicateRejections": 0,
-      "structuralSignatureCount": 35,
-      "structuralSignatureDiversity": 0.35
+      "structuralSignatureCount": 97,
+      "structuralSignatureDiversity": 0.97
     },
     {
       "difficulty": "hard",
       "accepted": 100,
-      "candidatesAttempted": 272,
-      "averageSymbolCount": 3.73,
+      "candidatesAttempted": 104,
+      "averageSymbolCount": 3.38,
       "symbolDistribution": {
         "1": 0,
-        "2": 0,
-        "3": 27,
-        "4": 73
+        "2": 6,
+        "3": 50,
+        "4": 44
       },
-      "averageIndependentRuleCount": 3.73,
-      "orientationFrequency": 1,
+      "averageIndependentRuleCount": 3.33,
+      "orientationFrequency": 0.98,
       "pathRuleFrequency": {
-        "linear": 1,
-        "border": 1,
-        "directionCycle": 1,
-        "diagonal": 1
+        "linear": 0.95,
+        "border": 0.77,
+        "directionCycle": 0.53,
+        "diagonal": 0.52
       },
-      "averageCandidateSimilarity": 0.727,
-      "averageComplexityScore": 43.22,
-      "collisionRejections": 172,
+      "averageCandidateSimilarity": 0.693,
+      "averageComplexityScore": 66.602,
+      "collisionRejections": 0,
       "boundaryRejections": 0,
-      "validationRejections": 0,
+      "validationRejections": 4,
       "duplicateRejections": 0,
-      "structuralSignatureCount": 93,
-      "structuralSignatureDiversity": 0.93
+      "structuralSignatureCount": 100,
+      "structuralSignatureDiversity": 1
     }
   ]
 }

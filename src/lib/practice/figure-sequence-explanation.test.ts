@@ -30,6 +30,9 @@ describe("Figure Sequence Practice explanation mapping", () => {
       expect(walkthrough.steps).toHaveLength(question.structuredData.rules.length + 2);
       expect(walkthrough.steps.filter((step) => step.type === "track_symbol"))
         .toHaveLength(question.structuredData.rules.length);
+      walkthrough.steps.filter((step) => step.type === "track_symbol").forEach((step) => {
+        expect(step.transitions).toHaveLength(5);
+      });
       const predictions = walkthrough.steps.filter((step) => step.type === "predict_matrix");
       expect(predictions).toHaveLength(2);
       predictions.forEach((step, index) => {

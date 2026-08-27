@@ -4,10 +4,11 @@ import type {
   GeneratedQuestion,
   GenerationDifficulty,
 } from "../types";
+import type { LatinDeductionMechanismId } from "./evidence";
 
-export const LATIN_SQUARE_GENERATOR_VERSION = "latin-squares@2.0.0";
-export const LATIN_SQUARE_SOLVER_VERSION = "latin-squares-solver@2.0.0";
-export const LATIN_SQUARE_VALIDATOR_VERSION = "latin-squares-validator@2.0.0";
+export const LATIN_SQUARE_GENERATOR_VERSION = "latin-squares@4.0.0";
+export const LATIN_SQUARE_SOLVER_VERSION = "latin-squares-solver@3.0.0";
+export const LATIN_SQUARE_VALIDATOR_VERSION = "latin-squares-validator@3.0.0";
 export const LATIN_SQUARE_SIZE = 5 as const;
 export const DEFAULT_LATIN_SYMBOLS = ["A", "B", "C", "D", "E"] as const;
 
@@ -51,13 +52,19 @@ export type LatinDeductionReason =
   | "only_position_in_row"
   | "only_position_in_column";
 
+export type LatinDeductionAxis = "row" | "column" | "both";
+
 export type LatinDeduction = {
   coordinate: LatinCoordinate;
   symbol: LatinSymbol;
   reason: LatinDeductionReason;
   round: number;
   depth: number;
+  axis: LatinDeductionAxis;
   dependencies: LatinCoordinate[];
+  clueDependencies: LatinCoordinate[];
+  candidatesBefore: LatinSymbol[];
+  eliminatedCandidates: LatinSymbol[];
 };
 
 export type LatinTargetClassification = "direct" | "indirect" | "multi_stage";
@@ -73,6 +80,8 @@ export type LatinTargetSolverOutcome = {
   status: "none" | "unique" | "multiple" | "invalid";
   possibleTargetSymbols: LatinSymbol[];
   exploredAssignments: number;
+  fullGridSolutionCount: number;
+  fullGridSolutionCountCapped: boolean;
   reason: string | null;
 };
 
@@ -92,6 +101,18 @@ export type LatinDifficultyMetrics = {
   clueDistanceFromTarget: number;
   workingMemoryLoad: number;
   classification: LatinTargetClassification;
+  reasoningClassification: LatinDeductionMechanismId;
+  totalForcedCells: number;
+  requiredIntermediateCells: number;
+  maxDeductionDepth: number;
+  branchingFactor: number;
+  rowColumnAlternations: number;
+  candidateEliminations: number;
+  relevantClueCount: number;
+  irrelevantClueCount: number;
+  essentialClueCount: number;
+  redundantClueCount: number;
+  redundancyRatio: number;
   score: number;
 };
 
@@ -102,4 +123,6 @@ export type LatinValidationSolution = {
   deductions: LatinDeduction[];
   explanation: string;
   exploredAssignments: number;
+  fullGridSolutionCount: number;
+  fullGridSolutionCountCapped: boolean;
 };

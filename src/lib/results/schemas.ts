@@ -1,12 +1,15 @@
 import { z } from "zod";
 
 import type { PracticeAnswer, PracticeQuestion } from "@/lib/practice/schemas";
+import type { EducationalExplanation } from "@/lib/practice/educational-explanation";
+import type { CoreSkillId } from "@/lib/progress/skills";
 
 export const resultAttemptIdSchema = z.string().uuid();
 
 export type ResultHistoryItem = {
   id: string;
   testTitle: string;
+  origin: "curated" | "generated";
   status: "submitted" | "auto_submitted";
   startedAt: string;
   submittedAt: string | null;
@@ -35,15 +38,22 @@ export type ResultQuestion = Omit<
   isCorrect: boolean;
   markedForReview: boolean;
   isBookmarked: boolean;
+  canBookmark?: boolean;
   timeSpentSeconds: number;
   answer?: PracticeAnswer | null;
   correctAnswer?: unknown;
   explanationTrace?: unknown;
+  educationalExplanation?: EducationalExplanation;
+  questionNumber?: number;
+  estimatedTimeSeconds?: number;
+  skillIds?: CoreSkillId[];
 };
 
 export type AttemptResult = {
   id: string;
   testTitle: string;
+  origin: "curated" | "generated";
+  hasImmutableSnapshots: boolean;
   status: "submitted" | "auto_submitted";
   startedAt: string;
   submittedAt: string | null;

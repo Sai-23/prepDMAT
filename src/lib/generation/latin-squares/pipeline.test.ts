@@ -20,13 +20,10 @@ describe("validated Latin-square pipeline", () => {
       expect(question.explanation).not.toMatch(/[{}\[\]]/);
       const analysis = analyzeLatinDeductions(question);
       const calculated = calculateLatinDifficulty(question, analysis);
-      if (difficulty === "easy") {
-        expect(calculated?.metrics.classification).not.toBe("multi_stage");
-      } else {
-        expect(calculated?.metrics.classification).toBe(
-          difficulty === "medium" ? "indirect" : "multi_stage",
-        );
-      }
+      expect(calculated?.difficulty).toBe(difficulty);
+      expect(calculated?.metrics.reasoningClassification).toMatch(
+        difficulty === "easy" ? /^DIRECT_|^ROW_COLUMN_INTERSECTION$/ : difficulty === "medium" ? /SINGLE_INTERMEDIATE|CHAINED_INTERMEDIATE/ : /CHAINED_INTERMEDIATE|MULTI_STAGE_DEDUCTION/,
+      );
       for (const deduction of question.deductionTrace) {
         const deductionIndex = question.deductionTrace.indexOf(deduction);
         for (const dependency of deduction.dependencies) {

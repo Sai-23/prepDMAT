@@ -1,16 +1,27 @@
 import "server-only";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type {
-  DashboardAttempt,
-  DashboardData,
-  DashboardTask,
-  TopicPerformance,
-} from "@/types/analytics";
+import { getCoreProgress } from "@/lib/progress/data";
+import { MODULE_LABELS } from "@/lib/progress/model";
+import type { PracticeModule } from "@/lib/practice/schemas";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getEnv } from "@/lib/validators/env";
 
-type LoadDashboardResult =
-  | { data: DashboardData; error: null }
-  | { data: null; error: string };
+import {
+  assembleStudentDashboard,
+  type DashboardActivity,
+  type DashboardLatestMock,
+  type DashboardLatestPractice,
+  type DashboardResumeCandidate,
+  type StudentDashboardViewModel,
+} from "./model";
+
+const PRACTICE_TEST_ID = "00000000-0000-4000-8000-000000000001";
+const CORE_SECTION_TYPES = new Set([
+  "figure_sequence",
+  "mathematical_equation",
+  "latin_square",
+  "mixed",
+]);
 
 type ProfileRow = {
   display_name: string | null;
@@ -18,182 +29,414 @@ type ProfileRow = {
   target_exam_date: string | null;
 };
 
-type AttemptRow = {
+type PracticeSessionRow = {
   id: string;
-  test_id: string;
-  status: DashboardAttempt["status"];
+  module: PracticeModule;
+  difficulty_mode: "easy" | "medium" | "hard" | "mixed";
+  question_count: number;
+  timing_mode: "timed" | "untimed";
+  source_mode: "generated" | "exact_review";
+  current_position: number;
+  correct_count: number;
+  incorrect_count: number;
   started_at: string;
-  submitted_at: string | null;
-  total_time_seconds: number;
-  score: number | null;
-  accuracy: number | null;
+  expires_at: string | null;
+  completed_at: string | null;
 };
 
-type TopicRow = {
-  topic: string;
-  subtopic: string;
-  accuracy: number | null;
-  average_response_time_seconds: number | null;
-  attempts_count: number;
-};
-
-type TestRow = { id: string; title: string };
-type PlanRow = { id: string };
-type TaskRow = {
+type ActiveMockRow = {
   id: string;
-  title: string;
-  description: string | null;
-  topic: string | null;
-  target_count: number | null;
-  status: DashboardTask["status"];
-  due_at: string | null;
+  test_id: string | null;
+  generated_mock_id: string | null;
+  mock_origin: "curated" | "generated";
+  display_title: string | null;
+  started_at: string;
+  expires_at: string | null;
+  last_activity_at: string;
+  current_section_key: string | null;
+  test_snapshot: unknown;
 };
 
-export async function loadDashboardData(userId: string): Promise<LoadDashboardResult> {
-  const supabase = await createSupabaseServerClient();
+type CompletedMockRow = {
+  id: string;
+  display_title: string | null;
+  submitted_at: string | null;
+  accuracy: number | null;
+};
 
-  const [profileResult, attemptsResult, topicsResult, bookmarksResult, planResult] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("display_name, full_name, target_exam_date")
-        .eq("id", userId)
-        .maybeSingle()
-        .overrideTypes<ProfileRow | null, { merge: false }>(),
-      supabase
-        .from("test_attempts")
-        .select(
-          "id, test_id, status, started_at, submitted_at, total_time_seconds, score, accuracy",
-        )
-        .eq("user_id", userId)
-        .order("started_at", { ascending: false })
-        .overrideTypes<AttemptRow[], { merge: false }>(),
-      supabase
-        .from("user_topic_performance")
-        .select(
-          "topic, subtopic, accuracy, average_response_time_seconds, attempts_count",
-        )
-        .eq("module", "core")
-        .eq("user_id", userId)
-        .gt("attempts_count", 0)
-        .order("accuracy", { ascending: true })
-        .limit(5)
-        .overrideTypes<TopicRow[], { merge: false }>(),
-      supabase
-        .from("bookmarks")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId),
-      supabase
-        .from("study_plans")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("status", "active")
-        .order("plan_date", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-        .overrideTypes<PlanRow | null, { merge: false }>(),
-    ]);
+type MockResponseRow = {
+  attempt_id: string;
+  is_correct: boolean | null;
+};
 
-  const firstError = [
-    profileResult.error,
-    attemptsResult.error,
-    topicsResult.error,
-    bookmarksResult.error,
-    planResult.error,
-  ].find(Boolean);
+type PublishedTestRow = { id: string };
+type TestSectionRow = { test_id: string; section_type: string };
 
-  if (firstError) {
-    return { data: null, error: "We could not load your dashboard data. Try again shortly." };
-  }
+type DashboardQueryBundle = {
+  profile: ProfileRow | null;
+  activePractice: PracticeSessionRow[];
+  practiceHistory: PracticeSessionRow[];
+  activeMocks: ActiveMockRow[];
+  mockHistory: CompletedMockRow[];
+};
 
-  const attemptRows = attemptsResult.data ?? [];
-  const testIds = [...new Set(attemptRows.slice(0, 5).map((attempt) => attempt.test_id))];
-  const testsResult = testIds.length
-    ? await supabase
-        .from("tests")
-        .select("id, title")
-        .in("id", testIds)
-        .overrideTypes<TestRow[], { merge: false }>()
-    : { data: [], error: null };
+export type LoadStudentDashboardResult =
+  | {
+      data: StudentDashboardViewModel;
+      error: null;
+      warnings: string[];
+    }
+  | {
+      data: null;
+      error: string;
+      warnings: string[];
+    };
 
-  const tasksResult = planResult.data
-    ? await supabase
-        .from("study_tasks")
-        .select("id, title, description, topic, target_count, status, due_at")
-        .eq("study_plan_id", planResult.data.id)
-        .in("status", ["pending", "in_progress"])
-        .order("sort_order", { ascending: true })
-        .limit(4)
-        .overrideTypes<TaskRow[], { merge: false }>()
-    : { data: [], error: null };
-
-  if (testsResult.error || tasksResult.error) {
-    return { data: null, error: "We could not load your dashboard data. Try again shortly." };
-  }
-
-  const titleByTestId = new Map(
-    (testsResult.data ?? []).map((test) => [test.id, test.title]),
-  );
-
-  const recentAttempts: DashboardAttempt[] = attemptRows.slice(0, 5).map((attempt) => ({
-    id: attempt.id,
-    testId: attempt.test_id,
-    testTitle: titleByTestId.get(attempt.test_id) ?? "Practice test",
-    status: attempt.status,
-    startedAt: attempt.started_at,
-    submittedAt: attempt.submitted_at,
-    totalTimeSeconds: attempt.total_time_seconds,
-    score: attempt.score === null ? null : Number(attempt.score),
-    accuracy: attempt.accuracy === null ? null : Number(attempt.accuracy),
-  }));
-
-  const completed = attemptRows.filter(
-    (attempt) => attempt.status === "submitted" || attempt.status === "auto_submitted",
-  );
-  const accuracies = completed
-    .map((attempt) => attempt.accuracy)
-    .filter((accuracy): accuracy is number => accuracy !== null)
-    .map(Number);
-  const overallAccuracy = accuracies.length
-    ? accuracies.reduce((sum, accuracy) => sum + accuracy, 0) / accuracies.length
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
     : null;
+}
 
-  const weakTopics: TopicPerformance[] = (topicsResult.data ?? []).map((topic) => ({
-    topic: topic.topic,
-    subtopic: topic.subtopic || null,
-    accuracy: Number(topic.accuracy ?? 0),
-    averageTimeSeconds: Number(topic.average_response_time_seconds ?? 0),
-    attempts: topic.attempts_count,
-  }));
+function activeSectionTitle(attempt: ActiveMockRow): string | null {
+  const sections = record(attempt.test_snapshot)?.sections;
+  if (!Array.isArray(sections)) return null;
+  const current = sections.find(
+    (section) => record(section)?.id === attempt.current_section_key,
+  );
+  const title = record(current)?.title;
+  return typeof title === "string" && title.trim() ? title : null;
+}
 
-  const studyTasks: DashboardTask[] = (tasksResult.data ?? []).map((task) => ({
-    id: task.id,
-    title: task.title,
-    description: task.description,
-    topic: task.topic,
-    targetCount: task.target_count,
-    status: task.status,
-    dueAt: task.due_at,
-  }));
+function safeNumber(value: number | null): number {
+  return value === null || !Number.isFinite(Number(value)) ? 0 : Number(value);
+}
+
+function practiceTitle(row: PracticeSessionRow): string {
+  return row.source_mode === "exact_review"
+    ? `${MODULE_LABELS[row.module]} review`
+    : `${MODULE_LABELS[row.module]} practice`;
+}
+
+function buildPracticeResume(row: PracticeSessionRow): DashboardResumeCandidate {
+  const answeredCount = Math.min(
+    row.question_count,
+    Math.max(0, row.correct_count + row.incorrect_count),
+  );
+  return {
+    kind: "practice",
+    id: row.id,
+    title: practiceTitle(row),
+    description: `${answeredCount} of ${row.question_count} answered · ${row.timing_mode === "timed" ? "Timed" : "Untimed"}`,
+    href: "/practice",
+    startedAt: row.started_at,
+    expiresAt: row.expires_at,
+    timingMode: row.timing_mode,
+  };
+}
+
+function buildMockResume(row: ActiveMockRow): DashboardResumeCandidate | null {
+  const targetId = row.test_id ?? row.generated_mock_id;
+  if (!targetId) return null;
+  const sectionTitle = activeSectionTitle(row);
+  return {
+    kind: "mock",
+    id: row.id,
+    title: row.display_title?.trim() || "Core Mock",
+    description: sectionTitle
+      ? `Continue from ${sectionTitle}. Your existing attempt is saved.`
+      : "Continue your saved exam-style Core attempt.",
+    href: `/tests/${targetId}/take?attempt=${row.id}`,
+    startedAt: row.started_at,
+    expiresAt: row.expires_at,
+  };
+}
+
+function responseCounts(rows: MockResponseRow[]) {
+  const byAttempt = new Map<string, { correct: number; total: number }>();
+  rows.forEach((row) => {
+    const current = byAttempt.get(row.attempt_id) ?? { correct: 0, total: 0 };
+    current.total += 1;
+    if (row.is_correct === true) current.correct += 1;
+    byAttempt.set(row.attempt_id, current);
+  });
+  return byAttempt;
+}
+
+function mapPracticeActivity(row: PracticeSessionRow): DashboardActivity | null {
+  if (!row.completed_at) return null;
+  const correct = Math.max(0, row.correct_count);
+  const total = Math.max(1, row.question_count);
+  return {
+    id: row.id,
+    type: "practice",
+    title: practiceTitle(row),
+    subtitle: `${row.difficulty_mode[0].toUpperCase()}${row.difficulty_mode.slice(1)} · ${row.timing_mode === "timed" ? "Timed" : "Untimed"}`,
+    completedAt: row.completed_at,
+    href: `/practice/review/${row.id}`,
+    correctCount: correct,
+    questionCount: total,
+    accuracy: (correct / total) * 100,
+  };
+}
+
+function mapMockActivity(
+  row: CompletedMockRow,
+  counts: Map<string, { correct: number; total: number }>,
+): DashboardActivity | null {
+  if (!row.submitted_at) return null;
+  const count = counts.get(row.id);
+  return {
+    id: row.id,
+    type: "mock",
+    title: row.display_title?.trim() || "Core Mock",
+    subtitle: "Completed Core Mock",
+    completedAt: row.submitted_at,
+    href: `/results?attempt=${row.id}`,
+    correctCount: count?.correct ?? null,
+    questionCount: count?.total ?? null,
+    accuracy: row.accuracy === null ? null : safeNumber(row.accuracy),
+  };
+}
+
+async function loadPrimaryDashboardRows(userId: string): Promise<DashboardQueryBundle> {
+  const admin = createSupabaseAdminClient();
+  const [
+    profileResult,
+    activePracticeResult,
+    practiceHistoryResult,
+    activeMockResult,
+    mockHistoryResult,
+  ] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("display_name, full_name, target_exam_date")
+      .eq("id", userId)
+      .maybeSingle()
+      .overrideTypes<ProfileRow | null, { merge: false }>(),
+    admin
+      .from("practice_sessions")
+      .select(
+        "id, module, difficulty_mode, question_count, timing_mode, source_mode, current_position, correct_count, incorrect_count, started_at, expires_at, completed_at",
+      )
+      .eq("user_id", userId)
+      .eq("status", "in_progress")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .overrideTypes<PracticeSessionRow[], { merge: false }>(),
+    admin
+      .from("practice_sessions")
+      .select(
+        "id, module, difficulty_mode, question_count, timing_mode, source_mode, current_position, correct_count, incorrect_count, started_at, expires_at, completed_at",
+      )
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(6)
+      .overrideTypes<PracticeSessionRow[], { merge: false }>(),
+    admin
+      .from("test_attempts")
+      .select(
+        "id, test_id, generated_mock_id, mock_origin, display_title, started_at, expires_at, last_activity_at, current_section_key, test_snapshot",
+      )
+      .eq("user_id", userId)
+      .eq("status", "in_progress")
+      .order("last_activity_at", { ascending: false })
+      .limit(4)
+      .overrideTypes<ActiveMockRow[], { merge: false }>(),
+    admin
+      .from("test_attempts")
+      .select("id, display_title, submitted_at, accuracy")
+      .eq("user_id", userId)
+      .in("status", ["submitted", "auto_submitted"])
+      .order("submitted_at", { ascending: false })
+      .limit(6)
+      .overrideTypes<CompletedMockRow[], { merge: false }>(),
+  ]);
+
+  const error = [
+    profileResult.error,
+    activePracticeResult.error,
+    practiceHistoryResult.error,
+    activeMockResult.error,
+    mockHistoryResult.error,
+  ].find(Boolean);
+  if (error) throw new Error("Unable to load dashboard activity.");
 
   return {
-    data: {
+    profile: profileResult.data,
+    activePractice: activePracticeResult.data ?? [],
+    practiceHistory: practiceHistoryResult.data ?? [],
+    activeMocks: activeMockResult.data ?? [],
+    mockHistory: mockHistoryResult.data ?? [],
+  };
+}
+
+async function loadOwnedMockResponseCounts(
+  userId: string,
+  attempts: CompletedMockRow[],
+): Promise<Map<string, { correct: number; total: number }>> {
+  if (!attempts.length) return new Map();
+
+  // Attempt IDs come only from the preceding user_id-scoped query. The response
+  // projection is intentionally limited to aggregate correctness fields.
+  const admin = createSupabaseAdminClient();
+  const ownedAttemptIds = attempts.map((attempt) => attempt.id);
+  const ownershipResult = await admin
+    .from("test_attempts")
+    .select("id")
+    .eq("user_id", userId)
+    .in("id", ownedAttemptIds)
+    .overrideTypes<Array<{ id: string }>, { merge: false }>();
+  if (ownershipResult.error) throw new Error("Unable to verify mock ownership.");
+  const verifiedIds = (ownershipResult.data ?? []).map((attempt) => attempt.id);
+  if (!verifiedIds.length) return new Map();
+
+  const responsesResult = await admin
+    .from("user_responses")
+    .select("attempt_id, is_correct")
+    .in("attempt_id", verifiedIds)
+    .limit(600)
+    .overrideTypes<MockResponseRow[], { merge: false }>();
+  if (responsesResult.error) throw new Error("Unable to load mock result totals.");
+  return responseCounts(responsesResult.data ?? []);
+}
+
+async function hasPublishedCoreMock(): Promise<boolean> {
+  const admin = createSupabaseAdminClient();
+  const testsResult = await admin
+    .from("tests")
+    .select("id")
+    .eq("is_published", true)
+    .neq("id", PRACTICE_TEST_ID)
+    .order("created_at", { ascending: false })
+    .limit(20)
+    .overrideTypes<PublishedTestRow[], { merge: false }>();
+  if (testsResult.error) throw new Error("Unable to check Core mock availability.");
+  const tests = testsResult.data ?? [];
+  if (!tests.length) return false;
+
+  const sectionsResult = await admin
+    .from("test_sections")
+    .select("test_id, section_type")
+    .in(
+      "test_id",
+      tests.map((test) => test.id),
+    )
+    .eq("is_current", true)
+    .limit(100)
+    .overrideTypes<TestSectionRow[], { merge: false }>();
+  if (sectionsResult.error) throw new Error("Unable to check Core mock sections.");
+  const sections = sectionsResult.data ?? [];
+
+  return tests.some((test) => {
+    const testSections = sections.filter((section) => section.test_id === test.id);
+    return (
+      testSections.length > 0 &&
+      testSections.every((section) => CORE_SECTION_TYPES.has(section.section_type))
+    );
+  });
+}
+
+export async function loadStudentDashboardData(
+  userId: string,
+  now = new Date(),
+): Promise<LoadStudentDashboardResult> {
+  const onDemandMocksEnabled = getEnv().ENABLE_ON_DEMAND_CORE_MOCKS;
+  const [primaryResult, progressResult, availabilityResult] =
+    await Promise.allSettled([
+      loadPrimaryDashboardRows(userId),
+      getCoreProgress(userId),
+      onDemandMocksEnabled ? Promise.resolve(true) : hasPublishedCoreMock(),
+    ]);
+
+  if (primaryResult.status === "rejected") {
+    return {
+      data: null,
+      error: "We could not load your dashboard activity. Try again shortly.",
+      warnings: [],
+    };
+  }
+
+  const warnings: string[] = [];
+  const primary = primaryResult.value;
+  const progress = progressResult.status === "fulfilled" ? progressResult.value : null;
+  if (progressResult.status === "rejected") {
+    warnings.push("Core progress is temporarily unavailable. Your activity and resume actions are still shown.");
+  }
+  const mockAvailable =
+    availabilityResult.status === "fulfilled" ? availabilityResult.value : false;
+  if (availabilityResult.status === "rejected") {
+    warnings.push("Mock availability could not be confirmed, so the mock shortcut is hidden for now.");
+  }
+
+  let counts = new Map<string, { correct: number; total: number }>();
+  try {
+    counts = await loadOwnedMockResponseCounts(userId, primary.mockHistory);
+  } catch {
+    warnings.push("Exact mock score totals are temporarily unavailable. Saved accuracy is shown instead.");
+  }
+
+  const practiceActivity = primary.practiceHistory
+    .map(mapPracticeActivity)
+    .filter((activity): activity is DashboardActivity => activity !== null);
+  const mockActivity = primary.mockHistory
+    .map((attempt) => mapMockActivity(attempt, counts))
+    .filter((activity): activity is DashboardActivity => activity !== null);
+  const recentActivity = [...practiceActivity, ...mockActivity];
+  const latestPracticeRow = primary.practiceHistory[0] ?? null;
+  const latestPractice: DashboardLatestPractice | null =
+    latestPracticeRow?.completed_at
+      ? {
+          sessionId: latestPracticeRow.id,
+          title: practiceTitle(latestPracticeRow),
+          module: latestPracticeRow.module,
+          correctCount: Math.max(0, latestPracticeRow.correct_count),
+          questionCount: Math.max(1, latestPracticeRow.question_count),
+          completedAt: latestPracticeRow.completed_at,
+          href: `/practice/review/${latestPracticeRow.id}`,
+        }
+      : null;
+  const latestMockRow = primary.mockHistory[0] ?? null;
+  const latestMockCount = latestMockRow ? counts.get(latestMockRow.id) : undefined;
+  const latestMock: DashboardLatestMock | null =
+    latestMockRow?.submitted_at
+      ? {
+          attemptId: latestMockRow.id,
+          title: latestMockRow.display_title?.trim() || "Core Mock",
+          correctCount: latestMockCount?.correct ?? null,
+          questionCount: latestMockCount?.total ?? null,
+          accuracy:
+            latestMockRow.accuracy === null
+              ? null
+              : safeNumber(latestMockRow.accuracy),
+          completedAt: latestMockRow.submitted_at,
+          href: `/results?attempt=${latestMockRow.id}`,
+        }
+      : null;
+  const resumeCandidates = [
+    ...primary.activeMocks
+      .map(buildMockResume)
+      .filter((candidate): candidate is DashboardResumeCandidate => candidate !== null),
+    ...primary.activePractice.map(buildPracticeResume),
+  ];
+
+  return {
+    data: assembleStudentDashboard({
       displayName:
-        profileResult.data?.display_name ??
-        profileResult.data?.full_name ??
-        "Student",
-      targetExamDate: profileResult.data?.target_exam_date ?? null,
-      completedAttempts: completed.length,
-      overallAccuracy,
-      totalTimeSeconds: attemptRows.reduce(
-        (total, attempt) => total + attempt.total_time_seconds,
-        0,
-      ),
-      bookmarkCount: bookmarksResult.count ?? 0,
-      recentAttempts,
-      weakTopics,
-      studyTasks,
-    },
+        primary.profile?.display_name ?? primary.profile?.full_name ?? "Student",
+      targetExamDate: primary.profile?.target_exam_date ?? null,
+      onDemandMocksEnabled,
+      mockAvailable,
+      resumeCandidates,
+      progress,
+      progressUnavailable: progressResult.status === "rejected",
+      recentActivity,
+      latestPractice,
+      latestMock,
+      now,
+    }),
     error: null,
+    warnings,
   };
 }

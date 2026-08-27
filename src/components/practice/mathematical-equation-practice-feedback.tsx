@@ -12,6 +12,11 @@ import {
   presentationEquationText,
   type EquationExplanationStep,
 } from "@/lib/practice/mathematical-equation-explanation";
+import {
+  buildEquationEducationalExplanation,
+  diagnoseEquationMistake,
+  type EducationalExplanation,
+} from "@/lib/practice/educational-explanation";
 import { cn } from "@/lib/utils";
 import { MathematicalEquationAnswerReview } from "./mathematical-equation-answer-review";
 import { PracticeExplanationShell } from "./practice-explanation-shell";
@@ -26,6 +31,9 @@ export function MathematicalEquationPracticeFeedback({
   initialView = "step",
   initialStep = 0,
   showOutcomeHeader = true,
+  onExplanationOpen,
+  educationalExplanation,
+  difficulty,
 }: {
   data: MathematicalEquationStructuredData;
   trace: unknown;
@@ -36,15 +44,27 @@ export function MathematicalEquationPracticeFeedback({
   initialView?: "step" | "all";
   initialStep?: number;
   showOutcomeHeader?: boolean;
+  onExplanationOpen?: () => void;
+  educationalExplanation?: EducationalExplanation;
+  difficulty?: "easy" | "medium" | "hard";
 }) {
   const walkthrough = useMemo(
     () => buildMathematicalEquationWalkthrough(data, trace, correctAnswer),
     [correctAnswer, data, trace],
   );
+  const education = useMemo(
+    () => educationalExplanation ?? buildEquationEducationalExplanation(data, trace, correctAnswer, difficulty),
+    [correctAnswer, data, difficulty, educationalExplanation, trace],
+  );
+  const mistake = useMemo(
+    () => isCorrect ? null : diagnoseEquationMistake(data, trace, selectedAnswer, correctAnswer),
+    [correctAnswer, data, isCorrect, selectedAnswer, trace],
+  );
   const assignment = walkthrough.assignment ?? {};
 
   return (
     <PracticeExplanationShell
+      answerConclusion={education?.answerConclusion}
       dataFeedbackInterface="mathematical-equation-guided"
       fallbackMessage={walkthrough.fallbackMessage}
       getStepKey={(step) => step.id}
@@ -52,6 +72,9 @@ export function MathematicalEquationPracticeFeedback({
       initialView={initialView}
       initiallyOpen={initiallyOpen}
       isCorrect={isCorrect}
+      mistakeFeedback={mistake}
+      observation={education?.observation}
+      onExplanationOpen={onExplanationOpen}
       renderStep={(step, index, total) => (
         <EquationStepCard
           assignment={assignment}
@@ -76,8 +99,10 @@ export function MathematicalEquationPracticeFeedback({
           symbols={data.variables}
         />
       )}
+      quickSummary={education?.summary}
       showOutcomeHeader={showOutcomeHeader}
       steps={walkthrough.valid ? walkthrough.steps : []}
+      takeaway={education?.takeaway}
     />
   );
 }

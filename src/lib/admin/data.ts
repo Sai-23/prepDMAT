@@ -12,6 +12,7 @@ import type { MathematicalEquationQuestion } from "@/lib/generation/mathematical
 import type { LatinSquareQuestion } from "@/lib/generation/latin-squares";
 import type { FigureSequenceQuestion } from "@/lib/generation/figure-sequences";
 import { evaluatePublication } from "@/lib/admin/publishing-policy";
+import type { StructuralProfile } from "@/lib/generation/novelty";
 
 function questionSnapshot(
   question: Record<string, unknown>,
@@ -57,6 +58,53 @@ async function getGeneratedFingerprints(
       return typeof fingerprint === "string" ? [fingerprint] : [];
     }),
   );
+}
+
+export type GeneratedNoveltyHistory = {
+  fingerprints: Set<string>;
+  structuralProfiles: StructuralProfile[];
+};
+
+function isStructuralProfile(value: unknown): value is StructuralProfile {
+  if (!value || typeof value !== "object") return false;
+  const profile = value as { namespace?: unknown; features?: unknown };
+  return ["figure_sequence", "mathematical_equation", "latin_square"].includes(String(profile.namespace)) &&
+    Boolean(profile.features) && typeof profile.features === "object" && !Array.isArray(profile.features);
+}
+
+async function getGeneratedNoveltyHistory(
+  questionType: "mathematical_equation" | "latin_square" | "figure_sequence",
+): Promise<GeneratedNoveltyHistory> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("questions")
+    .select("metadata")
+    .eq("source_type", "generated")
+    .eq("question_type", questionType)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw new Error("Unable to load recent generated-question novelty metadata.");
+  const fingerprints = new Set<string>();
+  const structuralProfiles: StructuralProfile[] = [];
+  (data ?? []).forEach((row) => {
+    const generation = (row.metadata as { generation?: Record<string, unknown> } | null)?.generation;
+    if (typeof generation?.fingerprint === "string") fingerprints.add(generation.fingerprint);
+    if (isStructuralProfile(generation?.structuralProfile)) structuralProfiles.push(generation.structuralProfile);
+  });
+  return { fingerprints, structuralProfiles };
+}
+
+export function getGeneratedEquationNoveltyHistory(): Promise<GeneratedNoveltyHistory> {
+  return getGeneratedNoveltyHistory("mathematical_equation");
+}
+
+export function getGeneratedLatinNoveltyHistory(): Promise<GeneratedNoveltyHistory> {
+  return getGeneratedNoveltyHistory("latin_square");
+}
+
+export function getGeneratedFigureNoveltyHistory(): Promise<GeneratedNoveltyHistory> {
+  return getGeneratedNoveltyHistory("figure_sequence");
 }
 
 export function getGeneratedEquationFingerprints(): Promise<Set<string>> {
@@ -326,14 +374,29 @@ export async function createPublishedGeneratedFigure(
 
 export async function getAdminMetrics(): Promise<AdminMetrics> {
   const admin = createSupabaseAdminClient();
+  const utcDayStart = new Date();
+  utcDayStart.setUTCHours(0, 0, 0, 0);
+  const generatedBase = () => admin
+    .from("questions")
+    .select("id", { count: "exact", head: true })
+    .eq("module", "core")
+    .eq("source_type", "generated")
+    .is("deleted_at", null);
   const [
+    users,
     total,
     underReview,
     approvedDrafts,
     published,
     openReports,
     publishedTests,
+    generated,
+    generatedToday,
+    attempts,
+    completedAttempts,
+    ...generatorBreakdowns
   ] = await Promise.all([
+    admin.from("profiles").select("id", { count: "exact", head: true }),
     admin.from("questions").select("id", { count: "exact", head: true }).eq("module", "core").is("deleted_at", null),
     admin
       .from("questions")
@@ -361,41 +424,52 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
       .eq("status", "open"),
     admin
       .from("tests")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .eq("is_published", true)
+      .eq("module", "core")
       .neq("id", "00000000-0000-4000-8000-000000000001"),
+    generatedBase(),
+    generatedBase().gte("created_at", utcDayStart.toISOString()),
+    admin.from("test_attempts").select("id", { count: "exact", head: true }),
+    admin.from("test_attempts").select("id", { count: "exact", head: true }).in("status", ["submitted", "auto_submitted"]),
+    ...(["figure_sequence", "mathematical_equation", "latin_square"] as const).map((questionType) =>
+      generatedBase().eq("question_type", questionType),
+    ),
+    ...(["easy", "medium", "hard"] as const).map((difficulty) =>
+      generatedBase().eq("difficulty", difficulty),
+    ),
   ]);
 
   if (
-    [total, underReview, approvedDrafts, published, openReports, publishedTests].some(
+    [users, total, underReview, approvedDrafts, published, openReports, publishedTests, generated, generatedToday, attempts, completedAttempts, ...generatorBreakdowns].some(
       (result) => result.error,
     )
   ) {
     throw new Error("Unable to load administrative metrics.");
   }
 
-  const publishedTestIds = (publishedTests.data ?? []).map((test) => test.id);
-  const { data: publishedSections, error: publishedSectionsError } = publishedTestIds.length
-    ? await admin
-        .from("test_sections")
-        .select("test_id, section_type")
-        .in("test_id", publishedTestIds)
-        .eq("is_current", true)
-    : { data: [], error: null };
-  if (publishedSectionsError) throw new Error("Unable to load administrative metrics.");
-  const coreSectionTypes = new Set(["figure_sequence", "mathematical_equation", "latin_square", "mixed"]);
-  const publishedCoreTestCount = publishedTestIds.filter((testId) => {
-    const sections = (publishedSections ?? []).filter((section) => section.test_id === testId);
-    return sections.length > 0 && sections.every((section) => coreSectionTypes.has(section.section_type));
-  }).length;
-
   return {
+    totalUsers: users.count ?? 0,
     totalQuestions: total.count ?? 0,
     underReview: underReview.count ?? 0,
     approvedDrafts: approvedDrafts.count ?? 0,
     publishedQuestions: published.count ?? 0,
     openReports: openReports.count ?? 0,
-    publishedTests: publishedCoreTestCount,
+    publishedTests: publishedTests.count ?? 0,
+    generatedQuestions: generated.count ?? 0,
+    generatedTodayUtc: generatedToday.count ?? 0,
+    totalAttempts: attempts.count ?? 0,
+    completedAttempts: completedAttempts.count ?? 0,
+    generatedByType: {
+      figure_sequence: generatorBreakdowns[0].count ?? 0,
+      mathematical_equation: generatorBreakdowns[1].count ?? 0,
+      latin_square: generatorBreakdowns[2].count ?? 0,
+    },
+    generatedByDifficulty: {
+      easy: generatorBreakdowns[3].count ?? 0,
+      medium: generatorBreakdowns[4].count ?? 0,
+      hard: generatorBreakdowns[5].count ?? 0,
+    },
   };
 }
 

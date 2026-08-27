@@ -16,6 +16,17 @@ import {
   mathematicalEquationSolver,
 } from "./solver";
 import {
+  inspectMathematicalEquationStyle,
+  mathematicalEquationStyleIssues,
+} from "./style";
+import { inspectPublicEquationPresentation } from "./presentation";
+import {
+  EQUATION_GRAPH_REGISTRY,
+  EQUATION_RELATIONSHIP_REGISTRY,
+  sharedEquationEvidence,
+} from "./taxonomy";
+import { validateEvidenceDefinition } from "../../evidence";
+import {
   MATHEMATICAL_EQUATION_DOMAIN,
   MATHEMATICAL_EQUATION_VALIDATOR_VERSION,
   type MathematicalEquation,
@@ -54,8 +65,8 @@ function validateExpression(
   issues: ValidationIssue[],
 ): void {
   if (expression.kind === "constant") {
-    if (!Number.isSafeInteger(expression.value) || Math.abs(expression.value) > 40) {
-      issues.push(issue("format", "invalid_constant", "Constants must be safe mental-calculation integers with magnitude at most 40.", path));
+    if (!Number.isSafeInteger(expression.value) || expression.value < 1 || expression.value > 20) {
+      issues.push(issue("format", "VISIBLE_CONSTANT_OUT_OF_RANGE", "Every displayed constant must be an integer from 1 through 20.", path));
     }
     return;
   }
@@ -81,13 +92,10 @@ function validateExpression(
     }
   }
   if (expression.operator === "divide") {
-    if (
-      (expression.right.kind === "constant" &&
-        (expression.right.value === 0 || Math.abs(expression.right.value) < 2 || Math.abs(expression.right.value) > 6)) ||
-      (expression.right.kind === "variable" && !declared.has(expression.right.symbol)) ||
-      expression.right.kind === "operation"
-    ) {
-      issues.push(issue("safety", "invalid_divisor", "Division must use a safe variable or a divisor from 2 through 6.", path));
+    if (expression.right.kind !== "constant") {
+      issues.push(issue("safety", "UNSUPPORTED_MECHANIC", "Division must use an exact integer divisor from 2 through 6.", path));
+    } else if (expression.right.value < 2 || expression.right.value > 6) {
+      issues.push(issue("safety", "invalid_divisor", "Division must use an exact integer divisor from 2 through 6.", path));
     }
   }
 }
@@ -129,25 +137,37 @@ function possibleTargetValues(
   const possible = new Set<number>();
   const partial: VariableAssignment = { ...knownAssignment };
   const references = equations.map(equationVariables);
-  const search = (index: number): void => {
-    if (index === unresolved.length) {
+  const search = (): void => {
+    if (possible.size >= 2) return;
+    const unassigned = unresolved.filter((symbol) => !Object.hasOwn(partial, symbol));
+    if (unassigned.length === 0) {
       if (equations.every((equation) => equationIsTrue(equation, partial))) {
         possible.add(partial[targetSymbol]);
       }
       return;
     }
-    const symbol = unresolved[index];
+    const symbol = [...unassigned].sort((first, second) => {
+      const score = (value: string) => references.reduce((total, symbols) => {
+        if (!symbols.has(value)) return total;
+        const remaining = [...symbols].filter((item) =>
+          item !== value && !Object.hasOwn(partial, item),
+        ).length;
+        return total + (remaining === 0 ? 100 : 1 / (remaining + 1));
+      }, 0);
+      return score(second) - score(first) || first.localeCompare(second);
+    })[0];
     for (let value = domain.minimum; value <= domain.maximum; value += 1) {
       partial[symbol] = value;
       const contradicted = equations.some((equation, equationIndex) =>
         [...references[equationIndex]].every((item) => Object.hasOwn(partial, item)) &&
         !equationIsTrue(equation, partial),
       );
-      if (!contradicted) search(index + 1);
+      if (!contradicted) search();
+      if (possible.size >= 2) break;
     }
     delete partial[symbol];
   };
-  search(0);
+  search();
   return [...possible].sort((first, second) => first - second);
 }
 
@@ -214,12 +234,18 @@ function validateSolutionPath(
     const knownAssignment = Object.fromEntries(
       [...solved].map((symbol) => [symbol, assignment[symbol]]),
     );
-    const possibleValues = possibleTargetValues(
-      selectedEquations as MathematicalEquation[],
-      step.targetSymbol,
-      knownAssignment,
-      domain,
-    );
+    // The independently verified unique full-system solution already proves an
+    // initial step that explicitly combines every equation. Re-enumerating the
+    // same 20^4 domain here would add cost without adding a distinct guarantee.
+    const combinesWholeSystem = solved.size === 0 && equationIndices.length === equations.length;
+    const possibleValues = combinesWholeSystem
+      ? [assignment[step.targetSymbol]]
+      : possibleTargetValues(
+          selectedEquations as MathematicalEquation[],
+          step.targetSymbol,
+          knownAssignment,
+          domain,
+        );
     if (
       possibleValues.length !== 1 ||
       possibleValues[0] !== assignment[step.targetSymbol] ||
@@ -256,6 +282,19 @@ export class MathematicalEquationValidator
     const declared = new Set(variables);
 
     if (
+      Object.keys(candidate.correctAnswer).some((symbol) => !declared.has(symbol)) ||
+      Object.values(candidate.correctAnswer).some((value) =>
+        !Number.isSafeInteger(value) || value < 1 || value > 20)
+    ) {
+      issues.push(issue(
+        "domain",
+        "HIDDEN_VALUE_OUT_OF_RANGE",
+        "Every stored letter value must be an integer from 1 through 20.",
+        "correctAnswer",
+      ));
+    }
+
+    if (
       candidate.questionType !== "mathematical_equation" ||
       candidate.module !== "core" ||
       variables.length < 2 ||
@@ -275,13 +314,63 @@ export class MathematicalEquationValidator
       !Number.isInteger(dependencyModel.relationshipReversalCount) ||
       Number(dependencyModel.relationshipReversalCount) < 0 ||
       !Number.isInteger(dependencyModel.meaningfulReasoningSteps) ||
-      Number(dependencyModel.meaningfulReasoningSteps) < 2
+      Number(dependencyModel.meaningfulReasoningSteps) < 2 ||
+      !Array.isArray(dependencyModel.relationshipPrimitives) ||
+      dependencyModel.relationshipPrimitives.length !== equations.length ||
+      dependencyModel.evidenceLevel === "experimental" ||
+      !dependencyModel.rootStrategy ||
+      !dependencyModel.targetSymbol ||
+      !declared.has(dependencyModel.targetSymbol)
     ) {
       issues.push(issue("format", "invalid_system_shape", "The equation system does not match the supported dMAT format."));
     }
     equations.forEach((equation, index) => {
       validateExpression(equation.left, declared, `equations.${index}.left`, issues);
       validateExpression(equation.right, declared, `equations.${index}.right`, issues);
+    });
+    const publicPresentation = inspectPublicEquationPresentation(
+      candidate.presentation.blocks,
+      equations,
+    );
+    if (!publicPresentation.validFormulaShape) {
+      issues.push(issue(
+        "format",
+        "PUBLIC_PRESENTATION_MISMATCH",
+        "The final student-visible formulae must exactly match the validated equation system and supported notation.",
+        "presentation.blocks",
+      ));
+    }
+    if (publicPresentation.visibleConstants.some((value) =>
+      !Number.isSafeInteger(value) || value < 1 || value > 20)) {
+      issues.push(issue(
+        "format",
+        "VISIBLE_CONSTANT_OUT_OF_RANGE",
+        "The final student-visible formulae contain a numeric constant outside 1 through 20.",
+        "presentation.blocks",
+      ));
+    }
+    const relationshipDefinitions = dependencyModel.relationshipPrimitives?.map((relationship) =>
+      EQUATION_RELATIONSHIP_REGISTRY.find((definition) => definition.id === relationship));
+    const graphDefinition = EQUATION_GRAPH_REGISTRY.find((definition) =>
+      definition.id === dependencyModel.family);
+    if (
+      !graphDefinition ||
+      !graphDefinition.productionEnabled ||
+      !validateEvidenceDefinition(sharedEquationEvidence(graphDefinition)).valid ||
+      relationshipDefinitions?.some((definition) =>
+        !definition ||
+        !definition.productionEnabled ||
+        !validateEvidenceDefinition(sharedEquationEvidence(definition)).valid)
+    ) {
+      issues.push(issue(
+        "safety",
+        "UNSUPPORTED_MECHANIC",
+        "Every graph and relationship primitive must have enabled, valid production evidence.",
+      ));
+    }
+    const styleMetrics = inspectMathematicalEquationStyle(candidate);
+    mathematicalEquationStyleIssues(candidate).forEach((styleIssue) => {
+      issues.push(issue("format", styleIssue.code, styleIssue.message));
     });
     const normalizedEquations = mathematicalEquationSemanticValue(candidate).equations;
     if (new Set(normalizedEquations.map((equation) => JSON.stringify(equation))).size !== equations.length) {
@@ -302,7 +391,7 @@ export class MathematicalEquationValidator
     ) {
       issues.push(issue("format", "invalid_reasoning_metadata", "Reasoning-path and fastest-method metadata must be complete."));
     }
-    checks.push(check("format", !issues.some((item) => item.stage === "format")));
+    checks.push(check("format", !issues.some((item) => item.stage === "format"), styleMetrics as never));
     checks.push(check("safety", !issues.some((item) => item.stage === "safety")));
     if (issues.length) return { valid: false, issues, checks };
 

@@ -1,0 +1,179 @@
+{
+  "generatedAt": "2026-08-21T21:48:02.561Z",
+  "syntheticStudents": 500,
+  "mocksPerStudent": 5,
+  "requestedMocks": 2500,
+  "completeMocks": 2496,
+  "generatedQuestions": 149760,
+  "structuralHistoryWindow": 3,
+  "exactFingerprintHistoryWindow": 5,
+  "similarityThreshold": 0.94,
+  "similarity": {
+    "figure_sequence": {
+      "comparisons": 1993600,
+      "exactRepeatedQuestions": 0,
+      "structuralNearClonesAtOrAboveThreshold": 1332,
+      "activeWindowNearClonesAtOrAboveThreshold": 0,
+      "outsideWindowNearClonesAtOrAboveThreshold": 1332,
+      "maximumCrossMockSimilarity": {
+        "p50": 1,
+        "p90": 1,
+        "p95": 1,
+        "p99": 1,
+        "maximum": 1,
+        "mean": 0.998667
+      },
+      "activeWindowMaximumSimilarity": {
+        "p50": 0.904762,
+        "p90": 0.928571,
+        "p95": 0.928571,
+        "p99": 0.928571,
+        "maximum": 0.928571,
+        "mean": 0.907048
+      },
+      "meanCrossMockSimilarity": 0.318882,
+      "perStudentMeanSimilarity": {
+        "p50": 0.318582,
+        "p90": 0.32559,
+        "p95": 0.327283,
+        "p99": 0.329896,
+        "maximum": 0.332627,
+        "mean": 0.318875
+      },
+      "repeatedStructuralFamilyQuestions": 29662,
+      "repeatedFamilySequences": 0,
+      "repeatedDifficultyFamilySequences": 0,
+      "largestFamilyCountAcrossFiveMocks": {
+        "p50": 11,
+        "p90": 13,
+        "p95": 13,
+        "p99": 15,
+        "maximum": 17,
+        "mean": 10.796
+      }
+    },
+    "mathematical_equation": {
+      "comparisons": 1993600,
+      "exactRepeatedQuestions": 0,
+      "structuralNearClonesAtOrAboveThreshold": 3542,
+      "activeWindowNearClonesAtOrAboveThreshold": 0,
+      "outsideWindowNearClonesAtOrAboveThreshold": 3542,
+      "maximumCrossMockSimilarity": {
+        "p50": 1,
+        "p90": 1,
+        "p95": 1,
+        "p99": 1,
+        "maximum": 1,
+        "mean": 0.999321
+      },
+      "activeWindowMaximumSimilarity": {
+        "p50": 0.933333,
+        "p90": 0.933333,
+        "p95": 0.9375,
+        "p99": 0.939236,
+        "maximum": 0.939236,
+        "mean": 0.932743
+      },
+      "meanCrossMockSimilarity": 0.426991,
+      "perStudentMeanSimilarity": {
+        "p50": 0.426827,
+        "p90": 0.433777,
+        "p95": 0.43554,
+        "p99": 0.439268,
+        "maximum": 0.441739,
+        "mean": 0.426999
+      },
+      "repeatedStructuralFamilyQuestions": 9026,
+      "repeatedFamilySequences": 0,
+      "repeatedDifficultyFamilySequences": 0,
+      "largestFamilyCountAcrossFiveMocks": {
+        "p50": 3,
+        "p90": 4,
+        "p95": 4,
+        "p99": 4,
+        "maximum": 4,
+        "mean": 3.172
+      }
+    },
+    "latin_square": {
+      "comparisons": 1993600,
+      "exactRepeatedQuestions": 0,
+      "structuralNearClonesAtOrAboveThreshold": 162,
+      "activeWindowNearClonesAtOrAboveThreshold": 0,
+      "outsideWindowNearClonesAtOrAboveThreshold": 162,
+      "maximumCrossMockSimilarity": {
+        "p50": 0.936304,
+        "p90": 0.962488,
+        "p95": 1,
+        "p99": 1,
+        "maximum": 1,
+        "mean": 0.943239
+      },
+      "activeWindowMaximumSimilarity": {
+        "p50": 0.935287,
+        "p90": 0.939194,
+        "p95": 0.939484,
+        "p99": 0.939622,
+        "maximum": 0.939782,
+        "mean": 0.934796
+      },
+      "meanCrossMockSimilarity": 0.455982,
+      "perStudentMeanSimilarity": {
+        "p50": 0.455728,
+        "p90": 0.464387,
+        "p95": 0.46701,
+        "p99": 0.471946,
+        "maximum": 0.475942,
+        "mean": 0.455978
+      },
+      "repeatedStructuralFamilyQuestions": 39427,
+      "repeatedFamilySequences": 0,
+      "repeatedDifficultyFamilySequences": 0,
+      "largestFamilyCountAcrossFiveMocks": {
+        "p50": 38,
+        "p90": 42,
+        "p95": 43,
+        "p99": 45,
+        "maximum": 46,
+        "mean": 37.584
+      }
+    }
+  },
+  "generationDurationMs": {
+    "p50": 3794.123,
+    "p90": 5079.861,
+    "p95": 5510.791,
+    "p99": 6484.07,
+    "maximum": 8902.666,
+    "mean": 3902.481662
+  },
+  "failures": [
+    {
+      "student": 45,
+      "mock": 4,
+      "reason": "Unable to fill mathematical_equation slot 16 without violating validity or within-mock novelty."
+    },
+    {
+      "student": 329,
+      "mock": 4,
+      "reason": "Unable to fill mathematical_equation slot 17 without violating validity or within-mock novelty."
+    },
+    {
+      "student": 371,
+      "mock": 4,
+      "reason": "Unable to fill mathematical_equation slot 20 without violating validity or within-mock novelty."
+    },
+    {
+      "student": 376,
+      "mock": 4,
+      "reason": "Unable to fill mathematical_equation slot 19 without violating validity or within-mock novelty."
+    }
+  ],
+  "releaseBlockers": [
+    "4 mock generation failures",
+    "figure_sequence: 1332 cross-five near-clones at/above threshold (0 inside the active window)",
+    "mathematical_equation: 3542 cross-five near-clones at/above threshold (0 inside the active window)",
+    "latin_square: 162 cross-five near-clones at/above threshold (0 inside the active window)"
+  ],
+  "verdict": "NOT READY"
+}

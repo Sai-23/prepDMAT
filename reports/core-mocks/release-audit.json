@@ -1,0 +1,3770 @@
+{
+  "generatedAt": "2026-08-25T08:10:49.600Z",
+  "policyStatus": "DEVELOPMENT BALANCE — not an official item-level dMAT difficulty claim",
+  "requestedMocks": 1000,
+  "completeMocks": 1000,
+  "failedMocks": 0,
+  "generatedQuestions": 60000,
+  "protocol": {
+    "sectionOrder": [
+      "figure_sequence",
+      "mathematical_equation",
+      "latin_square"
+    ],
+    "questionsPerSection": 20,
+    "durationSecondsPerSection": 1500,
+    "criticalFailures": 0,
+    "answerIntegrityFailures": 0,
+    "strictValidationFailures": 0,
+    "missingExplanations": 0
+  },
+  "similarity": {
+    "figure_sequence": {
+      "maximumPairwiseSimilarity": {
+        "p50": 0.8571,
+        "p90": 0.9048,
+        "p95": 0.9048,
+        "p99": 0.9048,
+        "maximum": 0.9286,
+        "mean": 0.8126
+      },
+      "meanPairwiseSimilarity": {
+        "p50": 0.3118,
+        "p90": 0.3298,
+        "p95": 0.3356,
+        "p99": 0.3467,
+        "maximum": 0.3594,
+        "mean": 0.3128
+      },
+      "pairsAbove090": {
+        "total": 183,
+        "perMock": {
+          "p50": 0,
+          "p90": 1,
+          "p95": 1,
+          "p99": 2,
+          "maximum": 3,
+          "mean": 0.183
+        }
+      },
+      "pairsAbove085": {
+        "total": 1234,
+        "perMock": {
+          "p50": 1,
+          "p90": 3,
+          "p95": 3,
+          "p99": 4,
+          "maximum": 6,
+          "mean": 1.234
+        }
+      },
+      "pairsAbove080": {
+        "total": 1234,
+        "perMock": {
+          "p50": 1,
+          "p90": 3,
+          "p95": 3,
+          "p99": 4,
+          "maximum": 6,
+          "mean": 1.234
+        }
+      },
+      "largestStructuralFamilyCount": {
+        "p50": 3,
+        "p90": 4,
+        "p95": 4,
+        "p99": 5,
+        "maximum": 7,
+        "mean": 3.188
+      }
+    },
+    "mathematical_equation": {
+      "maximumPairwiseSimilarity": {
+        "p50": 0.8833,
+        "p90": 0.9333,
+        "p95": 0.9333,
+        "p99": 0.9333,
+        "maximum": 0.9375,
+        "mean": 0.8878
+      },
+      "meanPairwiseSimilarity": {
+        "p50": 0.4102,
+        "p90": 0.4297,
+        "p95": 0.4352,
+        "p99": 0.4485,
+        "maximum": 0.4784,
+        "mean": 0.4117
+      },
+      "pairsAbove090": {
+        "total": 394,
+        "perMock": {
+          "p50": 0,
+          "p90": 1,
+          "p95": 1,
+          "p99": 2,
+          "maximum": 3,
+          "mean": 0.394
+        }
+      },
+      "pairsAbove085": {
+        "total": 1884,
+        "perMock": {
+          "p50": 2,
+          "p90": 4,
+          "p95": 4,
+          "p99": 6,
+          "maximum": 7,
+          "mean": 1.884
+        }
+      },
+      "pairsAbove080": {
+        "total": 4837,
+        "perMock": {
+          "p50": 5,
+          "p90": 7,
+          "p95": 9,
+          "p99": 10,
+          "maximum": 14,
+          "mean": 4.837
+        }
+      },
+      "largestStructuralFamilyCount": {
+        "p50": 1,
+        "p90": 2,
+        "p95": 2,
+        "p99": 2,
+        "maximum": 2,
+        "mean": 1.421
+      }
+    },
+    "latin_square": {
+      "maximumPairwiseSimilarity": {
+        "p50": 0.9092,
+        "p90": 0.9282,
+        "p95": 0.9333,
+        "p99": 0.9375,
+        "maximum": 0.9396,
+        "mean": 0.9097
+      },
+      "meanPairwiseSimilarity": {
+        "p50": 0.4441,
+        "p90": 0.4647,
+        "p95": 0.4703,
+        "p99": 0.4831,
+        "maximum": 0.5077,
+        "mean": 0.4449
+      },
+      "pairsAbove090": {
+        "total": 1259,
+        "perMock": {
+          "p50": 1,
+          "p90": 3,
+          "p95": 3,
+          "p99": 5,
+          "maximum": 7,
+          "mean": 1.259
+        }
+      },
+      "pairsAbove085": {
+        "total": 11599,
+        "perMock": {
+          "p50": 11,
+          "p90": 17,
+          "p95": 19,
+          "p99": 21,
+          "maximum": 24,
+          "mean": 11.599
+        }
+      },
+      "pairsAbove080": {
+        "total": 14447,
+        "perMock": {
+          "p50": 15,
+          "p90": 21,
+          "p95": 22,
+          "p99": 24,
+          "maximum": 27,
+          "mean": 14.447
+        }
+      },
+      "largestStructuralFamilyCount": {
+        "p50": 8,
+        "p90": 9,
+        "p95": 10,
+        "p99": 11,
+        "maximum": 12,
+        "mean": 7.727
+      }
+    }
+  },
+  "difficulty": {
+    "figure_sequence": {
+      "aggregateCounts": {
+        "easy": 7000,
+        "medium": 7000,
+        "hard": 6000
+      },
+      "longestEasyStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.245
+      },
+      "longestMediumStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.3
+      },
+      "longestHardStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.079
+      },
+      "averageDifficultyScoreByPosition": [
+        {
+          "position": 1,
+          "averageScore": 40.1769,
+          "observations": 1000
+        },
+        {
+          "position": 2,
+          "averageScore": 39.7375,
+          "observations": 1000
+        },
+        {
+          "position": 3,
+          "averageScore": 40.275,
+          "observations": 1000
+        },
+        {
+          "position": 4,
+          "averageScore": 40.6305,
+          "observations": 1000
+        },
+        {
+          "position": 5,
+          "averageScore": 40.2093,
+          "observations": 1000
+        },
+        {
+          "position": 6,
+          "averageScore": 39.4542,
+          "observations": 1000
+        },
+        {
+          "position": 7,
+          "averageScore": 40.2917,
+          "observations": 1000
+        },
+        {
+          "position": 8,
+          "averageScore": 40.3322,
+          "observations": 1000
+        },
+        {
+          "position": 9,
+          "averageScore": 39.411,
+          "observations": 1000
+        },
+        {
+          "position": 10,
+          "averageScore": 39.5901,
+          "observations": 1000
+        },
+        {
+          "position": 11,
+          "averageScore": 40.1347,
+          "observations": 1000
+        },
+        {
+          "position": 12,
+          "averageScore": 40.4069,
+          "observations": 1000
+        },
+        {
+          "position": 13,
+          "averageScore": 39.3162,
+          "observations": 1000
+        },
+        {
+          "position": 14,
+          "averageScore": 40.6763,
+          "observations": 1000
+        },
+        {
+          "position": 15,
+          "averageScore": 39.5506,
+          "observations": 1000
+        },
+        {
+          "position": 16,
+          "averageScore": 40.6199,
+          "observations": 1000
+        },
+        {
+          "position": 17,
+          "averageScore": 40.8806,
+          "observations": 1000
+        },
+        {
+          "position": 18,
+          "averageScore": 40.1167,
+          "observations": 1000
+        },
+        {
+          "position": 19,
+          "averageScore": 39.8855,
+          "observations": 1000
+        },
+        {
+          "position": 20,
+          "averageScore": 39.3584,
+          "observations": 1000
+        }
+      ],
+      "uniqueFamiliesPerMock": {
+        "p50": 14,
+        "p90": 16,
+        "p95": 16,
+        "p99": 17,
+        "maximum": 19,
+        "mean": 13.808
+      }
+    },
+    "mathematical_equation": {
+      "aggregateCounts": {
+        "easy": 7000,
+        "medium": 7000,
+        "hard": 6000
+      },
+      "longestEasyStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.266
+      },
+      "longestMediumStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.257
+      },
+      "longestHardStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.047
+      },
+      "averageDifficultyScoreByPosition": [
+        {
+          "position": 1,
+          "averageScore": 9.682,
+          "observations": 1000
+        },
+        {
+          "position": 2,
+          "averageScore": 9.744,
+          "observations": 1000
+        },
+        {
+          "position": 3,
+          "averageScore": 9.856,
+          "observations": 1000
+        },
+        {
+          "position": 4,
+          "averageScore": 9.606,
+          "observations": 1000
+        },
+        {
+          "position": 5,
+          "averageScore": 9.81,
+          "observations": 1000
+        },
+        {
+          "position": 6,
+          "averageScore": 9.764,
+          "observations": 1000
+        },
+        {
+          "position": 7,
+          "averageScore": 9.563,
+          "observations": 1000
+        },
+        {
+          "position": 8,
+          "averageScore": 9.996,
+          "observations": 1000
+        },
+        {
+          "position": 9,
+          "averageScore": 9.988,
+          "observations": 1000
+        },
+        {
+          "position": 10,
+          "averageScore": 9.845,
+          "observations": 1000
+        },
+        {
+          "position": 11,
+          "averageScore": 9.711,
+          "observations": 1000
+        },
+        {
+          "position": 12,
+          "averageScore": 10.052,
+          "observations": 1000
+        },
+        {
+          "position": 13,
+          "averageScore": 10.033,
+          "observations": 1000
+        },
+        {
+          "position": 14,
+          "averageScore": 9.998,
+          "observations": 1000
+        },
+        {
+          "position": 15,
+          "averageScore": 9.98,
+          "observations": 1000
+        },
+        {
+          "position": 16,
+          "averageScore": 9.901,
+          "observations": 1000
+        },
+        {
+          "position": 17,
+          "averageScore": 9.764,
+          "observations": 1000
+        },
+        {
+          "position": 18,
+          "averageScore": 9.437,
+          "observations": 1000
+        },
+        {
+          "position": 19,
+          "averageScore": 9.659,
+          "observations": 1000
+        },
+        {
+          "position": 20,
+          "averageScore": 10.084,
+          "observations": 1000
+        }
+      ],
+      "uniqueFamiliesPerMock": {
+        "p50": 20,
+        "p90": 20,
+        "p95": 20,
+        "p99": 20,
+        "maximum": 20,
+        "mean": 19.5
+      }
+    },
+    "latin_square": {
+      "aggregateCounts": {
+        "easy": 7000,
+        "medium": 7000,
+        "hard": 6000
+      },
+      "longestEasyStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.278
+      },
+      "longestMediumStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.316
+      },
+      "longestHardStreak": {
+        "p50": 2,
+        "p90": 3,
+        "p95": 3,
+        "p99": 3,
+        "maximum": 3,
+        "mean": 2.062
+      },
+      "averageDifficultyScoreByPosition": [
+        {
+          "position": 1,
+          "averageScore": 35.5946,
+          "observations": 1000
+        },
+        {
+          "position": 2,
+          "averageScore": 35.1388,
+          "observations": 1000
+        },
+        {
+          "position": 3,
+          "averageScore": 35.6185,
+          "observations": 1000
+        },
+        {
+          "position": 4,
+          "averageScore": 35.9766,
+          "observations": 1000
+        },
+        {
+          "position": 5,
+          "averageScore": 35.2573,
+          "observations": 1000
+        },
+        {
+          "position": 6,
+          "averageScore": 35.1656,
+          "observations": 1000
+        },
+        {
+          "position": 7,
+          "averageScore": 35.3103,
+          "observations": 1000
+        },
+        {
+          "position": 8,
+          "averageScore": 35.9339,
+          "observations": 1000
+        },
+        {
+          "position": 9,
+          "averageScore": 36.0028,
+          "observations": 1000
+        },
+        {
+          "position": 10,
+          "averageScore": 35.6234,
+          "observations": 1000
+        },
+        {
+          "position": 11,
+          "averageScore": 35.2239,
+          "observations": 1000
+        },
+        {
+          "position": 12,
+          "averageScore": 36.0424,
+          "observations": 1000
+        },
+        {
+          "position": 13,
+          "averageScore": 35.4476,
+          "observations": 1000
+        },
+        {
+          "position": 14,
+          "averageScore": 36.0486,
+          "observations": 1000
+        },
+        {
+          "position": 15,
+          "averageScore": 34.9503,
+          "observations": 1000
+        },
+        {
+          "position": 16,
+          "averageScore": 35.8083,
+          "observations": 1000
+        },
+        {
+          "position": 17,
+          "averageScore": 35.4109,
+          "observations": 1000
+        },
+        {
+          "position": 18,
+          "averageScore": 35.9357,
+          "observations": 1000
+        },
+        {
+          "position": 19,
+          "averageScore": 35.2325,
+          "observations": 1000
+        },
+        {
+          "position": 20,
+          "averageScore": 35.5366,
+          "observations": 1000
+        }
+      ],
+      "uniqueFamiliesPerMock": {
+        "p50": 5,
+        "p90": 6,
+        "p95": 6,
+        "p99": 6,
+        "maximum": 7,
+        "mean": 5.006
+      }
+    }
+  },
+  "coverage": {
+    "figure_sequence": {
+      "movementFamily": {
+        "border": 14518,
+        "linear-axis": 17815,
+        "linear-diagonal": 8288,
+        "direction_cycle": 5390
+      },
+      "objectCount": {
+        "1": 5284,
+        "2": 6190,
+        "3": 5757,
+        "4": 2769
+      },
+      "progressiveRuleFrequency": {
+        "absent": 12136,
+        "present": 7864
+      },
+      "rotationFrequency": {
+        "absent": 8650,
+        "present": 11350
+      },
+      "colourFrequency": {
+        "absent": 5688,
+        "present": 14312
+      },
+      "boundaryBehavior": {
+        "interaction": 20000
+      },
+      "periodicityRange": {
+        "<=16": 6224,
+        "<=8": 6172,
+        "<=32": 3283,
+        ">32": 4086,
+        "<=4": 235
+      },
+      "structuralFamily": {
+        "border+linear-axis": 1811,
+        "border+border+border": 58,
+        "linear-diagonal": 1205,
+        "linear-axis+linear-diagonal": 1102,
+        "border+linear-axis+linear-axis": 965,
+        "linear-axis": 2281,
+        "border+direction_cycle+linear-axis+linear-diagonal": 343,
+        "border": 1703,
+        "border+direction_cycle+linear-diagonal": 199,
+        "linear-axis+linear-axis": 506,
+        "direction_cycle+linear-axis": 516,
+        "border+border+linear-axis+linear-diagonal": 270,
+        "direction_cycle+linear-axis+linear-axis": 543,
+        "border+linear-axis+linear-diagonal": 1025,
+        "linear-axis+linear-diagonal+linear-diagonal": 82,
+        "direction_cycle+linear-diagonal": 265,
+        "direction_cycle+linear-axis+linear-diagonal": 509,
+        "border+linear-diagonal": 996,
+        "border+border": 480,
+        "border+direction_cycle+linear-axis+linear-axis": 257,
+        "border+direction_cycle+linear-axis": 556,
+        "border+direction_cycle": 514,
+        "linear-axis+linear-axis+linear-axis+linear-diagonal": 52,
+        "linear-axis+linear-axis+linear-diagonal": 549,
+        "border+border+border+linear-diagonal": 55,
+        "border+direction_cycle+direction_cycle": 45,
+        "border+border+direction_cycle+linear-axis": 272,
+        "border+border+linear-axis": 559,
+        "border+linear-axis+linear-axis+linear-axis": 120,
+        "border+border+linear-diagonal": 224,
+        "direction_cycle+direction_cycle+linear-diagonal": 19,
+        "direction_cycle+linear-axis+linear-diagonal+linear-diagonal": 39,
+        "border+border+linear-axis+linear-axis": 162,
+        "linear-axis+linear-axis+linear-axis": 151,
+        "linear-axis+linear-diagonal+linear-diagonal+linear-diagonal": 9,
+        "border+border+direction_cycle": 125,
+        "border+linear-axis+linear-axis+linear-diagonal": 271,
+        "border+border+direction_cycle+linear-diagonal": 121,
+        "direction_cycle+direction_cycle+linear-axis+linear-diagonal": 48,
+        "direction_cycle+linear-axis+linear-axis+linear-axis": 58,
+        "border+direction_cycle+direction_cycle+linear-axis": 97,
+        "direction_cycle+linear-axis+linear-axis+linear-diagonal": 132,
+        "direction_cycle": 95,
+        "border+linear-axis+linear-diagonal+linear-diagonal": 92,
+        "border+border+border+linear-axis": 110,
+        "direction_cycle+linear-diagonal+linear-diagonal+linear-diagonal": 2,
+        "border+direction_cycle+linear-diagonal+linear-diagonal": 41,
+        "border+linear-diagonal+linear-diagonal": 79,
+        "linear-axis+linear-axis+linear-diagonal+linear-diagonal": 26,
+        "border+border+border+direction_cycle": 49,
+        "border+direction_cycle+direction_cycle+linear-diagonal": 38,
+        "border+direction_cycle+direction_cycle+direction_cycle": 11,
+        "border+border+direction_cycle+direction_cycle": 15,
+        "border+border+border+border": 9,
+        "direction_cycle+direction_cycle+linear-axis+linear-axis": 26,
+        "direction_cycle+linear-diagonal+linear-diagonal": 26,
+        "direction_cycle+direction_cycle+direction_cycle+linear-diagonal": 5,
+        "linear-axis+linear-axis+linear-axis+linear-axis": 7,
+        "direction_cycle+direction_cycle+linear-axis": 43,
+        "border+border+linear-diagonal+linear-diagonal": 21,
+        "direction_cycle+direction_cycle+direction_cycle+linear-axis": 6,
+        "border+linear-diagonal+linear-diagonal+linear-diagonal": 5
+      }
+    },
+    "mathematical_equation": {
+      "graph": {
+        "cascade": 877,
+        "merged": 2278,
+        "direct": 2509,
+        "mixed": 1167,
+        "triangle": 1443,
+        "reverse_chain": 3840,
+        "chain": 3519,
+        "branch": 2338,
+        "branch_recombine": 1191,
+        "star": 838
+      },
+      "relationship": {
+        "offset_subtract": 4613,
+        "multi_variable_balance": 6627,
+        "difference": 4794,
+        "sum": 5342,
+        "direct_value": 9432,
+        "offset_add": 4601,
+        "scale": 3471,
+        "weighted_sum": 9062,
+        "complement": 5477,
+        "multi_variable_sum": 2215,
+        "divide_by_constant": 3366
+      },
+      "variableCount": {
+        "2": 7000,
+        "3": 7000,
+        "4": 6000
+      },
+      "targetDepth": {
+        "0": 3520,
+        "1": 7007,
+        "2": 8596,
+        "3": 877
+      },
+      "arithmeticCostBand": {
+        "<=9": 4186,
+        "<=6": 6592,
+        "<=3": 8424,
+        "<=12": 793,
+        ">12": 5
+      },
+      "visibleConstantBand": {
+        "<=20": 20000
+      },
+      "scaleDivisionCoverage": {
+        "absent": 13640,
+        "present": 6360
+      },
+      "structuralFamily": {
+        "cascade|multi_variable_balance+offset_difference+offset_difference+offset_difference": 47,
+        "merged|direct_value+direct_value+multi_variable_balance+sum_complement": 152,
+        "direct|direct_value+offset_difference": 514,
+        "mixed|multi_variable_balance+offset_difference+offset_difference+sum_complement": 84,
+        "mixed|offset_difference+scale_divide+weighted_sum+weighted_sum": 23,
+        "triangle|multi_variable_sum+offset_difference+sum_complement": 78,
+        "triangle|multi_variable_balance+scale_divide+sum_complement": 97,
+        "direct|offset_difference+sum_complement": 465,
+        "reverse_chain|multi_variable_balance+offset_difference+weighted_sum": 76,
+        "reverse_chain|offset_difference+sum_complement": 816,
+        "reverse_chain|sum_complement+weighted_sum": 258,
+        "mixed|scale_divide+sum_complement+weighted_sum+weighted_sum": 29,
+        "chain|direct_value+offset_difference+scale_divide": 209,
+        "reverse_chain|scale_divide+weighted_sum+weighted_sum": 20,
+        "branch|multi_variable_balance+scale_divide+sum_complement+sum_complement": 14,
+        "reverse_chain|weighted_sum+weighted_sum": 51,
+        "chain|direct_value+sum_complement": 598,
+        "triangle|multi_variable_balance+offset_difference+sum_complement": 262,
+        "chain|direct_value+offset_difference+sum_complement": 330,
+        "direct|scale_divide+sum_complement": 239,
+        "direct|sum_complement+weighted_sum": 148,
+        "branch|multi_variable_balance+offset_difference+offset_difference": 140,
+        "chain|direct_value+scale_divide": 455,
+        "chain|direct_value+sum_complement+weighted_sum": 94,
+        "reverse_chain|offset_difference+scale_divide": 396,
+        "reverse_chain|scale_divide+sum_complement": 389,
+        "reverse_chain|multi_variable_sum+offset_difference+weighted_sum": 30,
+        "mixed|offset_difference+sum_complement+sum_complement+weighted_sum": 32,
+        "merged|direct_value+direct_value+multi_variable_balance": 549,
+        "reverse_chain|offset_difference+weighted_sum+weighted_sum": 52,
+        "cascade|multi_variable_sum+offset_difference+sum_complement+sum_complement": 13,
+        "merged|direct_value+direct_value+weighted_sum": 401,
+        "triangle|multi_variable_balance+offset_difference+weighted_sum": 117,
+        "branch_recombine|multi_variable_balance+sum_complement+sum_complement+weighted_sum": 27,
+        "cascade|offset_difference+sum_complement+weighted_sum+weighted_sum": 17,
+        "chain|direct_value+offset_difference": 708,
+        "direct|offset_difference+weighted_sum": 178,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+scale_divide+weighted_sum": 16,
+        "direct|scale_divide+weighted_sum": 92,
+        "reverse_chain|scale_divide+sum_complement+weighted_sum": 47,
+        "branch|multi_variable_balance+offset_difference+weighted_sum+weighted_sum": 9,
+        "star|multi_variable_balance+offset_difference+offset_difference+offset_difference": 34,
+        "star|multi_variable_balance+offset_difference+scale_divide+sum_complement": 55,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+scale_divide+sum_complement": 35,
+        "reverse_chain|multi_variable_balance+scale_divide+sum_complement": 85,
+        "merged|direct_value+direct_value+offset_difference+weighted_sum": 150,
+        "chain|direct_value+weighted_sum+weighted_sum": 17,
+        "reverse_chain|multi_variable_balance+offset_difference+offset_difference": 136,
+        "mixed|offset_difference+offset_difference+sum_complement+weighted_sum": 74,
+        "branch|scale_divide+sum_complement+sum_complement+weighted_sum": 16,
+        "cascade|scale_divide+sum_complement+sum_complement+weighted_sum": 14,
+        "chain|direct_value+weighted_sum": 321,
+        "merged|direct_value+direct_value+multi_variable_sum": 255,
+        "reverse_chain|offset_difference+weighted_sum": 341,
+        "branch|offset_difference+scale_divide+weighted_sum": 67,
+        "star|multi_variable_balance+scale_divide+sum_complement+weighted_sum": 12,
+        "branch|multi_variable_balance+offset_difference+offset_difference+sum_complement": 62,
+        "chain|direct_value+sum_complement+sum_complement": 126,
+        "branch|multi_variable_balance+offset_difference+weighted_sum": 80,
+        "branch|multi_variable_balance+offset_difference+sum_complement": 184,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+offset_difference+scale_divide": 33,
+        "branch|offset_difference+sum_complement+weighted_sum": 113,
+        "chain|direct_value+scale_divide+scale_divide": 61,
+        "star|offset_difference+scale_divide+sum_complement+weighted_sum": 41,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+scale_divide+scale_divide": 12,
+        "triangle|multi_variable_sum+sum_complement+weighted_sum": 31,
+        "star|multi_variable_balance+offset_difference+sum_complement+weighted_sum": 40,
+        "star|multi_variable_balance+offset_difference+offset_difference+scale_divide": 56,
+        "chain|direct_value+scale_divide+sum_complement": 170,
+        "branch_recombine|multi_variable_balance+sum_complement+weighted_sum+weighted_sum": 19,
+        "direct|direct_value+sum_complement": 376,
+        "triangle|offset_difference+sum_complement+weighted_sum": 164,
+        "reverse_chain|scale_divide+weighted_sum": 158,
+        "star|multi_variable_balance+offset_difference+sum_complement+sum_complement": 46,
+        "branch|multi_variable_balance+sum_complement+sum_complement+weighted_sum": 16,
+        "merged|direct_value+direct_value+sum_complement+weighted_sum": 106,
+        "direct|direct_value+scale_divide": 268,
+        "direct|direct_value+weighted_sum": 199,
+        "reverse_chain|multi_variable_balance+offset_difference+sum_complement": 191,
+        "triangle|multi_variable_balance+offset_difference+scale_divide": 122,
+        "merged|direct_value+direct_value+multi_variable_sum+sum_complement": 56,
+        "reverse_chain|multi_variable_sum+offset_difference+scale_divide": 35,
+        "mixed|multi_variable_balance+offset_difference+scale_divide+weighted_sum": 42,
+        "reverse_chain|multi_variable_sum+sum_complement+sum_complement": 23,
+        "merged|direct_value+direct_value+multi_variable_balance+offset_difference": 215,
+        "merged|direct_value+direct_value+multi_variable_balance+weighted_sum": 63,
+        "branch|multi_variable_balance+scale_divide+scale_divide": 29,
+        "branch|multi_variable_balance+offset_difference+offset_difference+weighted_sum": 31,
+        "branch_recombine|multi_variable_balance+offset_difference+weighted_sum+weighted_sum": 40,
+        "branch_recombine|multi_variable_balance+scale_divide+sum_complement+weighted_sum": 50,
+        "branch|multi_variable_balance+offset_difference+scale_divide": 115,
+        "triangle|scale_divide+sum_complement+weighted_sum": 65,
+        "mixed|multi_variable_balance+offset_difference+offset_difference+scale_divide": 41,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+offset_difference+offset_difference": 50,
+        "cascade|multi_variable_balance+offset_difference+offset_difference+scale_divide": 53,
+        "reverse_chain|scale_divide+scale_divide+weighted_sum": 11,
+        "branch_recombine|multi_variable_balance+offset_difference+offset_difference+weighted_sum": 75,
+        "chain|direct_value+offset_difference+weighted_sum": 131,
+        "mixed|multi_variable_balance+offset_difference+scale_divide+sum_complement": 106,
+        "branch|offset_difference+offset_difference+weighted_sum": 91,
+        "branch|multi_variable_balance+scale_divide+sum_complement": 90,
+        "reverse_chain|sum_complement+weighted_sum+weighted_sum": 23,
+        "reverse_chain|offset_difference+scale_divide+weighted_sum": 59,
+        "cascade|multi_variable_balance+offset_difference+offset_difference+weighted_sum": 31,
+        "merged|direct_value+direct_value+multi_variable_sum+scale_divide": 32,
+        "star|multi_variable_balance+offset_difference+offset_difference+weighted_sum": 28,
+        "triangle|scale_divide+weighted_sum+weighted_sum": 22,
+        "branch_recombine|multi_variable_balance+offset_difference+scale_divide+weighted_sum": 62,
+        "branch|multi_variable_balance+sum_complement+weighted_sum": 49,
+        "branch|scale_divide+sum_complement+weighted_sum+weighted_sum": 7,
+        "branch|multi_variable_balance+offset_difference+offset_difference+offset_difference": 36,
+        "branch|offset_difference+sum_complement+weighted_sum+weighted_sum": 23,
+        "branch|offset_difference+weighted_sum+weighted_sum": 44,
+        "mixed|multi_variable_sum+offset_difference+offset_difference+scale_divide": 13,
+        "chain|direct_value+offset_difference+offset_difference": 239,
+        "mixed|multi_variable_balance+offset_difference+sum_complement+sum_complement": 62,
+        "reverse_chain|multi_variable_sum+offset_difference+sum_complement": 58,
+        "merged|direct_value+direct_value+multi_variable_balance+scale_divide": 107,
+        "reverse_chain|sum_complement+sum_complement+weighted_sum": 36,
+        "cascade|offset_difference+scale_divide+sum_complement+weighted_sum": 29,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+weighted_sum+weighted_sum": 7,
+        "cascade|offset_difference+weighted_sum+weighted_sum+weighted_sum": 3,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+offset_difference+sum_complement": 71,
+        "triangle|offset_difference+scale_divide+weighted_sum": 65,
+        "cascade|multi_variable_balance+offset_difference+scale_divide+sum_complement": 71,
+        "mixed|multi_variable_balance+scale_divide+sum_complement+sum_complement": 33,
+        "mixed|multi_variable_sum+offset_difference+scale_divide+sum_complement": 34,
+        "branch|sum_complement+weighted_sum+weighted_sum": 22,
+        "triangle|multi_variable_balance+scale_divide+weighted_sum": 54,
+        "star|multi_variable_sum+scale_divide+scale_divide+weighted_sum": 3,
+        "branch_recombine|multi_variable_sum+offset_difference+scale_divide+weighted_sum": 19,
+        "branch|offset_difference+sum_complement+sum_complement+weighted_sum": 36,
+        "branch_recombine|multi_variable_sum+scale_divide+sum_complement+weighted_sum": 13,
+        "reverse_chain|multi_variable_balance+scale_divide+scale_divide": 16,
+        "branch|multi_variable_sum+offset_difference+sum_complement": 57,
+        "branch|multi_variable_balance+offset_difference+scale_divide+scale_divide": 18,
+        "branch_recombine|offset_difference+offset_difference+weighted_sum+weighted_sum": 21,
+        "triangle|offset_difference+weighted_sum+weighted_sum": 77,
+        "branch|multi_variable_balance+offset_difference+sum_complement+sum_complement": 50,
+        "triangle|multi_variable_balance+sum_complement+weighted_sum": 74,
+        "branch_recombine|multi_variable_sum+offset_difference+sum_complement+weighted_sum": 40,
+        "branch|multi_variable_balance+offset_difference+sum_complement+weighted_sum": 37,
+        "reverse_chain|multi_variable_balance+offset_difference+scale_divide": 105,
+        "mixed|multi_variable_sum+scale_divide+scale_divide+weighted_sum": 4,
+        "mixed|multi_variable_balance+offset_difference+offset_difference+weighted_sum": 30,
+        "branch|multi_variable_sum+offset_difference+scale_divide+sum_complement": 25,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+offset_difference+offset_difference": 27,
+        "branch_recombine|offset_difference+sum_complement+weighted_sum+weighted_sum": 32,
+        "triangle|weighted_sum+weighted_sum+weighted_sum": 13,
+        "star|offset_difference+offset_difference+sum_complement+weighted_sum": 32,
+        "branch|scale_divide+scale_divide+weighted_sum": 9,
+        "branch|multi_variable_sum+offset_difference+weighted_sum": 26,
+        "star|multi_variable_balance+sum_complement+sum_complement+sum_complement": 10,
+        "branch|multi_variable_sum+offset_difference+offset_difference+scale_divide": 24,
+        "cascade|multi_variable_sum+scale_divide+scale_divide+weighted_sum": 2,
+        "branch|multi_variable_sum+offset_difference+sum_complement+sum_complement": 7,
+        "branch|multi_variable_sum+offset_difference+scale_divide+weighted_sum": 12,
+        "cascade|multi_variable_balance+offset_difference+offset_difference+sum_complement": 76,
+        "cascade|multi_variable_sum+offset_difference+scale_divide+weighted_sum": 8,
+        "star|offset_difference+offset_difference+scale_divide+weighted_sum": 19,
+        "mixed|multi_variable_balance+offset_difference+weighted_sum+weighted_sum": 15,
+        "cascade|offset_difference+offset_difference+sum_complement+weighted_sum": 46,
+        "reverse_chain|multi_variable_sum+scale_divide+sum_complement": 41,
+        "mixed|multi_variable_balance+sum_complement+sum_complement+weighted_sum": 20,
+        "star|multi_variable_sum+offset_difference+offset_difference+offset_difference": 10,
+        "branch_recombine|multi_variable_balance+scale_divide+scale_divide+weighted_sum": 13,
+        "branch|offset_difference+offset_difference+sum_complement+weighted_sum": 35,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+offset_difference+weighted_sum": 22,
+        "cascade|multi_variable_balance+offset_difference+sum_complement+weighted_sum": 37,
+        "reverse_chain|offset_difference+offset_difference+weighted_sum": 67,
+        "mixed|scale_divide+sum_complement+sum_complement+weighted_sum": 19,
+        "mixed|multi_variable_sum+offset_difference+sum_complement+weighted_sum": 21,
+        "reverse_chain|offset_difference+sum_complement+weighted_sum": 78,
+        "branch|multi_variable_balance+offset_difference+scale_divide+weighted_sum": 21,
+        "cascade|multi_variable_balance+sum_complement+sum_complement+weighted_sum": 19,
+        "branch|multi_variable_sum+offset_difference+offset_difference": 48,
+        "branch|offset_difference+offset_difference+scale_divide+weighted_sum": 23,
+        "merged|direct_value+direct_value+multi_variable_sum+offset_difference": 61,
+        "triangle|sum_complement+weighted_sum+weighted_sum": 45,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+sum_complement+sum_complement": 19,
+        "mixed|multi_variable_sum+scale_divide+scale_divide+sum_complement": 3,
+        "chain|direct_value+scale_divide+weighted_sum": 60,
+        "cascade|multi_variable_balance+offset_difference+sum_complement+sum_complement": 47,
+        "reverse_chain|multi_variable_balance+sum_complement+sum_complement": 67,
+        "branch|scale_divide+weighted_sum+weighted_sum+weighted_sum": 2,
+        "mixed|scale_divide+scale_divide+weighted_sum+weighted_sum": 3,
+        "cascade|multi_variable_balance+sum_complement+weighted_sum+weighted_sum": 8,
+        "branch|multi_variable_sum+scale_divide+scale_divide": 10,
+        "branch|sum_complement+sum_complement+weighted_sum": 28,
+        "branch|multi_variable_balance+scale_divide+sum_complement+weighted_sum": 11,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+offset_difference+scale_divide": 59,
+        "star|multi_variable_balance+offset_difference+offset_difference+sum_complement": 64,
+        "branch|multi_variable_balance+offset_difference+offset_difference+scale_divide": 51,
+        "branch|multi_variable_balance+scale_divide+weighted_sum": 31,
+        "branch_recombine|multi_variable_balance+offset_difference+sum_complement+weighted_sum": 98,
+        "branch|offset_difference+scale_divide+sum_complement+weighted_sum": 32,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+scale_divide+sum_complement": 19,
+        "triangle|multi_variable_sum+scale_divide+sum_complement": 39,
+        "mixed|multi_variable_sum+offset_difference+offset_difference+sum_complement": 32,
+        "mixed|multi_variable_balance+offset_difference+sum_complement+weighted_sum": 72,
+        "mixed|multi_variable_balance+offset_difference+scale_divide+scale_divide": 17,
+        "branch|multi_variable_balance+offset_difference+scale_divide+sum_complement": 66,
+        "branch|multi_variable_sum+offset_difference+offset_difference+sum_complement": 10,
+        "direct|weighted_sum+weighted_sum": 30,
+        "branch_recombine|offset_difference+scale_divide+weighted_sum+weighted_sum": 12,
+        "star|scale_divide+scale_divide+scale_divide+weighted_sum": 1,
+        "star|scale_divide+weighted_sum+weighted_sum+weighted_sum": 2,
+        "mixed|multi_variable_sum+scale_divide+sum_complement+weighted_sum": 11,
+        "triangle|multi_variable_sum+scale_divide+weighted_sum": 21,
+        "cascade|multi_variable_sum+offset_difference+offset_difference+offset_difference": 11,
+        "mixed|multi_variable_sum+offset_difference+scale_divide+weighted_sum": 22,
+        "cascade|multi_variable_sum+offset_difference+sum_complement+weighted_sum": 15,
+        "branch|multi_variable_balance+sum_complement+sum_complement": 69,
+        "cascade|multi_variable_balance+scale_divide+sum_complement+sum_complement": 21,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+sum_complement+weighted_sum": 17,
+        "branch_recombine|multi_variable_sum+offset_difference+weighted_sum+weighted_sum": 13,
+        "branch|multi_variable_sum+sum_complement+weighted_sum": 18,
+        "cascade|multi_variable_sum+offset_difference+scale_divide+sum_complement": 22,
+        "mixed|offset_difference+scale_divide+sum_complement+weighted_sum": 58,
+        "reverse_chain|multi_variable_sum+offset_difference+offset_difference": 45,
+        "reverse_chain|multi_variable_balance+sum_complement+weighted_sum": 49,
+        "mixed|multi_variable_sum+offset_difference+offset_difference+weighted_sum": 11,
+        "branch|sum_complement+weighted_sum+weighted_sum+weighted_sum": 3,
+        "branch|weighted_sum+weighted_sum+weighted_sum": 7,
+        "cascade|multi_variable_balance+offset_difference+scale_divide+scale_divide": 23,
+        "reverse_chain|multi_variable_balance+scale_divide+weighted_sum": 30,
+        "star|multi_variable_balance+offset_difference+scale_divide+scale_divide": 23,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+sum_complement+sum_complement": 16,
+        "branch|scale_divide+sum_complement+weighted_sum": 44,
+        "cascade|offset_difference+offset_difference+scale_divide+weighted_sum": 20,
+        "star|offset_difference+sum_complement+sum_complement+weighted_sum": 28,
+        "merged|direct_value+direct_value+scale_divide+weighted_sum": 70,
+        "cascade|multi_variable_balance+scale_divide+sum_complement+weighted_sum": 11,
+        "star|multi_variable_sum+offset_difference+offset_difference+sum_complement": 26,
+        "mixed|multi_variable_balance+scale_divide+sum_complement+weighted_sum": 38,
+        "star|offset_difference+sum_complement+weighted_sum+weighted_sum": 20,
+        "branch_recombine|multi_variable_balance+weighted_sum+weighted_sum+weighted_sum": 7,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+sum_complement+weighted_sum": 3,
+        "star|multi_variable_sum+offset_difference+scale_divide+weighted_sum": 11,
+        "branch|multi_variable_sum+offset_difference+scale_divide": 36,
+        "star|multi_variable_balance+scale_divide+sum_complement+sum_complement": 28,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+offset_difference+sum_complement": 10,
+        "branch|scale_divide+weighted_sum+weighted_sum": 14,
+        "cascade|multi_variable_balance+offset_difference+scale_divide+weighted_sum": 26,
+        "reverse_chain|multi_variable_sum+sum_complement+weighted_sum": 18,
+        "triangle|multi_variable_balance+weighted_sum+weighted_sum": 17,
+        "branch|multi_variable_sum+weighted_sum+weighted_sum": 4,
+        "cascade|multi_variable_balance+offset_difference+weighted_sum+weighted_sum": 9,
+        "branch|multi_variable_sum+scale_divide+sum_complement+sum_complement": 5,
+        "star|multi_variable_sum+offset_difference+weighted_sum+weighted_sum": 2,
+        "mixed|multi_variable_sum+offset_difference+scale_divide+scale_divide": 11,
+        "branch|multi_variable_balance+scale_divide+scale_divide+sum_complement": 14,
+        "star|offset_difference+scale_divide+scale_divide+weighted_sum": 6,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+sum_complement+sum_complement": 1,
+        "branch|scale_divide+scale_divide+sum_complement+weighted_sum": 6,
+        "star|offset_difference+offset_difference+offset_difference+weighted_sum": 27,
+        "cascade|sum_complement+sum_complement+sum_complement+weighted_sum": 6,
+        "merged|direct_value+direct_value+multi_variable_sum+weighted_sum": 27,
+        "star|multi_variable_sum+scale_divide+sum_complement+weighted_sum": 5,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+sum_complement+weighted_sum": 15,
+        "branch|multi_variable_sum+sum_complement+sum_complement": 22,
+        "triangle|multi_variable_sum+offset_difference+scale_divide": 43,
+        "cascade|offset_difference+offset_difference+weighted_sum+weighted_sum": 14,
+        "triangle|multi_variable_sum+offset_difference+weighted_sum": 33,
+        "mixed|offset_difference+offset_difference+weighted_sum+weighted_sum": 26,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+scale_divide+weighted_sum": 17,
+        "branch|multi_variable_balance+scale_divide+scale_divide+weighted_sum": 8,
+        "branch_recombine|sum_complement+sum_complement+weighted_sum+weighted_sum": 10,
+        "mixed|multi_variable_sum+scale_divide+sum_complement+sum_complement": 11,
+        "mixed|multi_variable_sum+offset_difference+sum_complement+sum_complement": 14,
+        "merged|direct_value+direct_value+weighted_sum+weighted_sum": 34,
+        "branch|offset_difference+offset_difference+offset_difference+weighted_sum": 20,
+        "star|multi_variable_balance+offset_difference+scale_divide+weighted_sum": 15,
+        "cascade|sum_complement+weighted_sum+weighted_sum+weighted_sum": 5,
+        "star|multi_variable_balance+scale_divide+scale_divide+sum_complement": 17,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+offset_difference+sum_complement": 41,
+        "branch|multi_variable_sum+scale_divide+sum_complement+weighted_sum": 6,
+        "cascade|multi_variable_sum+scale_divide+scale_divide+scale_divide": 1,
+        "branch|offset_difference+scale_divide+weighted_sum+weighted_sum": 16,
+        "cascade|multi_variable_sum+offset_difference+offset_difference+scale_divide": 19,
+        "cascade|multi_variable_sum+offset_difference+weighted_sum+weighted_sum": 2,
+        "mixed|sum_complement+weighted_sum+weighted_sum+weighted_sum": 3,
+        "mixed|offset_difference+sum_complement+weighted_sum+weighted_sum": 42,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+offset_difference+weighted_sum": 29,
+        "branch|multi_variable_sum+offset_difference+offset_difference+offset_difference": 11,
+        "cascade|offset_difference+sum_complement+sum_complement+weighted_sum": 31,
+        "cascade|multi_variable_sum+scale_divide+sum_complement+weighted_sum": 8,
+        "branch|multi_variable_sum+scale_divide+sum_complement": 26,
+        "branch|offset_difference+scale_divide+scale_divide+weighted_sum": 6,
+        "star|multi_variable_sum+offset_difference+sum_complement+weighted_sum": 9,
+        "cascade|scale_divide+sum_complement+weighted_sum+weighted_sum": 9,
+        "branch_recombine|multi_variable_sum+offset_difference+offset_difference+weighted_sum": 29,
+        "mixed|sum_complement+sum_complement+weighted_sum+weighted_sum": 9,
+        "star|scale_divide+scale_divide+sum_complement+weighted_sum": 7,
+        "mixed|multi_variable_balance+sum_complement+weighted_sum+weighted_sum": 13,
+        "star|offset_difference+weighted_sum+weighted_sum+weighted_sum": 6,
+        "star|multi_variable_sum+scale_divide+sum_complement+sum_complement": 9,
+        "branch|multi_variable_sum+offset_difference+scale_divide+scale_divide": 10,
+        "cascade|offset_difference+scale_divide+scale_divide+weighted_sum": 6,
+        "star|multi_variable_sum+offset_difference+offset_difference+weighted_sum": 6,
+        "cascade|multi_variable_sum+sum_complement+sum_complement+weighted_sum": 3,
+        "star|scale_divide+sum_complement+weighted_sum+weighted_sum": 8,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+offset_difference+offset_difference": 5,
+        "star|offset_difference+offset_difference+weighted_sum+weighted_sum": 16,
+        "star|multi_variable_sum+offset_difference+offset_difference+scale_divide": 14,
+        "branch_recombine|scale_divide+sum_complement+weighted_sum+weighted_sum": 14,
+        "branch|multi_variable_balance+sum_complement+sum_complement+sum_complement": 9,
+        "mixed|scale_divide+scale_divide+sum_complement+weighted_sum": 7,
+        "cascade|multi_variable_sum+offset_difference+offset_difference+weighted_sum": 7,
+        "mixed|multi_variable_balance+scale_divide+weighted_sum+weighted_sum": 3,
+        "branch|offset_difference+offset_difference+weighted_sum+weighted_sum": 11,
+        "star|multi_variable_sum+offset_difference+scale_divide+scale_divide": 9,
+        "cascade|multi_variable_balance+scale_divide+scale_divide+sum_complement": 12,
+        "branch|multi_variable_sum+scale_divide+weighted_sum": 7,
+        "reverse_chain|multi_variable_sum+scale_divide+scale_divide": 7,
+        "star|multi_variable_sum+scale_divide+weighted_sum+weighted_sum": 2,
+        "mixed|offset_difference+offset_difference+scale_divide+weighted_sum": 25,
+        "star|sum_complement+weighted_sum+weighted_sum+weighted_sum": 5,
+        "branch_recombine|multi_variable_balance+multi_variable_balance+weighted_sum+weighted_sum": 4,
+        "branch_recombine|multi_variable_sum+scale_divide+scale_divide+weighted_sum": 6,
+        "star|multi_variable_balance+sum_complement+sum_complement+weighted_sum": 12,
+        "star|offset_difference+scale_divide+weighted_sum+weighted_sum": 13,
+        "star|multi_variable_sum+offset_difference+scale_divide+sum_complement": 15,
+        "branch_recombine|sum_complement+weighted_sum+weighted_sum+weighted_sum": 7,
+        "reverse_chain|multi_variable_sum+weighted_sum+weighted_sum": 2,
+        "star|multi_variable_balance+offset_difference+weighted_sum+weighted_sum": 8,
+        "cascade|offset_difference+offset_difference+offset_difference+weighted_sum": 12,
+        "cascade|multi_variable_balance+scale_divide+scale_divide+weighted_sum": 6,
+        "mixed|offset_difference+weighted_sum+weighted_sum+weighted_sum": 9,
+        "branch|multi_variable_sum+offset_difference+offset_difference+weighted_sum": 8,
+        "mixed|offset_difference+scale_divide+scale_divide+weighted_sum": 11,
+        "mixed|multi_variable_sum+sum_complement+weighted_sum+weighted_sum": 2,
+        "branch|multi_variable_sum+offset_difference+sum_complement+weighted_sum": 10,
+        "star|sum_complement+sum_complement+sum_complement+weighted_sum": 6,
+        "cascade|offset_difference+scale_divide+weighted_sum+weighted_sum": 9,
+        "reverse_chain|multi_variable_balance+weighted_sum+weighted_sum": 6,
+        "cascade|sum_complement+sum_complement+weighted_sum+weighted_sum": 7,
+        "branch_recombine|weighted_sum+weighted_sum+weighted_sum+weighted_sum": 1,
+        "branch_recombine|multi_variable_sum+sum_complement+weighted_sum+weighted_sum": 3,
+        "branch|sum_complement+sum_complement+weighted_sum+weighted_sum": 5,
+        "cascade|multi_variable_sum+scale_divide+sum_complement+sum_complement": 5,
+        "cascade|scale_divide+scale_divide+sum_complement+weighted_sum": 4,
+        "branch|multi_variable_balance+weighted_sum+weighted_sum": 4,
+        "star|multi_variable_balance+sum_complement+weighted_sum+weighted_sum": 3,
+        "mixed|multi_variable_balance+scale_divide+scale_divide+sum_complement": 11,
+        "reverse_chain|multi_variable_sum+scale_divide+weighted_sum": 12,
+        "mixed|multi_variable_sum+offset_difference+weighted_sum+weighted_sum": 3,
+        "branch_recombine|scale_divide+weighted_sum+weighted_sum+weighted_sum": 2,
+        "branch|multi_variable_balance+sum_complement+weighted_sum+weighted_sum": 8,
+        "branch|sum_complement+sum_complement+sum_complement+weighted_sum": 3,
+        "branch_recombine|offset_difference+weighted_sum+weighted_sum+weighted_sum": 11,
+        "branch|multi_variable_sum+scale_divide+scale_divide+weighted_sum": 3,
+        "star|multi_variable_balance+scale_divide+scale_divide+weighted_sum": 4,
+        "cascade|multi_variable_sum+offset_difference+offset_difference+sum_complement": 11,
+        "star|multi_variable_balance+scale_divide+scale_divide+scale_divide": 1,
+        "mixed|multi_variable_balance+scale_divide+scale_divide+weighted_sum": 8,
+        "branch|multi_variable_sum+sum_complement+sum_complement+weighted_sum": 2,
+        "branch|offset_difference+weighted_sum+weighted_sum+weighted_sum": 4,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+offset_difference+weighted_sum": 5,
+        "star|multi_variable_sum+sum_complement+sum_complement+weighted_sum": 2,
+        "star|sum_complement+sum_complement+weighted_sum+weighted_sum": 3,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+offset_difference+scale_divide": 5,
+        "star|multi_variable_sum+weighted_sum+weighted_sum+weighted_sum": 1,
+        "star|multi_variable_sum+scale_divide+scale_divide+sum_complement": 4,
+        "star|multi_variable_sum+sum_complement+sum_complement+sum_complement": 3,
+        "star|scale_divide+sum_complement+sum_complement+weighted_sum": 8,
+        "cascade|multi_variable_balance+sum_complement+sum_complement+sum_complement": 9,
+        "mixed|multi_variable_sum+sum_complement+sum_complement+weighted_sum": 3,
+        "branch|scale_divide+scale_divide+scale_divide+weighted_sum": 3,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+scale_divide+scale_divide": 2,
+        "star|multi_variable_balance+weighted_sum+weighted_sum+weighted_sum": 1,
+        "branch_recombine|multi_variable_balance+scale_divide+weighted_sum+weighted_sum": 6,
+        "cascade|multi_variable_sum+offset_difference+scale_divide+scale_divide": 4,
+        "reverse_chain|weighted_sum+weighted_sum+weighted_sum": 6,
+        "branch|multi_variable_balance+scale_divide+scale_divide+scale_divide": 1,
+        "branch_recombine|multi_variable_sum+sum_complement+sum_complement+weighted_sum": 7,
+        "branch_recombine|multi_variable_sum+scale_divide+weighted_sum+weighted_sum": 4,
+        "branch|multi_variable_sum+sum_complement+weighted_sum+weighted_sum": 2,
+        "branch_recombine|multi_variable_balance+multi_variable_sum+scale_divide+scale_divide": 5,
+        "cascade|scale_divide+scale_divide+weighted_sum+weighted_sum": 2,
+        "cascade|multi_variable_balance+scale_divide+scale_divide+scale_divide": 3,
+        "branch_recombine|multi_variable_sum+weighted_sum+weighted_sum+weighted_sum": 1,
+        "mixed|scale_divide+weighted_sum+weighted_sum+weighted_sum": 5,
+        "mixed|multi_variable_sum+scale_divide+weighted_sum+weighted_sum": 2,
+        "triangle|multi_variable_sum+weighted_sum+weighted_sum": 4,
+        "branch|multi_variable_sum+scale_divide+weighted_sum+weighted_sum": 1,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+scale_divide+sum_complement": 2,
+        "branch|multi_variable_balance+weighted_sum+weighted_sum+weighted_sum": 1,
+        "star|multi_variable_sum+sum_complement+weighted_sum+weighted_sum": 1,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+weighted_sum+weighted_sum": 1,
+        "branch|multi_variable_sum+scale_divide+scale_divide+sum_complement": 1,
+        "branch|multi_variable_sum+offset_difference+weighted_sum+weighted_sum": 2,
+        "branch|scale_divide+scale_divide+weighted_sum+weighted_sum": 1,
+        "star|multi_variable_balance+scale_divide+weighted_sum+weighted_sum": 1,
+        "cascade|multi_variable_sum+scale_divide+scale_divide+sum_complement": 2,
+        "cascade|scale_divide+weighted_sum+weighted_sum+weighted_sum": 1,
+        "branch_recombine|multi_variable_sum+multi_variable_sum+scale_divide+weighted_sum": 1
+      }
+    },
+    "latin_square": {
+      "reasoningFamily": {
+        "SINGLE_INTERMEDIATE": 2656,
+        "CHAINED_INTERMEDIATE": 7547,
+        "DIRECT_AXIS_ELIMINATION": 5798,
+        "MULTI_STAGE_DEDUCTION": 2382,
+        "ROW_COLUMN_INTERSECTION": 1617
+      },
+      "targetDepth": {
+        "1": 7415,
+        "2": 10179,
+        "3": 2204,
+        "4": 184,
+        "5": 14,
+        "6": 4
+      },
+      "intermediateCellCount": {
+        "0": 7415,
+        "1": 2656,
+        "2": 97,
+        "3": 959,
+        "4": 2874,
+        "5": 1750,
+        "6": 1941,
+        "7": 1199,
+        "8": 526,
+        "9": 409,
+        "10": 131,
+        "11": 27,
+        "12": 15,
+        "13": 1
+      },
+      "deductionType": {
+        "only_position_in_column": 17598,
+        "only_position_in_row": 19324,
+        "single_candidate": 20000
+      },
+      "clueRedundancyBand": {
+        ">8": 1601,
+        "<=4": 1883,
+        "<=2": 4556,
+        "<=8": 4394,
+        "<=6": 4401,
+        "<=0": 3165
+      },
+      "fullGridUniqueness": {
+        "verified": 20000
+      },
+      "structuralFamily": {
+        "SINGLE_INTERMEDIATE|depth-2": 2656,
+        "CHAINED_INTERMEDIATE|depth-2": 7523,
+        "DIRECT_AXIS_ELIMINATION|depth-1": 5798,
+        "MULTI_STAGE_DEDUCTION|depth-3": 2180,
+        "ROW_COLUMN_INTERSECTION|depth-1": 1617,
+        "MULTI_STAGE_DEDUCTION|depth-4": 184,
+        "CHAINED_INTERMEDIATE|depth-3": 24,
+        "MULTI_STAGE_DEDUCTION|depth-5": 14,
+        "MULTI_STAGE_DEDUCTION|depth-6": 4
+      }
+    }
+  },
+  "latency": {
+    "totalMockMs": {
+      "p50": 2802.357,
+      "p90": 3833.818,
+      "p95": 4486.514,
+      "p99": 5668.315,
+      "maximum": 7734.156,
+      "mean": 2957.6433
+    },
+    "byModuleMs": {
+      "figure_sequence": {
+        "p50": 571.962,
+        "p90": 1027.751,
+        "p95": 1184.086,
+        "p99": 1821.504,
+        "maximum": 2950.93,
+        "mean": 639.4862
+      },
+      "mathematical_equation": {
+        "p50": 586.462,
+        "p90": 1063.006,
+        "p95": 1269.558,
+        "p99": 2127.467,
+        "maximum": 3335.234,
+        "mean": 686.0016
+      },
+      "latin_square": {
+        "p50": 1506.396,
+        "p90": 2138.661,
+        "p95": 2464.88,
+        "p99": 3241.259,
+        "maximum": 5607.961,
+        "mean": 1632.0578
+      }
+    },
+    "generatorAttemptsPerAcceptedMock": {
+      "p50": 111,
+      "p90": 151,
+      "p95": 170,
+      "p99": 210,
+      "maximum": 249,
+      "mean": 116.117
+    },
+    "slotGenerationCallsPerAcceptedMock": {
+      "p50": 65,
+      "p90": 72,
+      "p95": 74,
+      "p99": 78,
+      "maximum": 83,
+      "mean": 65.622
+    },
+    "averageRetriesPerQuestion": 0.0937
+  },
+  "failureRate": {
+    "completeMocks": 1000,
+    "failedMocks": 0,
+    "rate": 0,
+    "reasons": {},
+    "modules": {},
+    "slotRetryExhaustions": 0
+  },
+  "determinism": {
+    "checked": 100,
+    "mismatches": []
+  },
+  "quality": {
+    "score": {
+      "p50": 97.32,
+      "p90": 97.41,
+      "p95": 97.44,
+      "p99": 97.48,
+      "maximum": 97.53,
+      "mean": 97.2807
+    },
+    "moduleScores": {
+      "figure_sequence": {
+        "p50": 88.57,
+        "p90": 89.21,
+        "p95": 89.42,
+        "p99": 89.73,
+        "maximum": 90.2,
+        "mean": 88.562
+      },
+      "mathematical_equation": {
+        "p50": 84.21,
+        "p90": 84.8,
+        "p95": 84.96,
+        "p99": 85.21,
+        "maximum": 85.51,
+        "mean": 84.2061
+      },
+      "latin_square": {
+        "p50": 83.05,
+        "p90": 83.45,
+        "p95": 83.55,
+        "p99": 83.73,
+        "maximum": 83.92,
+        "mean": 83.0154
+      }
+    },
+    "spacingRelaxations": 18
+  },
+  "developmentSummaries": [
+    {
+      "seed": "phase-5-core-mock-0001",
+      "questions": [
+        {
+          "module": "figure_sequence",
+          "questionNumber": 1,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 1,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 2,
+          "difficulty": "medium",
+          "structuralFamily": "border+border+border",
+          "noveltyScore": 0.571429,
+          "reasoningClassification": "border + border + border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.728571,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 4,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis+linear-diagonal",
+          "noveltyScore": 0.428571,
+          "reasoningClassification": "linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 5,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis+linear-axis",
+          "noveltyScore": 0.27619,
+          "reasoningClassification": "border + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 6,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.428571,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 7,
+          "difficulty": "hard",
+          "structuralFamily": "border+direction_cycle+linear-axis+linear-diagonal",
+          "noveltyScore": 0.726364,
+          "reasoningClassification": "border + direction_cycle + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 8,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-axis",
+          "noveltyScore": 0.633723,
+          "reasoningClassification": "border + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 10,
+          "difficulty": "hard",
+          "structuralFamily": "border+direction_cycle+linear-diagonal",
+          "noveltyScore": 0.583492,
+          "reasoningClassification": "border + direction_cycle + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 11,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.409524,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "linear-axis+linear-axis",
+          "noveltyScore": 0.556349,
+          "reasoningClassification": "linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 13,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle+linear-axis",
+          "noveltyScore": 0.592381,
+          "reasoningClassification": "direction_cycle + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 14,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.42381,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+linear-axis+linear-diagonal",
+          "noveltyScore": 0.593333,
+          "reasoningClassification": "border + border + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle+linear-axis+linear-axis",
+          "noveltyScore": 0.554286,
+          "reasoningClassification": "direction_cycle + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-diagonal",
+          "noveltyScore": 0.527619,
+          "reasoningClassification": "border + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 18,
+          "difficulty": "medium",
+          "structuralFamily": "border",
+          "noveltyScore": 0.533333,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis+linear-axis",
+          "noveltyScore": 0.428571,
+          "reasoningClassification": "linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 20,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-diagonal",
+          "noveltyScore": 0.468095,
+          "reasoningClassification": "border + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 1,
+          "difficulty": "hard",
+          "structuralFamily": "cascade|multi_variable_balance+offset_difference+offset_difference+offset_difference",
+          "noveltyScore": 1,
+          "reasoningClassification": "cascade"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 2,
+          "difficulty": "hard",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_balance+sum_complement",
+          "noveltyScore": 0.604167,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "direct|direct_value+offset_difference",
+          "noveltyScore": 0.634028,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 4,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|multi_variable_balance+offset_difference+offset_difference+sum_complement",
+          "noveltyScore": 0.518651,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 5,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|offset_difference+scale_divide+weighted_sum+weighted_sum",
+          "noveltyScore": 0.295635,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|multi_variable_sum+offset_difference+sum_complement",
+          "noveltyScore": 0.426389,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 7,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|multi_variable_balance+scale_divide+sum_complement",
+          "noveltyScore": 0.244444,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "direct|offset_difference+sum_complement",
+          "noveltyScore": 0.40625,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 9,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|multi_variable_balance+offset_difference+weighted_sum",
+          "noveltyScore": 0.420833,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 10,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+sum_complement",
+          "noveltyScore": 0.243056,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 11,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|sum_complement+weighted_sum",
+          "noveltyScore": 0.277778,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 12,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|scale_divide+sum_complement+weighted_sum+weighted_sum",
+          "noveltyScore": 0.066667,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 13,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+offset_difference+scale_divide",
+          "noveltyScore": 0.444444,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 14,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+sum_complement",
+          "noveltyScore": 0.125,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 15,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|scale_divide+weighted_sum+weighted_sum",
+          "noveltyScore": 0.269444,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 16,
+          "difficulty": "hard",
+          "structuralFamily": "branch|multi_variable_balance+scale_divide+sum_complement+sum_complement",
+          "noveltyScore": 0.443452,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 17,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|weighted_sum+weighted_sum",
+          "noveltyScore": 0.215278,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+sum_complement",
+          "noveltyScore": 0.354167,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 19,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|multi_variable_balance+offset_difference+sum_complement",
+          "noveltyScore": 0.090278,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 20,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+offset_difference+sum_complement",
+          "noveltyScore": 0.1875,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 1,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 1,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 2,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.622075,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 3,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.288427,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 4,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.673573,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.144982,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.293714,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.128645,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 8,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.513018,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 9,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.286147,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 10,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.384746,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 11,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.109463,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.403713,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 13,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.085256,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 14,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.297934,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.138105,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 16,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.262796,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.241857,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 18,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.233179,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.114229,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 20,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.303817,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        }
+      ]
+    },
+    {
+      "seed": "phase-5-core-mock-0002",
+      "questions": [
+        {
+          "module": "figure_sequence",
+          "questionNumber": 1,
+          "difficulty": "medium",
+          "structuralFamily": "border+direction_cycle",
+          "noveltyScore": 1,
+          "reasoningClassification": "border + direction_cycle"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 2,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle+linear-axis+linear-diagonal",
+          "noveltyScore": 0.635714,
+          "reasoningClassification": "direction_cycle + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 3,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis+linear-axis",
+          "noveltyScore": 0.614286,
+          "reasoningClassification": "border + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 4,
+          "difficulty": "hard",
+          "structuralFamily": "linear-axis+linear-diagonal",
+          "noveltyScore": 0.657143,
+          "reasoningClassification": "linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 5,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.557143,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.457143,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.452381,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis+linear-diagonal",
+          "noveltyScore": 0.559524,
+          "reasoningClassification": "linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 9,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.461905,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 10,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+linear-axis",
+          "noveltyScore": 0.627211,
+          "reasoningClassification": "border + border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 11,
+          "difficulty": "hard",
+          "structuralFamily": "direction_cycle+linear-axis+linear-axis+linear-diagonal",
+          "noveltyScore": 0.664286,
+          "reasoningClassification": "direction_cycle + linear-axis + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 12,
+          "difficulty": "hard",
+          "structuralFamily": "border+direction_cycle+linear-axis+linear-diagonal",
+          "noveltyScore": 0.575476,
+          "reasoningClassification": "border + direction_cycle + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 13,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.504762,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 14,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.428571,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-axis+linear-diagonal",
+          "noveltyScore": 0.542857,
+          "reasoningClassification": "border + linear-axis + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.460952,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 17,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.428571,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.142857,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 20,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+border+linear-axis",
+          "noveltyScore": 0.478912,
+          "reasoningClassification": "border + border + border + linear-axis"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 1,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|scale_divide+weighted_sum",
+          "noveltyScore": 1,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 2,
+          "difficulty": "hard",
+          "structuralFamily": "branch|scale_divide+sum_complement+sum_complement+weighted_sum",
+          "noveltyScore": 0.543056,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 3,
+          "difficulty": "medium",
+          "structuralFamily": "branch|sum_complement+weighted_sum+weighted_sum",
+          "noveltyScore": 0.320139,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 4,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|multi_variable_balance+offset_difference+weighted_sum",
+          "noveltyScore": 0.40625,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|scale_divide+sum_complement",
+          "noveltyScore": 0.270833,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 6,
+          "difficulty": "hard",
+          "structuralFamily": "branch|multi_variable_balance+sum_complement+sum_complement+sum_complement",
+          "noveltyScore": 0.236111,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "direct|direct_value+sum_complement",
+          "noveltyScore": 0.440972,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 8,
+          "difficulty": "medium",
+          "structuralFamily": "branch|offset_difference+offset_difference+weighted_sum",
+          "noveltyScore": 0.2,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|scale_divide+sum_complement",
+          "noveltyScore": 0.083333,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 10,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|multi_variable_balance+offset_difference+sum_complement",
+          "noveltyScore": 0.486111,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 11,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+weighted_sum+weighted_sum",
+          "noveltyScore": 0.519444,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|offset_difference+sum_complement+weighted_sum",
+          "noveltyScore": 0.236111,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "star|offset_difference+sum_complement+sum_complement+weighted_sum",
+          "noveltyScore": 0.299306,
+          "reasoningClassification": "star"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 14,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+offset_difference",
+          "noveltyScore": 0.388889,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 15,
+          "difficulty": "medium",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_balance",
+          "noveltyScore": 0.552083,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 16,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|multi_variable_balance+offset_difference+scale_divide+sum_complement",
+          "noveltyScore": 0.3125,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "branch|offset_difference+offset_difference+weighted_sum+weighted_sum",
+          "noveltyScore": 0.214286,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 18,
+          "difficulty": "hard",
+          "structuralFamily": "branch_recombine|multi_variable_balance+multi_variable_sum+offset_difference+sum_complement",
+          "noveltyScore": 0.365873,
+          "reasoningClassification": "branch_recombine"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+weighted_sum",
+          "noveltyScore": 0.215278,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+sum_complement",
+          "noveltyScore": 0.208333,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 1,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 1,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 2,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.596936,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 3,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.119702,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 4,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.244216,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 5,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.301047,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.319716,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 7,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.317337,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.57563,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 9,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.572219,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 10,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.103175,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 11,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.277778,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 12,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.108582,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.233325,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 14,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.113291,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 15,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.116232,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 16,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.240463,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 17,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.227725,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 18,
+          "difficulty": "medium",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.365996,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.088294,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.109463,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        }
+      ]
+    },
+    {
+      "seed": "phase-5-core-mock-0003",
+      "questions": [
+        {
+          "module": "figure_sequence",
+          "questionNumber": 1,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle+linear-axis+linear-diagonal",
+          "noveltyScore": 1,
+          "reasoningClassification": "direction_cycle + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 2,
+          "difficulty": "hard",
+          "structuralFamily": "linear-axis+linear-axis+linear-diagonal",
+          "noveltyScore": 0.657143,
+          "reasoningClassification": "linear-axis + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.578571,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 4,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle",
+          "noveltyScore": 0.7,
+          "reasoningClassification": "direction_cycle"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.571429,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 7,
+          "difficulty": "medium",
+          "structuralFamily": "linear-axis+linear-diagonal+linear-diagonal",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "linear-axis + linear-diagonal + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.557143,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.142857,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 10,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.624762,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 11,
+          "difficulty": "medium",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.571429,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 12,
+          "difficulty": "hard",
+          "structuralFamily": "linear-axis+linear-axis+linear-diagonal+linear-diagonal",
+          "noveltyScore": 0.52619,
+          "reasoningClassification": "linear-axis + linear-axis + linear-diagonal + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 13,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis+linear-axis",
+          "noveltyScore": 0.420952,
+          "reasoningClassification": "border + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 14,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle+linear-diagonal",
+          "noveltyScore": 0.538095,
+          "reasoningClassification": "direction_cycle + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+border+linear-axis",
+          "noveltyScore": 0.559864,
+          "reasoningClassification": "border + border + border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 16,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.514286,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+direction_cycle+linear-axis",
+          "noveltyScore": 0.561657,
+          "reasoningClassification": "border + border + direction_cycle + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.514286,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 19,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+linear-axis+linear-diagonal",
+          "noveltyScore": 0.56355,
+          "reasoningClassification": "border + border + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.142857,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 1,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+sum_complement",
+          "noveltyScore": 1,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 2,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|scale_divide+sum_complement",
+          "noveltyScore": 0.236111,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 3,
+          "difficulty": "hard",
+          "structuralFamily": "star|multi_variable_balance+sum_complement+weighted_sum+weighted_sum",
+          "noveltyScore": 0.584722,
+          "reasoningClassification": "star"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 4,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|multi_variable_balance+offset_difference+sum_complement",
+          "noveltyScore": 0.577083,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+weighted_sum",
+          "noveltyScore": 0.277778,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 6,
+          "difficulty": "hard",
+          "structuralFamily": "branch|offset_difference+scale_divide+weighted_sum+weighted_sum",
+          "noveltyScore": 0.452877,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 7,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|multi_variable_balance+sum_complement+weighted_sum",
+          "noveltyScore": 0.378472,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "direct|scale_divide+sum_complement",
+          "noveltyScore": 0.243056,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "direct|direct_value+sum_complement",
+          "noveltyScore": 0.385417,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 10,
+          "difficulty": "hard",
+          "structuralFamily": "branch|multi_variable_balance+scale_divide+scale_divide+weighted_sum",
+          "noveltyScore": 0.239583,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 11,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|offset_difference+sum_complement+weighted_sum",
+          "noveltyScore": 0.236111,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 12,
+          "difficulty": "easy",
+          "structuralFamily": "direct|offset_difference+sum_complement",
+          "noveltyScore": 0.194444,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_sum+sum_complement",
+          "noveltyScore": 0.604861,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 14,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|multi_variable_balance+offset_difference+offset_difference",
+          "noveltyScore": 0.206944,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "branch_recombine|multi_variable_balance+multi_variable_balance+offset_difference+sum_complement",
+          "noveltyScore": 0.368056,
+          "reasoningClassification": "branch_recombine"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+offset_difference+offset_difference",
+          "noveltyScore": 0.447917,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|multi_variable_balance+scale_divide+sum_complement+sum_complement",
+          "noveltyScore": 0.370833,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 18,
+          "difficulty": "medium",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_sum",
+          "noveltyScore": 0.180556,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 19,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|offset_difference+scale_divide+weighted_sum",
+          "noveltyScore": 0.155208,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "direct|offset_difference+sum_complement",
+          "noveltyScore": 0.09375,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 1,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 1,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 2,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.619967,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.285179,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 4,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.127997,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 5,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.316686,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 6,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.615199,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.113565,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.16495,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 9,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.274425,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 10,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.621505,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 11,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.122367,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.341982,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.286933,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 14,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.257089,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.398352,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.290056,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 17,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.116447,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.071695,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 19,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.256544,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 20,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.291932,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        }
+      ]
+    },
+    {
+      "seed": "phase-5-core-mock-0004",
+      "questions": [
+        {
+          "module": "figure_sequence",
+          "questionNumber": 1,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 1,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 2,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 3,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.590476,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 4,
+          "difficulty": "hard",
+          "structuralFamily": "direction_cycle+linear-axis",
+          "noveltyScore": 0.668571,
+          "reasoningClassification": "direction_cycle + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 5,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis+linear-axis",
+          "noveltyScore": 0.445238,
+          "reasoningClassification": "border + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "direction_cycle+linear-axis",
+          "noveltyScore": 0.452381,
+          "reasoningClassification": "direction_cycle + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 8,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.615238,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 9,
+          "difficulty": "medium",
+          "structuralFamily": "border+border",
+          "noveltyScore": 0.533333,
+          "reasoningClassification": "border + border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 10,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+linear-axis",
+          "noveltyScore": 0.65,
+          "reasoningClassification": "border + border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 11,
+          "difficulty": "hard",
+          "structuralFamily": "border+direction_cycle+linear-diagonal",
+          "noveltyScore": 0.603333,
+          "reasoningClassification": "border + direction_cycle + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "linear-axis+linear-diagonal",
+          "noveltyScore": 0.47619,
+          "reasoningClassification": "linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "border+border+direction_cycle+linear-diagonal",
+          "noveltyScore": 0.604286,
+          "reasoningClassification": "border + border + direction_cycle + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 14,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.453333,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-axis+linear-axis",
+          "noveltyScore": 0.575714,
+          "reasoningClassification": "border + linear-axis + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.414286,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-diagonal",
+          "noveltyScore": 0.606349,
+          "reasoningClassification": "border + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "border+border",
+          "noveltyScore": 0.357143,
+          "reasoningClassification": "border + border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.571429,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "linear-diagonal",
+          "noveltyScore": 0.514286,
+          "reasoningClassification": "linear-diagonal"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 1,
+          "difficulty": "hard",
+          "structuralFamily": "branch|multi_variable_balance+offset_difference+scale_divide+sum_complement",
+          "noveltyScore": 1,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 2,
+          "difficulty": "medium",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_balance",
+          "noveltyScore": 0.736111,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+sum_complement",
+          "noveltyScore": 0.577083,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 4,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|multi_variable_balance+sum_complement+sum_complement",
+          "noveltyScore": 0.388889,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 5,
+          "difficulty": "medium",
+          "structuralFamily": "branch|multi_variable_balance+offset_difference+offset_difference",
+          "noveltyScore": 0.313194,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 6,
+          "difficulty": "hard",
+          "structuralFamily": "cascade|multi_variable_sum+offset_difference+scale_divide+sum_complement",
+          "noveltyScore": 0.422817,
+          "reasoningClassification": "cascade"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "direct|offset_difference+sum_complement",
+          "noveltyScore": 0.284722,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 8,
+          "difficulty": "hard",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_sum+scale_divide",
+          "noveltyScore": 0.320139,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 9,
+          "difficulty": "hard",
+          "structuralFamily": "branch_recombine|multi_variable_balance+multi_variable_balance+offset_difference+scale_divide",
+          "noveltyScore": 0.343056,
+          "reasoningClassification": "branch_recombine"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 10,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+offset_difference+scale_divide",
+          "noveltyScore": 0.5,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 11,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+scale_divide",
+          "noveltyScore": 0.256944,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 12,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+offset_difference",
+          "noveltyScore": 0.229167,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "merged|direct_value+direct_value+offset_difference+weighted_sum",
+          "noveltyScore": 0.229167,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 14,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|offset_difference+sum_complement+weighted_sum",
+          "noveltyScore": 0.527778,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 15,
+          "difficulty": "hard",
+          "structuralFamily": "cascade|multi_variable_sum+offset_difference+sum_complement+weighted_sum",
+          "noveltyScore": 0.138095,
+          "reasoningClassification": "cascade"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_sum",
+          "noveltyScore": 0.180556,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 17,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+offset_difference+sum_complement",
+          "noveltyScore": 0.2125,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+weighted_sum",
+          "noveltyScore": 0.28125,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 19,
+          "difficulty": "easy",
+          "structuralFamily": "direct|direct_value+offset_difference",
+          "noveltyScore": 0.125,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "direct|direct_value+weighted_sum",
+          "noveltyScore": 0.125,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 1,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 1,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 2,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.512957,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.731195,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 4,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.325661,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.104167,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.378365,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 7,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.292659,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.142217,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 9,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.365616,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 10,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.303068,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 11,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.10232,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.549684,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 13,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.309262,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 14,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.325761,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 15,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.145257,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.266768,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 17,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.234264,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 18,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.132116,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 19,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.291565,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 20,
+          "difficulty": "medium",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.364,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        }
+      ]
+    },
+    {
+      "seed": "phase-5-core-mock-0005",
+      "questions": [
+        {
+          "module": "figure_sequence",
+          "questionNumber": 1,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 1,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 2,
+          "difficulty": "medium",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.738095,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "border",
+          "noveltyScore": 0.514286,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 4,
+          "difficulty": "medium",
+          "structuralFamily": "linear-axis+linear-diagonal+linear-diagonal",
+          "noveltyScore": 0.691429,
+          "reasoningClassification": "linear-axis + linear-diagonal + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 5,
+          "difficulty": "hard",
+          "structuralFamily": "direction_cycle+linear-diagonal",
+          "noveltyScore": 0.689796,
+          "reasoningClassification": "direction_cycle + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 6,
+          "difficulty": "medium",
+          "structuralFamily": "linear-axis+linear-diagonal",
+          "noveltyScore": 0.619048,
+          "reasoningClassification": "linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 7,
+          "difficulty": "hard",
+          "structuralFamily": "direction_cycle+linear-axis+linear-diagonal",
+          "noveltyScore": 0.511905,
+          "reasoningClassification": "direction_cycle + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-axis",
+          "noveltyScore": 0.409524,
+          "reasoningClassification": "border + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "border+linear-diagonal",
+          "noveltyScore": 0.380952,
+          "reasoningClassification": "border + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 10,
+          "difficulty": "easy",
+          "structuralFamily": "border+border",
+          "noveltyScore": 0.357143,
+          "reasoningClassification": "border + border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 11,
+          "difficulty": "hard",
+          "structuralFamily": "border+direction_cycle+linear-axis+linear-axis",
+          "noveltyScore": 0.620769,
+          "reasoningClassification": "border + direction_cycle + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "border+direction_cycle+linear-axis",
+          "noveltyScore": 0.546667,
+          "reasoningClassification": "border + direction_cycle + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 13,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.514286,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 14,
+          "difficulty": "hard",
+          "structuralFamily": "border+direction_cycle",
+          "noveltyScore": 0.589116,
+          "reasoningClassification": "border + direction_cycle"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 15,
+          "difficulty": "medium",
+          "structuralFamily": "border+border",
+          "noveltyScore": 0.466667,
+          "reasoningClassification": "border + border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "border",
+          "noveltyScore": 0.533333,
+          "reasoningClassification": "border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 17,
+          "difficulty": "medium",
+          "structuralFamily": "border+border",
+          "noveltyScore": 0.42381,
+          "reasoningClassification": "border + border"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 18,
+          "difficulty": "hard",
+          "structuralFamily": "border+linear-axis+linear-axis",
+          "noveltyScore": 0.57674,
+          "reasoningClassification": "border + linear-axis + linear-axis"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 19,
+          "difficulty": "hard",
+          "structuralFamily": "linear-axis+linear-axis+linear-axis+linear-diagonal",
+          "noveltyScore": 0.541054,
+          "reasoningClassification": "linear-axis + linear-axis + linear-axis + linear-diagonal"
+        },
+        {
+          "module": "figure_sequence",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "linear-axis",
+          "noveltyScore": 0.514286,
+          "reasoningClassification": "linear-axis"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 1,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+sum_complement",
+          "noveltyScore": 1,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 2,
+          "difficulty": "easy",
+          "structuralFamily": "direct|scale_divide+sum_complement",
+          "noveltyScore": 0.510417,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "direct|sum_complement+weighted_sum",
+          "noveltyScore": 0.305556,
+          "reasoningClassification": "direct"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 4,
+          "difficulty": "medium",
+          "structuralFamily": "branch|multi_variable_balance+offset_difference+offset_difference",
+          "noveltyScore": 0.645833,
+          "reasoningClassification": "branch"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+scale_divide",
+          "noveltyScore": 0.270833,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 6,
+          "difficulty": "hard",
+          "structuralFamily": "cascade|multi_variable_balance+offset_difference+offset_difference+offset_difference",
+          "noveltyScore": 0.460069,
+          "reasoningClassification": "cascade"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 7,
+          "difficulty": "medium",
+          "structuralFamily": "chain|direct_value+sum_complement+weighted_sum",
+          "noveltyScore": 0.288194,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 8,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|offset_difference+scale_divide",
+          "noveltyScore": 0.416667,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "reverse_chain|scale_divide+sum_complement",
+          "noveltyScore": 0.229167,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 10,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|multi_variable_sum+offset_difference+weighted_sum",
+          "noveltyScore": 0.427083,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 11,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|offset_difference+sum_complement+sum_complement+weighted_sum",
+          "noveltyScore": 0.556944,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 12,
+          "difficulty": "medium",
+          "structuralFamily": "merged|direct_value+direct_value+multi_variable_balance",
+          "noveltyScore": 0.552083,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 13,
+          "difficulty": "medium",
+          "structuralFamily": "reverse_chain|offset_difference+weighted_sum+weighted_sum",
+          "noveltyScore": 0.1875,
+          "reasoningClassification": "reverse_chain"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 14,
+          "difficulty": "hard",
+          "structuralFamily": "cascade|multi_variable_sum+offset_difference+sum_complement+sum_complement",
+          "noveltyScore": 0.276786,
+          "reasoningClassification": "cascade"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 15,
+          "difficulty": "medium",
+          "structuralFamily": "merged|direct_value+direct_value+weighted_sum",
+          "noveltyScore": 0.1875,
+          "reasoningClassification": "merged"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "triangle|multi_variable_balance+offset_difference+weighted_sum",
+          "noveltyScore": 0.440972,
+          "reasoningClassification": "triangle"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 17,
+          "difficulty": "hard",
+          "structuralFamily": "branch_recombine|multi_variable_balance+sum_complement+sum_complement+weighted_sum",
+          "noveltyScore": 0.405556,
+          "reasoningClassification": "branch_recombine"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 18,
+          "difficulty": "hard",
+          "structuralFamily": "cascade|offset_difference+sum_complement+weighted_sum+weighted_sum",
+          "noveltyScore": 0.263889,
+          "reasoningClassification": "cascade"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 19,
+          "difficulty": "hard",
+          "structuralFamily": "mixed|multi_variable_balance+offset_difference+offset_difference+sum_complement",
+          "noveltyScore": 0.236111,
+          "reasoningClassification": "mixed"
+        },
+        {
+          "module": "mathematical_equation",
+          "questionNumber": 20,
+          "difficulty": "easy",
+          "structuralFamily": "chain|direct_value+offset_difference",
+          "noveltyScore": 0.229167,
+          "reasoningClassification": "chain"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 1,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 1,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 2,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.567017,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 3,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.614898,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 4,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.347315,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 5,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.138855,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 6,
+          "difficulty": "hard",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.222222,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 7,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.115546,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 8,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-4",
+          "noveltyScore": 0.636905,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 9,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.088745,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 10,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.271527,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 11,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.363653,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 12,
+          "difficulty": "easy",
+          "structuralFamily": "ROW_COLUMN_INTERSECTION|depth-1",
+          "noveltyScore": 0.279512,
+          "reasoningClassification": "ROW_COLUMN_INTERSECTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 13,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.111998,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 14,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.382853,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 15,
+          "difficulty": "easy",
+          "structuralFamily": "DIRECT_AXIS_ELIMINATION|depth-1",
+          "noveltyScore": 0.115385,
+          "reasoningClassification": "DIRECT_AXIS_ELIMINATION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 16,
+          "difficulty": "medium",
+          "structuralFamily": "SINGLE_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.298063,
+          "reasoningClassification": "SINGLE_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 17,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.308036,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 18,
+          "difficulty": "medium",
+          "structuralFamily": "CHAINED_INTERMEDIATE|depth-2",
+          "noveltyScore": 0.245337,
+          "reasoningClassification": "CHAINED_INTERMEDIATE"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 19,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.362835,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        },
+        {
+          "module": "latin_square",
+          "questionNumber": 20,
+          "difficulty": "hard",
+          "structuralFamily": "MULTI_STAGE_DEDUCTION|depth-3",
+          "noveltyScore": 0.27561,
+          "reasoningClassification": "MULTI_STAGE_DEDUCTION"
+        }
+      ]
+    }
+  ],
+  "failures": [],
+  "releaseBlockers": [],
+  "releaseVerdict": "READY WITH MINOR ISSUES"
+}

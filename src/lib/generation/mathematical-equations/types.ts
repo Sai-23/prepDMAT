@@ -5,10 +5,11 @@ import type {
   GenerationDifficulty,
   ValidationIssue,
 } from "../types";
+import type { EvidenceClassification } from "../../evidence";
 
-export const MATHEMATICAL_EQUATION_GENERATOR_VERSION = "mathematical-equations@4.0.0";
+export const MATHEMATICAL_EQUATION_GENERATOR_VERSION = "mathematical-equations@8.1.0";
 export const MATHEMATICAL_EQUATION_SOLVER_VERSION = "mathematical-equations-solver@2.0.0";
-export const MATHEMATICAL_EQUATION_VALIDATOR_VERSION = "mathematical-equations-validator@4.0.0";
+export const MATHEMATICAL_EQUATION_VALIDATOR_VERSION = "mathematical-equations-validator@7.0.0";
 export const MATHEMATICAL_EQUATION_DOMAIN = { minimum: 1, maximum: 20 } as const;
 
 export type EquationVariable = string;
@@ -30,46 +31,32 @@ export type MathematicalEquation = {
 };
 
 export type EquationStructuralFamily =
-  | "direct_chain"
-  | "sum_difference"
-  | "multiply_then_derive"
-  | "divide_then_derive"
-  | "three_variable_chain"
-  | "shared_source"
-  | "branch_then_combine"
-  | "compound_derived_variable"
-  | "four_variable_chain"
-  | "shared_source_branch"
-  | "branch_and_recombine"
-  | "multi_dependency_system"
-  | "compound_four_variable"
-  | "low_direct_chain"
-  | "low_sum_difference"
-  | "low_scaled_pair"
-  | "low_divide_pair"
-  | "medium_branch"
-  | "medium_recombine"
-  | "medium_cross_dependency"
-  | "medium_compound_chain"
-  | "medium_shared_source_recombine"
-  | "high_branch_recombine"
-  | "high_cross_dependency"
-  | "high_multi_stage"
-  | "high_compound_system"
-  | "high_two_stage_recombine"
-  | "high_mixed_dependency"
-  | "easy_sum_difference"
-  | "easy_multiplier_difference"
-  | "easy_division_difference"
-  | "easy_scaled_total"
-  | "medium_hidden_difference"
-  | "medium_hidden_sum"
-  | "medium_reverse_relationship"
-  | "medium_mixed_grouping"
-  | "hard_two_groups"
-  | "hard_dependency_chain"
-  | "hard_nested_dependency"
-  | "hard_group_bridge";
+  | "direct"
+  | "chain"
+  | "reverse_chain"
+  | "star"
+  | "triangle"
+  | "branch"
+  | "merged"
+  | "branch_recombine"
+  | "cascade"
+  | "mixed";
+
+/** Compatibility alias: serialized equation evidence values remain unchanged. */
+export type EquationEvidenceLevel = EvidenceClassification;
+
+export type EquationRelationshipPrimitive =
+  | "direct_value"
+  | "offset_add"
+  | "offset_subtract"
+  | "scale"
+  | "divide_by_constant"
+  | "sum"
+  | "difference"
+  | "complement"
+  | "weighted_sum"
+  | "multi_variable_sum"
+  | "multi_variable_balance";
 
 export type EquationDependencyModel = {
   family: EquationStructuralFamily;
@@ -78,6 +65,10 @@ export type EquationDependencyModel = {
   hiddenGroupingCount?: number;
   relationshipReversalCount?: number;
   meaningfulReasoningSteps?: number;
+  relationshipPrimitives?: EquationRelationshipPrimitive[];
+  evidenceLevel?: EquationEvidenceLevel;
+  rootStrategy?: "direct" | "coupled" | "global_balance";
+  targetSymbol?: EquationVariable;
 };
 
 export type MathematicalEquationStructuredData = {
@@ -155,6 +146,10 @@ export type EquationDifficultyMetrics = {
   hiddenGroupingCount: number;
   relationshipReversalCount: number;
   meaningfulReasoningSteps: number;
+  targetDepth: number;
+  multiVariableConstraintCount: number;
+  termCount: number;
+  mentalArithmeticCost: number;
   score: number;
 };
 

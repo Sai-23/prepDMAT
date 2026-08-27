@@ -88,4 +88,33 @@ describe("Latin-square fingerprints", () => {
       latinSquareStructuralSignature(candidate),
     );
   });
+
+  it("treats row and column permutations as the same clue structure", () => {
+    const candidate = latinSquareGenerator.generate({ seed: "latin-permutation", difficulty: "hard" }, 1);
+    const permuted = structuredClone(candidate);
+    const rowOrder = [4, 2, 0, 3, 1];
+    const columnOrder = [1, 4, 2, 0, 3];
+    permuted.structuredData.grid = rowOrder.map((row) =>
+      columnOrder.map((column) => candidate.structuredData.grid[row][column]),
+    );
+    permuted.completedGrid = rowOrder.map((row) =>
+      columnOrder.map((column) => candidate.completedGrid[row][column]),
+    );
+    permuted.structuredData.target = {
+      row: rowOrder.indexOf(candidate.structuredData.target.row),
+      column: columnOrder.indexOf(candidate.structuredData.target.column),
+    };
+    expect(latinSquareStructuralSignature(permuted)).toBe(latinSquareStructuralSignature(candidate));
+  });
+
+  it("treats transpose symmetry as the same reasoning structure", () => {
+    const candidate = latinSquareGenerator.generate({ seed: "latin-transpose", difficulty: "medium" }, 1);
+    const transposed = structuredClone(candidate);
+    transposed.structuredData.grid = Array.from({ length: 5 }, (_, row) =>
+      Array.from({ length: 5 }, (__, column) => candidate.structuredData.grid[column][row]));
+    transposed.completedGrid = Array.from({ length: 5 }, (_, row) =>
+      Array.from({ length: 5 }, (__, column) => candidate.completedGrid[column][row]));
+    transposed.structuredData.target = { row: candidate.structuredData.target.column, column: candidate.structuredData.target.row };
+    expect(latinSquareStructuralSignature(transposed)).toBe(latinSquareStructuralSignature(candidate));
+  });
 });

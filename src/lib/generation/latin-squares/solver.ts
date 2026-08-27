@@ -41,13 +41,26 @@ function canPlace(
   );
 }
 
-function hasCompletion(grid: VisibleLatinGrid): {
-  found: boolean;
+export type LatinCompletionCount = {
+  count: number;
+  capped: boolean;
   exploredAssignments: number;
-} {
-  let exploredAssignments = 0;
+};
 
-  const search = (): boolean => {
+export function countLatinGridSolutions(
+  source: VisibleLatinGrid,
+  limit = 2,
+): LatinCompletionCount {
+  if (!Number.isSafeInteger(limit) || limit < 1) throw new RangeError("Latin completion limit must be positive.");
+  if (!validGridShape(source) || hasKnownDuplicates(source)) {
+    return { count: 0, capped: false, exploredAssignments: 0 };
+  }
+  const grid = source.map((row) => [...row]);
+  let exploredAssignments = 0;
+  let count = 0;
+
+  const search = (): void => {
+    if (count >= limit) return;
     let best: { row: number; column: number; candidates: LatinSymbol[] } | null = null;
     for (let row = 0; row < LATIN_SQUARE_SIZE; row += 1) {
       for (let column = 0; column < LATIN_SQUARE_SIZE; column += 1) {
@@ -55,27 +68,36 @@ function hasCompletion(grid: VisibleLatinGrid): {
         const candidates = DEFAULT_LATIN_SYMBOLS.filter((symbol) =>
           canPlace(grid, row, column, symbol),
         );
-        if (candidates.length === 0) return false;
+        if (candidates.length === 0) return;
         if (!best || candidates.length < best.candidates.length) {
           best = { row, column, candidates: [...candidates] };
         }
       }
     }
-    if (!best) return true;
+    if (!best) {
+      count += 1;
+      return;
+    }
     const cell = best as { row: number; column: number; candidates: LatinSymbol[] };
     for (const symbol of cell.candidates) {
       exploredAssignments += 1;
       grid[cell.row][cell.column] = symbol;
-      if (search()) {
-        grid[cell.row][cell.column] = null;
-        return true;
-      }
+      search();
       grid[cell.row][cell.column] = null;
+      if (count >= limit) return;
     }
-    return false;
   };
 
-  return { found: search(), exploredAssignments };
+  search();
+  return { count, capped: count >= limit, exploredAssignments };
+}
+
+function hasCompletion(grid: VisibleLatinGrid): {
+  found: boolean;
+  exploredAssignments: number;
+} {
+  const result = countLatinGridSolutions(grid, 1);
+  return { found: result.count > 0, exploredAssignments: result.exploredAssignments };
 }
 
 export class LatinSquareSolver
@@ -102,6 +124,8 @@ export class LatinSquareSolver
         status: "invalid",
         possibleTargetSymbols: [],
         exploredAssignments: 0,
+        fullGridSolutionCount: 0,
+        fullGridSolutionCountCapped: false,
         reason: "Invalid Latin-square structure or clues.",
       };
     }
@@ -117,6 +141,8 @@ export class LatinSquareSolver
       if (completion.found) possibleTargetSymbols.push(symbol);
     }
 
+    const fullGridSolutions = countLatinGridSolutions(grid, 2);
+
     return {
       status:
         possibleTargetSymbols.length === 0
@@ -126,10 +152,11 @@ export class LatinSquareSolver
             : "multiple",
       possibleTargetSymbols,
       exploredAssignments,
+      fullGridSolutionCount: fullGridSolutions.count,
+      fullGridSolutionCountCapped: fullGridSolutions.capped,
       reason: null,
     };
   }
 }
 
 export const latinSquareSolver = new LatinSquareSolver();
-

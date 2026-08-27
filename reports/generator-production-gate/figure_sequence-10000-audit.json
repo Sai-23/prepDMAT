@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-08-25T07:43:58.593Z",
+  "module": "figure_sequence",
+  "requestedAccepted": 10000,
+  "accepted": 10000,
+  "acceptedByDifficulty": {
+    "easy": 3334,
+    "medium": 3333,
+    "hard": 3333
+  },
+  "acceptedBySeedGroup": {
+    "sequential": 2000,
+    "hashed": 2000,
+    "edge-case": 2000,
+    "retry-heavy": 2000,
+    "regression": 2000
+  },
+  "generationAttempts": 28603,
+  "attemptsPerAccepted": 2.86,
+  "rejectionReasons": {
+    "difficulty_mismatch": 18603
+  },
+  "latencyMilliseconds": {
+    "p50": 5.735,
+    "p95": 56.515,
+    "p99": 151.476,
+    "maximum": 544.294,
+    "mean": 13.405
+  },
+  "exactDuplicateFingerprints": 1270,
+  "structuralReuseCount": 3983,
+  "invariantFailures": {
+    "duplicate_rendered_candidates": 0,
+    "zero_correct_candidate_sets": 0,
+    "multiple_correct_candidate_sets": 0,
+    "correct_answer_mismatch": 0,
+    "object_disappearance": 0,
+    "illegal_overlap": 0,
+    "out_of_grid": 0,
+    "boundary_rule_violation": 0,
+    "rule_replay_failure": 0,
+    "render_contract_failure": 0,
+    "difficulty_mismatch": 0,
+    "accepted_invalid": 0
+  },
+  "distributions": {
+    "movement": {
+      "linear": 12744,
+      "border": 7566,
+      "direction_cycle": 2903
+    },
+    "symbolCount": {
+      "1": 2663,
+      "2": 2962,
+      "3": 2874,
+      "4": 1501
+    }
+  }
+}

@@ -4,6 +4,9 @@ import type { PracticeQuestion } from "@/lib/practice/schemas";
 import { answerSubmissionSchema, type PracticeAnswer } from "@/lib/practice/schemas";
 
 export const testIdSchema = z.string().uuid();
+export const generatedMockRequestSchema = z.object({
+  generationRequestId: z.string().uuid(),
+});
 
 export const saveTestResponseSchema = z.object({
   attemptId: z.string().uuid(),

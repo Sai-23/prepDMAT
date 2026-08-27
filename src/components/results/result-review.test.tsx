@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { MathematicalEquationStructuredData } from "@/lib/generation/mathematical-equations";
+import { generateValidatedFigureSequence } from "@/lib/generation/figure-sequences";
+import { DEFAULT_LATIN_SYMBOLS, generateValidatedLatinSquare } from "@/lib/generation/latin-squares";
 import type { ResultQuestion } from "@/lib/results/schemas";
 import { ResultReview } from "./result-review";
 
@@ -13,7 +15,7 @@ const equation: MathematicalEquationStructuredData = {
   variables: ["A", "B"],
   domain: { minimum: 1, maximum: 20, integersOnly: true },
   dependencyModel: {
-    family: "direct_chain",
+    family: "chain",
     solveOrder: ["A", "B"],
     edges: [{ source: "A", target: "B" }],
   },
@@ -73,6 +75,32 @@ function resultQuestion(answer: { A?: number; B?: number }): ResultQuestion {
 }
 
 describe("completed Mathematical Equation result review", () => {
+  it("exposes accessible status, timing, and skill review controls", () => {
+    const question = resultQuestion({ A: 3, B: 1 });
+    question.questionNumber = 21;
+    question.skillIds = ["equation_scale"];
+    const html = renderToStaticMarkup(<ResultReview
+      analysis={[{
+        questionId: question.id,
+        questionNumber: 21,
+        module: "mathematical_equation",
+        skillIds: ["equation_scale"],
+        timing: "fast_incorrect",
+        paceRatio: 0.5,
+      }]}
+      attemptId="10000000-0000-4000-8000-000000000001"
+      questions={[question]}
+    />);
+
+    expect(html).toContain('aria-label="Question status and timing filters"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain("Fast incorrect (1)");
+    expect(html).toContain("Question 21");
+    expect(html).toContain("Scale relationships");
+    expect(html).toContain("Practice this skill");
+    expect(html).toContain("42s recorded");
+  });
+
   it("fixes the structured-response footer bug and reuses the step walkthrough", () => {
     const html = renderToStaticMarkup(<ResultReview questions={[resultQuestion({ A: 3, B: 1 })]} />);
 
@@ -96,5 +124,59 @@ describe("completed Mathematical Equation result review", () => {
     expect(html).toContain("Variable B. Your answer not answered. Correct answer 9. Not answered.");
     expect(html).toContain('data-variable-result="unanswered"');
     expect(html).not.toContain("Your response: No answer");
+  });
+});
+
+describe("completed generated Core result review", () => {
+  it("reuses the Figure simulator explanation instead of legacy prose", () => {
+    const generated = generateValidatedFigureSequence({ seed: "phase7-result-figure", difficulty: "medium", maxAttempts: 5_000 });
+    const wrong = generated.sequence.missingMatrices.map((matrix, index) =>
+      matrix.candidates.find((candidate) => candidate.id !== generated.correctAnswer[index])!.id,
+    ) as [string, string];
+    const question: ResultQuestion = {
+      ...resultQuestion({ A: 3, B: 9 }),
+      id: "figure-result",
+      questionType: "figure_sequence",
+      topic: "Figure Sequences",
+      questionText: "Choose the next two matrices.",
+      structuredData: generated.sequence,
+      response: { kind: "two_stage_single_choice" },
+      answer: { kind: "two_stage_single_choice", optionIds: wrong },
+      correctAnswer: generated.correctAnswer,
+      explanationTrace: { rules: generated.structuredData.rules },
+      explanation: "Legacy figure prose must not render.",
+      isCorrect: false,
+    };
+    const html = renderToStaticMarkup(<ResultReview questions={[question]} />);
+    expect(html).toContain('data-feedback-interface="figure-sequence-guided"');
+    expect(html).toContain("Verified across every transition");
+    expect(html).toContain("Quick explanation");
+    expect(html).not.toContain("Legacy figure prose must not render.");
+  });
+
+  it("reuses the Latin causal proof and hides unrelated solved cells", () => {
+    const generated = generateValidatedLatinSquare({ seed: "phase7-result-latin", difficulty: "hard", maxAttempts: 5_000 });
+    const wrong = DEFAULT_LATIN_SYMBOLS.find((symbol) => symbol !== generated.correctAnswer)!;
+    const question: ResultQuestion = {
+      ...resultQuestion({ A: 3, B: 9 }),
+      id: "latin-result",
+      questionType: "latin_square",
+      topic: "Latin Squares",
+      questionText: "Which symbol belongs in the target?",
+      structuredData: generated.structuredData,
+      response: { kind: "single_choice", options: DEFAULT_LATIN_SYMBOLS.map((symbol) => ({ id: symbol, label: symbol, content: symbol })) },
+      options: DEFAULT_LATIN_SYMBOLS.map((symbol) => ({ id: symbol, label: symbol, content: symbol })),
+      answer: { kind: "single_choice", optionId: wrong },
+      correctAnswer: generated.correctAnswer,
+      explanationTrace: generated.deductionTrace,
+      explanation: "Legacy Latin prose must not render.",
+      isCorrect: false,
+    };
+    const html = renderToStaticMarkup(<ResultReview questions={[question]} />);
+    expect(html).toContain('data-feedback-interface="latin-square-guided"');
+    expect(html).toContain("Cells used in this proof");
+    expect(html).toContain("not needed for this proof");
+    expect(html).not.toContain("Completely solved matrix");
+    expect(html).not.toContain("Legacy Latin prose must not render.");
   });
 });

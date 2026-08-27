@@ -13,10 +13,12 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { PracticeAnswer, PracticeQuestion } from "@/lib/practice/schemas";
 import type { PrivatePracticeSnapshot } from "@/lib/practice/native";
 import type { ExamSectionSnapshot } from "@/lib/tests/exam-spec";
+import type { StructuralProfile } from "@/lib/generation/novelty";
+import { mapQuestionToSkills } from "@/lib/progress/skills";
 
 type AttemptRow = {
   id: string;
-  test_id: string;
+  test_id: string | null;
   status: "submitted" | "auto_submitted";
   started_at: string;
   submitted_at: string | null;
@@ -24,10 +26,13 @@ type AttemptRow = {
   accuracy: number | null;
   total_time_seconds: number;
   test_snapshot?: unknown;
+  display_title?: string | null;
+  mock_origin?: "curated" | "generated";
 };
 
 type ResponseRow = {
-  question_id: string;
+  question_id: string | null;
+  question_key: string;
   selected_option_id: string | null;
   is_correct: boolean | null;
   is_marked_for_review: boolean;
@@ -59,6 +64,20 @@ type OptionRow = {
   sort_order: number;
 };
 
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function snapshotProfile(value: unknown): StructuralProfile | null {
+  const provenance = record(value)?.provenance;
+  const profile = record(provenance)?.structuralProfile;
+  return record(profile)?.features && typeof record(profile)?.namespace === "string"
+    ? profile as unknown as StructuralProfile
+    : null;
+}
+
 export async function getResultHistory(
   userId: string,
 ): Promise<ResultHistoryItem[]> {
@@ -66,7 +85,7 @@ export async function getResultHistory(
   const { data, error } = await admin
     .from("test_attempts")
     .select(
-      "id, test_id, status, started_at, submitted_at, score, accuracy, total_time_seconds, test_snapshot",
+      "id, test_id, mock_origin, display_title, status, started_at, submitted_at, score, accuracy, total_time_seconds",
     )
     .eq("user_id", userId)
     .in("status", ["submitted", "auto_submitted"])
@@ -75,7 +94,7 @@ export async function getResultHistory(
 
   if (error) throw new Error("Unable to load your result history.");
   const attempts = (data ?? []) as AttemptRow[];
-  const testIds = [...new Set(attempts.map((attempt) => attempt.test_id))];
+  const testIds = [...new Set(attempts.flatMap((attempt) => attempt.test_id ? [attempt.test_id] : []))];
   const { data: tests } = testIds.length
     ? await admin.from("tests").select("id, title").in("id", testIds)
     : { data: [] };
@@ -85,7 +104,8 @@ export async function getResultHistory(
 
   return attempts.map((attempt) => ({
     id: attempt.id,
-    testTitle: (attempt.test_snapshot as { title?: string } | undefined)?.title ?? titleByTestId.get(attempt.test_id) ?? "Assessment",
+    testTitle: attempt.display_title ?? (attempt.test_id ? titleByTestId.get(attempt.test_id) : undefined) ?? "Assessment",
+    origin: attempt.mock_origin ?? "curated",
     status: attempt.status,
     startedAt: attempt.started_at,
     submittedAt: attempt.submitted_at,
@@ -103,7 +123,7 @@ export async function getAttemptResult(
   const { data: attemptData, error: attemptError } = await admin
     .from("test_attempts")
     .select(
-      "id, test_id, user_id, status, started_at, submitted_at, score, accuracy, total_time_seconds, test_snapshot",
+      "id, test_id, user_id, mock_origin, display_title, status, started_at, submitted_at, score, accuracy, total_time_seconds, test_snapshot",
     )
     .eq("id", attemptId)
     .eq("user_id", userId)
@@ -112,33 +132,37 @@ export async function getAttemptResult(
 
   if (attemptError) throw new Error("Unable to load this result.");
   if (!attemptData) return null;
-  const attempt = attemptData as AttemptRow & { test_id: string };
+  const attempt = attemptData as AttemptRow;
 
   const [{ data: responseData }, { data: testData }] = await Promise.all([
     admin
       .from("user_responses")
       .select(
-        "question_id, selected_option_id, response_payload, is_correct, is_marked_for_review, response_status, time_spent_seconds",
+        "question_id, question_key, selected_option_id, response_payload, is_correct, is_marked_for_review, response_status, time_spent_seconds",
       )
       .eq("attempt_id", attemptId)
       .order("created_at", { ascending: true }),
-    admin.from("tests").select("title").eq("id", attempt.test_id).maybeSingle(),
+    attempt.test_id
+      ? admin.from("tests").select("title").eq("id", attempt.test_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
   const responses = (responseData ?? []) as ResponseRow[];
-  const questionIds = responses.map((response) => response.question_id);
+  const questionIds = responses.flatMap((response) => response.question_id ? [response.question_id] : []);
 
   const { data: snapshotItems } = await admin.from("practice_attempt_items")
-    .select("source_question_id, test_section_id, public_snapshot, private_snapshot, position")
+    .select("source_question_id, question_key, section_key, section_position, public_snapshot, private_snapshot, position")
     .eq("attempt_id", attemptId).order("position");
   if (snapshotItems?.length) {
-    const { data: bookmarkData } = await admin.from("bookmarks").select("question_id")
-      .eq("user_id", userId).in("question_id", questionIds);
+    const { data: bookmarkData } = questionIds.length
+      ? await admin.from("bookmarks").select("question_id")
+          .eq("user_id", userId).in("question_id", questionIds)
+      : { data: [] };
     const bookmarked = new Set((bookmarkData ?? []).map((item) => item.question_id as string));
-    const responseById = new Map(responses.map((response) => [response.question_id, response]));
+    const responseById = new Map(responses.map((response) => [response.question_key, response]));
     const testSnapshot = attempt.test_snapshot as { title?: string; sections?: ExamSectionSnapshot[] } | undefined;
     const sectionById = new Map((testSnapshot?.sections ?? []).map((section) => [section.id, section.title]));
     const resultQuestions: ResultQuestion[] = snapshotItems.flatMap((item) => {
-      const response = responseById.get(item.source_question_id);
+      const response = responseById.get(item.question_key);
       if (!response) return [];
       const question = item.public_snapshot as PracticeQuestion;
       if (question.module !== "core") return [];
@@ -146,19 +170,30 @@ export async function getAttemptResult(
       const answer = response.response_payload as PracticeAnswer | null;
       const selectedOptionId = answer?.kind === "single_choice" ? answer.optionId : response.selected_option_id;
       const correctOptionId = typeof privateSnapshot.correctAnswer === "string" ? privateSnapshot.correctAnswer : "";
+      const generated = (attempt.mock_origin ?? "curated") === "generated";
       return [{
         id: question.id, module: question.module, questionType: question.questionType,
         topic: question.topic, subtopic: question.subtopic, difficulty: question.difficulty,
         questionText: question.questionText, passage: question.passage, code: question.code,
         formula: question.formula, structuredData: question.structuredData, response: question.response,
-        options: question.options, sectionTitle: sectionById.get(String(item.test_section_id)) ?? "Test section",
+        options: question.options, sectionTitle: sectionById.get(String(item.section_key)) ?? "Test section",
         selectedOptionId, correctOptionId, explanation: privateSnapshot.explanation,
         responseStatus: response.response_status, isCorrect: response.is_correct === true,
         markedForReview: response.is_marked_for_review, isBookmarked: bookmarked.has(question.id),
+        canBookmark: item.source_question_id !== null,
         timeSpentSeconds: response.time_spent_seconds,
         answer,
         correctAnswer: privateSnapshot.correctAnswer,
         explanationTrace: privateSnapshot.explanationTrace,
+        educationalExplanation: privateSnapshot.educationalExplanation,
+        questionNumber: Number(item.position),
+        estimatedTimeSeconds: question.estimatedTimeSeconds,
+        skillIds: mapQuestionToSkills({
+          module: question.questionType,
+          structuralProfile: generated ? snapshotProfile(item.private_snapshot) : null,
+          publicSnapshot: item.public_snapshot,
+          explanationTrace: generated ? privateSnapshot.explanationTrace : undefined,
+        }),
       }];
     });
     const correctCount = resultQuestions.filter((question) => question.isCorrect).length;
@@ -168,7 +203,8 @@ export async function getAttemptResult(
     const topicBreakdown = buildResultBreakdown(resultQuestions.map((question) => ({ label: question.topic, isCorrect: question.isCorrect, answered: question.responseStatus === "answered", timeSpentSeconds: question.timeSpentSeconds })));
     const difficultyBreakdown = buildResultBreakdown(resultQuestions.map((question) => ({ label: question.difficulty, isCorrect: question.isCorrect, answered: question.responseStatus === "answered", timeSpentSeconds: question.timeSpentSeconds })));
     return {
-      id: attempt.id, testTitle: testSnapshot?.title ?? "Assessment", status: attempt.status,
+      id: attempt.id, testTitle: attempt.display_title ?? testSnapshot?.title ?? "Assessment",
+      origin: attempt.mock_origin ?? "curated", hasImmutableSnapshots: true, status: attempt.status,
       startedAt: attempt.started_at, submittedAt: attempt.submitted_at,
       totalTimeSeconds: attempt.total_time_seconds, score: Number(attempt.score ?? correctCount),
       accuracy: Number(attempt.accuracy ?? accuracy), correctCount,
@@ -233,8 +269,8 @@ export async function getAttemptResult(
     ]),
   );
 
-  const resultQuestions: ResultQuestion[] = responses.flatMap((response) => {
-    const question = questionById.get(response.question_id);
+  const resultQuestions: ResultQuestion[] = responses.flatMap((response, responseIndex) => {
+    const question = response.question_id ? questionById.get(response.question_id) : undefined;
     if (!question?.correct_option_id) return [];
 
     return [
@@ -264,7 +300,11 @@ export async function getAttemptResult(
         isCorrect: response.is_correct === true,
         markedForReview: response.is_marked_for_review,
         isBookmarked: bookmarkedQuestionIds.has(question.id),
+        canBookmark: true,
         timeSpentSeconds: response.time_spent_seconds,
+        questionNumber: responseIndex + 1,
+        estimatedTimeSeconds: undefined,
+        skillIds: [],
       },
     ];
   });
@@ -300,6 +340,8 @@ export async function getAttemptResult(
   return {
     id: attempt.id,
     testTitle: (testData?.title as string | undefined) ?? "Assessment",
+    origin: attempt.mock_origin ?? "curated",
+    hasImmutableSnapshots: false,
     status: attempt.status,
     startedAt: attempt.started_at,
     submittedAt: attempt.submitted_at,

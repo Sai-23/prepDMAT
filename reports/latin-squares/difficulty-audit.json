@@ -1,158 +1,158 @@
 {
-  "generatedAt": "2026-08-09T12:42:51.577Z",
+  "generatedAt": "2026-08-21T17:57:15.990Z",
   "sampleSizePerDifficulty": 100,
   "rows": [
     {
       "difficulty": "easy",
       "accepted": 100,
-      "candidatesAttempted": 137,
+      "candidatesAttempted": 105,
       "clueCount": {
         "minimum": 10,
-        "maximum": 15,
-        "average": 12.68,
-        "median": 13
+        "maximum": 13,
+        "average": 11.02,
+        "median": 11
       },
-      "averageUsefulClueCount": 3.75,
-      "averageTargetInitialCandidateCount": 1.27,
+      "averageUsefulClueCount": 4,
+      "averageTargetInitialCandidateCount": 1,
       "deductionRoundDistribution": {
-        "1": 99,
-        "2": 1
+        "1": 100
       },
-      "averageForcedPlacementsBeforeTarget": 0.01,
+      "averageForcedPlacementsBeforeTarget": 0,
       "classificationDistribution": {
-        "direct": 99,
-        "indirect": 1,
+        "direct": 100,
+        "indirect": 0,
         "multi_stage": 0
       },
-      "averageRowDependencyCount": 0.01,
+      "averageRowDependencyCount": 0,
       "averageColumnDependencyCount": 0,
-      "averageTargetDepth": 1.01,
-      "averageWorkingMemoryLoad": 2.29,
-      "averageScore": 9.71,
+      "averageTargetDepth": 1,
+      "averageWorkingMemoryLoad": 3,
+      "averageScore": 10.853,
       "targetRowDistribution": [
-        20,
-        18,
         14,
+        20,
         23,
-        25
+        21,
+        22
       ],
       "targetColumnDistribution": [
-        17,
-        19,
-        23,
+        18,
+        21,
         22,
-        19
+        21,
+        18
       ],
       "solverRejections": 0,
-      "ambiguityRejections": 4,
-      "validationRejections": 33,
+      "ambiguityRejections": 0,
+      "validationRejections": 5,
       "semanticDuplicateRejections": 0,
       "structuralDuplicates": 0,
       "solverRejectionRate": 0,
-      "ambiguityRejectionRate": 0.029,
+      "ambiguityRejectionRate": 0,
       "structuralDuplicateRate": 0,
       "structuralSignatureCount": 100
     },
     {
       "difficulty": "medium",
       "accepted": 100,
-      "candidatesAttempted": 230,
+      "candidatesAttempted": 155,
       "clueCount": {
         "minimum": 10,
         "maximum": 15,
-        "average": 12.13,
-        "median": 12
+        "average": 11.54,
+        "median": 11
       },
-      "averageUsefulClueCount": 10.78,
-      "averageTargetInitialCandidateCount": 2.47,
+      "averageUsefulClueCount": 8.59,
+      "averageTargetInitialCandidateCount": 2.26,
       "deductionRoundDistribution": {
         "2": 100
       },
-      "averageForcedPlacementsBeforeTarget": 4.16,
+      "averageForcedPlacementsBeforeTarget": 2.75,
       "classificationDistribution": {
         "direct": 0,
         "indirect": 100,
         "multi_stage": 0
       },
-      "averageRowDependencyCount": 2.14,
-      "averageColumnDependencyCount": 2.02,
+      "averageRowDependencyCount": 1.01,
+      "averageColumnDependencyCount": 1.36,
       "averageTargetDepth": 2,
-      "averageWorkingMemoryLoad": 11.79,
-      "averageScore": 30.05,
+      "averageWorkingMemoryLoad": 10.76,
+      "averageScore": 36.545,
       "targetRowDistribution": [
-        12,
-        25,
-        19,
-        24,
+        18,
+        20,
+        22,
+        20,
         20
       ],
       "targetColumnDistribution": [
         17,
-        18,
-        25,
         19,
+        26,
+        17,
         21
       ],
       "solverRejections": 0,
-      "ambiguityRejections": 13,
-      "validationRejections": 117,
+      "ambiguityRejections": 0,
+      "validationRejections": 55,
       "semanticDuplicateRejections": 0,
-      "structuralDuplicates": 0,
+      "structuralDuplicates": 3,
       "solverRejectionRate": 0,
-      "ambiguityRejectionRate": 0.057,
-      "structuralDuplicateRate": 0,
-      "structuralSignatureCount": 100
+      "ambiguityRejectionRate": 0,
+      "structuralDuplicateRate": 0.03,
+      "structuralSignatureCount": 97
     },
     {
       "difficulty": "hard",
       "accepted": 100,
-      "candidatesAttempted": 3070,
+      "candidatesAttempted": 100,
       "clueCount": {
         "minimum": 10,
-        "maximum": 13,
-        "average": 10.64,
-        "median": 10.5
+        "maximum": 15,
+        "average": 12.44,
+        "median": 12
       },
-      "averageUsefulClueCount": 10.51,
-      "averageTargetInitialCandidateCount": 3.56,
+      "averageUsefulClueCount": 12.02,
+      "averageTargetInitialCandidateCount": 3.66,
       "deductionRoundDistribution": {
-        "3": 98,
-        "4": 2
+        "2": 68,
+        "3": 27,
+        "4": 5
       },
-      "averageForcedPlacementsBeforeTarget": 7.92,
+      "averageForcedPlacementsBeforeTarget": 6.61,
       "classificationDistribution": {
         "direct": 0,
-        "indirect": 0,
-        "multi_stage": 100
+        "indirect": 68,
+        "multi_stage": 32
       },
-      "averageRowDependencyCount": 6.17,
-      "averageColumnDependencyCount": 6.11,
-      "averageTargetDepth": 3.02,
-      "averageWorkingMemoryLoad": 24.76,
-      "averageScore": 53.38,
+      "averageRowDependencyCount": 3.14,
+      "averageColumnDependencyCount": 3.95,
+      "averageTargetDepth": 2.37,
+      "averageWorkingMemoryLoad": 20.94,
+      "averageScore": 65.731,
       "targetRowDistribution": [
-        22,
-        23,
-        27,
-        16,
-        12
-      ],
-      "targetColumnDistribution": [
+        18,
+        13,
         19,
-        24,
-        14,
-        26,
+        33,
         17
       ],
+      "targetColumnDistribution": [
+        20,
+        20,
+        18,
+        16,
+        26
+      ],
       "solverRejections": 0,
-      "ambiguityRejections": 221,
-      "validationRejections": 2749,
+      "ambiguityRejections": 0,
+      "validationRejections": 0,
       "semanticDuplicateRejections": 0,
-      "structuralDuplicates": 0,
+      "structuralDuplicates": 4,
       "solverRejectionRate": 0,
-      "ambiguityRejectionRate": 0.072,
-      "structuralDuplicateRate": 0,
-      "structuralSignatureCount": 100
+      "ambiguityRejectionRate": 0,
+      "structuralDuplicateRate": 0.04,
+      "structuralSignatureCount": 96
     }
   ]
 }

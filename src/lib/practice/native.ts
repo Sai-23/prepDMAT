@@ -1,4 +1,13 @@
 import type { PracticeAnswer, PracticeQuestion, PracticeResponse } from "./schemas";
+import type { FigureSequencePresentation } from "../generation/figure-sequences";
+import type { MathematicalEquationStructuredData } from "../generation/mathematical-equations";
+import type { LatinSquareStructuredData } from "../generation/latin-squares";
+import {
+  buildEquationEducationalExplanation,
+  buildFigureEducationalExplanation,
+  buildLatinEducationalExplanation,
+  type EducationalExplanation,
+} from "./educational-explanation";
 
 type Option = { id: string; label: string; content: string };
 type Source = Omit<PracticeQuestion, "structuredData" | "response" | "options"> & {
@@ -14,6 +23,7 @@ export type PrivatePracticeSnapshot = {
   correctAnswer: unknown;
   explanation: string;
   explanationTrace?: unknown;
+  educationalExplanation?: EducationalExplanation;
   provenance: Record<string, unknown>;
 };
 
@@ -29,13 +39,20 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
   let response: PracticeResponse;
   let correctAnswer: unknown;
   let explanationTrace: unknown;
+  let explanationStructuredData: unknown;
 
   if (source.sourceType !== "generated") {
     response = { kind: "single_choice", options: source.options };
     correctAnswer = source.correctOptionId;
   } else if (source.questionType === "mathematical_equation") {
     const specification = record(stored.response);
-    structuredData = stored.task;
+    const equationTask = record(stored.task) ?? {};
+    structuredData = {
+      variables: structuredClone(equationTask.variables),
+      equations: structuredClone(equationTask.equations),
+      domain: structuredClone(equationTask.domain),
+    };
+    explanationStructuredData = stored.task;
     response = { kind: "symbol_assignment", symbols: Array.isArray(specification?.symbols) ? specification.symbols.filter((item): item is string => typeof item === "string") : [] };
     correctAnswer = metadata.correctAnswer;
     explanationTrace = structuredClone(stored.solutionPath);
@@ -71,8 +88,7 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
     throw new Error("Unsupported generated practice response type.");
   }
 
-  return {
-    publicQuestion: {
+  const publicQuestion: PracticeQuestion = {
       id: source.id,
       module: source.module,
       questionType: source.questionType,
@@ -89,11 +105,23 @@ export function createPracticeSnapshots(source: Source): { publicQuestion: Pract
       structuredData,
       response,
       options: response.kind === "single_choice" ? response.options : [],
-    },
+    };
+  const educationalExplanation = source.sourceType === "generated"
+    ? source.questionType === "figure_sequence"
+      ? buildFigureEducationalExplanation(structuredData as FigureSequencePresentation, explanationTrace, correctAnswer, source.difficulty)
+      : source.questionType === "mathematical_equation"
+        ? buildEquationEducationalExplanation(explanationStructuredData as MathematicalEquationStructuredData, explanationTrace, correctAnswer, source.difficulty)
+        : source.questionType === "latin_square"
+          ? buildLatinEducationalExplanation(structuredData as LatinSquareStructuredData, explanationTrace, correctAnswer, source.difficulty)
+          : null
+    : null;
+  return {
+    publicQuestion,
     privateSnapshot: {
       correctAnswer,
       explanation: source.explanation,
       ...(explanationTrace === undefined ? {} : { explanationTrace }),
+      ...(educationalExplanation ? { educationalExplanation } : {}),
       provenance: generation,
     },
   };

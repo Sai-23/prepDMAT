@@ -9,6 +9,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState, useTransition } from "react";
+import Link from "next/link";
+import type { Route } from "next";
 
 import { toggleBookmarkAction } from "@/app/learning/actions";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +24,29 @@ import type { ResultQuestion } from "@/lib/results/schemas";
 import { NativePracticeResponse } from "@/components/practice/native-practice-response";
 import { PracticeAnswerFeedback } from "@/components/practice/practice-answer-feedback";
 import { MathematicalEquationPracticeFeedback } from "@/components/practice/mathematical-equation-practice-feedback";
+import { FigureSequencePracticeFeedback } from "@/components/practice/figure-sequence-practice-feedback";
+import { LatinSquarePracticeFeedback } from "@/components/practice/latin-square-practice-feedback";
+import type { FigureSequencePresentation } from "@/lib/generation/figure-sequences";
 import type { MathematicalEquationStructuredData } from "@/lib/generation/mathematical-equations";
+import type { LatinSquareStructuredData } from "@/lib/generation/latin-squares";
+import type { MockQuestionAnalysis } from "@/lib/results/mock-analysis";
+import { MODULE_LABELS } from "@/lib/progress/model";
+import { coreSkill, type CoreSkillId } from "@/lib/progress/skills";
+import { Button } from "@/components/ui/button";
 
-type ReviewFilter = "all" | "correct" | "incorrect" | "unanswered" | "marked";
+type ReviewFilter = "all" | "correct" | "incorrect" | "unanswered" | "slow" | "fast_incorrect" | "marked";
 
-export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
+export function ResultReview({
+  questions,
+  analysis = [],
+  attemptId,
+}: {
+  questions: ResultQuestion[];
+  analysis?: MockQuestionAnalysis[];
+  attemptId?: string;
+}) {
   const [filter, setFilter] = useState<ReviewFilter>("all");
+  const [skillFilter, setSkillFilter] = useState<CoreSkillId | "all">("all");
   const [bookmarked, setBookmarked] = useState(
     () =>
       new Set(
@@ -49,14 +68,23 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
       (question) => question.responseStatus !== "answered",
     ).length,
     marked: questions.filter((question) => question.markedForReview).length,
+    slow: analysis.filter((question) => question.timing === "slow_correct" || question.timing === "slow_incorrect").length,
+    fast_incorrect: analysis.filter((question) => question.timing === "fast_incorrect").length,
   };
+  const analysisById = new Map(analysis.map((question) => [question.questionId, question]));
+  const availableSkills = [...new Set(questions.flatMap((question) => question.skillIds ?? []))]
+    .map((id) => coreSkill(id)).filter(Boolean);
   const visibleQuestions = questions.filter((question) => {
+    const timing = analysisById.get(question.id)?.timing;
+    if (skillFilter !== "all" && !question.skillIds?.includes(skillFilter)) return false;
     if (filter === "correct") return question.isCorrect;
     if (filter === "incorrect") {
       return question.responseStatus === "answered" && !question.isCorrect;
     }
     if (filter === "unanswered") return question.responseStatus !== "answered";
     if (filter === "marked") return question.markedForReview;
+    if (filter === "slow") return timing === "slow_correct" || timing === "slow_incorrect";
+    if (filter === "fast_incorrect") return timing === "fast_incorrect";
     return true;
   });
 
@@ -83,8 +111,9 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Review filters">
-        {(["all", "incorrect", "unanswered", "correct", "marked"] as const).map(
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Question status and timing filters">
+        {(["all", "incorrect", "unanswered", "correct", "slow", "fast_incorrect", "marked"] as const).map(
           (value) => (
             <button
               className={[
@@ -95,12 +124,15 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
               ].join(" ")}
               key={value}
               onClick={() => setFilter(value)}
+              aria-pressed={filter === value}
               type="button"
             >
-              {value.charAt(0).toUpperCase() + value.slice(1)} ({counts[value]})
+              {value === "fast_incorrect" ? "Fast incorrect" : value.charAt(0).toUpperCase() + value.slice(1)} ({counts[value]})
             </button>
           ),
         )}
+      </div>
+      {availableSkills.length ? <label className="flex items-center gap-2 text-sm font-medium"><span>Skill</span><select className="min-h-10 rounded-md border border-input-border bg-input-background px-3 text-on-surface" onChange={(event) => setSkillFilter(event.target.value as CoreSkillId | "all")} value={skillFilter}><option value="all">All skills</option>{availableSkills.map((skill) => skill ? <option key={skill.id} value={skill.id}>{skill.label}</option> : null)}</select></label> : null}
       </div>
 
       {bookmarkError ? (
@@ -111,6 +143,7 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
 
       {visibleQuestions.length ? (
         visibleQuestions.map((question) => {
+          const questionAnalysis = analysisById.get(question.id);
           const unanswered = question.responseStatus !== "answered";
           const selectedOption = question.options.find(
             (option) => option.id === question.selectedOptionId,
@@ -124,9 +157,20 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
           const equationAnswer = question.answer?.kind === "symbol_assignment"
             ? question.answer.values
             : {};
+          const figureReview = question.questionType === "figure_sequence" &&
+            question.response?.kind === "two_stage_single_choice";
+          const figureAnswer = question.answer?.kind === "two_stage_single_choice"
+            ? question.answer.optionIds
+            : ["", ""];
+          const latinReview = question.questionType === "latin_square" &&
+            question.response?.kind === "single_choice" && Array.isArray(question.explanationTrace);
+          const latinAnswer = question.answer?.kind === "single_choice"
+            ? question.answer.optionId
+            : null;
 
           return (
             <Card
+              aria-labelledby={`question-${question.id}`}
               className={
                 question.isCorrect
                   ? "border-success"
@@ -135,12 +179,22 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
                     : "border-error"
               }
               key={question.id}
+              role="article"
             >
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap gap-2">
+                    <Badge variant="subtle">
+                      Question {question.questionNumber ?? "—"}
+                    </Badge>
                     <Badge variant="subtle">{question.sectionTitle}</Badge>
                     <Badge>{question.difficulty}</Badge>
+                    {questionAnalysis?.timing === "fast_incorrect" ? (
+                      <Badge variant="warning">Fast incorrect</Badge>
+                    ) : questionAnalysis?.timing === "slow_correct" ||
+                      questionAnalysis?.timing === "slow_incorrect" ? (
+                      <Badge variant="warning">Slow response</Badge>
+                    ) : null}
                     {question.markedForReview ? (
                       <Badge variant="warning">
                         <BookmarkCheck className="mr-1 h-3 w-3" />
@@ -172,7 +226,7 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
                         : "Incorrect"}
                   </div>
                 </div>
-                <div>
+                {question.canBookmark !== false ? <div>
                   <button
                     className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-primary hover:bg-primary-muted disabled:opacity-50"
                     disabled={bookmarkPending}
@@ -188,15 +242,31 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
                       ? "Saved to bookmarks"
                       : "Save question"}
                   </button>
-                </div>
-                <CardTitle className="pt-3 text-xl leading-8">
+                </div> : null}
+                <CardTitle className="pt-3 text-xl leading-8" id={`question-${question.id}`}>
                   {question.questionText}
                 </CardTitle>
                 <p className="flex items-center gap-2 text-xs text-slate-500">
                   <Clock3 className="h-3.5 w-3.5" />
-                  {question.timeSpentSeconds}s · {question.topic}
+                  {question.timeSpentSeconds > 0
+                    ? `${question.timeSpentSeconds}s recorded`
+                    : "Timing unavailable"}
+                  {` · ${MODULE_LABELS[question.questionType]} · ${question.topic}`}
                   {question.subtopic ? ` · ${question.subtopic}` : ""}
                 </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {question.skillIds?.length ? question.skillIds.map((skillId) => {
+                    const skill = coreSkill(skillId);
+                    return skill ? <Badge key={skillId} variant="subtle">{skill.label}</Badge> : null;
+                  }) : <span className="text-xs text-slate-500">Skill attribution unavailable</span>}
+                  {!question.isCorrect && attemptId && question.skillIds?.[0] ? (
+                    <Button asChild size="sm" variant="secondary">
+                      <Link href={`/practice?module=${question.questionType}&difficulty=${question.difficulty}&count=5&focus=${question.skillIds[0]}&fromMock=${attemptId}` as Route}>
+                        Practice this skill
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
               </CardHeader>
               <CardContent className="space-y-5">
                 {question.passage ? (
@@ -219,11 +289,37 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
                   <MathematicalEquationPracticeFeedback
                     correctAnswer={question.correctAnswer}
                     data={question.structuredData as MathematicalEquationStructuredData}
+                    difficulty={question.difficulty}
+                    educationalExplanation={question.educationalExplanation}
                     initiallyOpen
                     initialView="all"
                     isCorrect={question.isCorrect}
                     selectedAnswer={equationAnswer}
                     showOutcomeHeader={false}
+                    trace={question.explanationTrace}
+                  />
+                ) : figureReview ? (
+                  <FigureSequencePracticeFeedback
+                    correctAnswer={question.correctAnswer}
+                    difficulty={question.difficulty}
+                    educationalExplanation={question.educationalExplanation}
+                    initiallyOpen
+                    initialView="all"
+                    isCorrect={question.isCorrect}
+                    selectedAnswer={figureAnswer}
+                    sequence={question.structuredData as FigureSequencePresentation}
+                    trace={question.explanationTrace}
+                  />
+                ) : latinReview ? (
+                  <LatinSquarePracticeFeedback
+                    correctAnswer={question.correctAnswer}
+                    data={question.structuredData as LatinSquareStructuredData}
+                    difficulty={question.difficulty}
+                    educationalExplanation={question.educationalExplanation}
+                    initiallyOpen
+                    initialView="all"
+                    isCorrect={question.isCorrect}
+                    selectedAnswer={latinAnswer}
                     trace={question.explanationTrace}
                   />
                 ) : question.response?.kind && question.response.kind !== "single_choice" ? (
@@ -267,7 +363,7 @@ export function ResultReview({ questions }: { questions: ResultQuestion[] }) {
                   })}
                 </div>}
 
-                {equationReview ? null : (
+                {equationReview || figureReview || latinReview ? null : (
                   <div className="rounded-md bg-surface-low p-5">
                   <p className="font-semibold text-on-surface">Explanation</p>
                   <p className="mt-2 text-sm leading-7 text-on-surface-variant">

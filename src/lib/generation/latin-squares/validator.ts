@@ -5,11 +5,17 @@ import type {
   ValidationIssue,
   ValidationResult,
 } from "../types";
+import { productionEvidenceFor, validateEvidenceDefinition } from "../../evidence";
 import {
   analyzeLatinDeductions,
   calculateLatinDifficulty,
   explainLatinDeductions,
 } from "./difficulty";
+import { analyzeLatinDistractors } from "./distractors";
+import {
+  LATIN_DEDUCTION_EVIDENCE_REGISTRY,
+  LATIN_HARD_CONSTRAINT_REGISTRY,
+} from "./evidence";
 import { latinSquareSolver } from "./solver";
 import {
   DEFAULT_LATIN_SYMBOLS,
@@ -109,6 +115,8 @@ export class LatinSquareValidator
     }
 
     const completedValid = isCompletedLatinSquare(candidate.completedGrid);
+    const evidenceValid = LATIN_HARD_CONSTRAINT_REGISTRY.every((constraint) =>
+      constraint.productionEnabled && validateEvidenceDefinition(constraint).valid);
     const cluesValid =
       knownCluesValid(candidate) &&
       grid.every((row, rowIndex) =>
@@ -118,8 +126,10 @@ export class LatinSquareValidator
         ),
       ) &&
       candidate.correctAnswer === candidate.completedGrid[target.row][target.column];
-    const domainValid = completedValid && cluesValid;
-    checks.push(validationCheck("domain", domainValid));
+    const domainValid = completedValid && cluesValid && evidenceValid;
+    checks.push(validationCheck("domain", domainValid, {
+      enforcedConstraints: LATIN_HARD_CONSTRAINT_REGISTRY.map((constraint) => constraint.id),
+    }));
     if (!domainValid) {
       return {
         valid: false,
@@ -130,7 +140,11 @@ export class LatinSquareValidator
 
     const outcome = latinSquareSolver.solve(candidate);
     checks.push(validationCheck("solve", outcome.status !== "invalid", { exploredAssignments: outcome.exploredAssignments }));
-    checks.push(validationCheck("uniqueness", outcome.status === "unique", { possibleTargetSymbols: outcome.possibleTargetSymbols }));
+    checks.push(validationCheck("uniqueness", outcome.status === "unique", {
+      possibleTargetSymbols: outcome.possibleTargetSymbols,
+      fullGridSolutionCount: outcome.fullGridSolutionCount,
+      fullGridSolutionCountCapped: outcome.fullGridSolutionCountCapped,
+    }));
     if (outcome.status !== "unique") {
       return {
         valid: false,
@@ -174,6 +188,50 @@ export class LatinSquareValidator
       };
     }
 
+    const causalGraphValid = deductions.every((deduction, deductionIndex) =>
+      deduction.dependencies.every((dependency) => deductions.slice(0, deductionIndex).some((prior) =>
+        prior.coordinate.row === dependency.row && prior.coordinate.column === dependency.column)) &&
+      deduction.clueDependencies.every((dependency) => grid[dependency.row]?.[dependency.column] !== null));
+    const reasoningEvidenceValid = Boolean(productionEvidenceFor(
+      LATIN_DEDUCTION_EVIDENCE_REGISTRY,
+      calculated.metrics.reasoningClassification,
+    ));
+    checks.push(validationCheck("domain", causalGraphValid && reasoningEvidenceValid, {
+      reasoningClassification: calculated.metrics.reasoningClassification,
+    }));
+    if (!causalGraphValid || !reasoningEvidenceValid) {
+      return {
+        valid: false,
+        issues: [validationIssue("domain", "invalid_latin_deduction_graph", "The target deduction graph is disconnected or lacks production evidence.")],
+        checks,
+      };
+    }
+
+    const distractors = analyzeLatinDistractors(candidate);
+    const distractorsValid = distractors.length === DEFAULT_LATIN_SYMBOLS.length - 1 &&
+      new Set(distractors.map((entry) => entry.symbol)).size === distractors.length;
+    checks.push(validationCheck("uniqueness", distractorsValid, {
+      distractorReasonCounts: distractors.reduce((counts, entry) => ({
+        ...counts,
+        [entry.reason]: (counts[entry.reason] ?? 0) + 1,
+      }), {} as Record<string, number>),
+    }));
+    if (!distractorsValid) {
+      return { valid: false, issues: [validationIssue("uniqueness", "invalid_latin_distractors", "Every wrong A-E option requires a distinct reasoning-error diagnosis.")], checks };
+    }
+
+    const pedagogicallyUseful =
+      calculated.metrics.irrelevantClueCount <= Math.floor(calculated.metrics.visibleClues * 0.7) &&
+      calculated.metrics.redundancyRatio <= 0.75;
+    checks.push(validationCheck("safety", pedagogicallyUseful, {
+      relevantClueCount: calculated.metrics.relevantClueCount,
+      irrelevantClueCount: calculated.metrics.irrelevantClueCount,
+      redundancyRatio: calculated.metrics.redundancyRatio,
+    }));
+    if (!pedagogicallyUseful) {
+      return { valid: false, issues: [validationIssue("safety", "excessive_irrelevant_clues", "The puzzle contains too many irrelevant or reasoning-redundant clues.")], checks };
+    }
+
     const difficultyMatches = calculated.difficulty === requestedDifficulty;
     checks.push(validationCheck("difficulty", difficultyMatches, calculated.metrics));
     if (!difficultyMatches) {
@@ -193,6 +251,8 @@ export class LatinSquareValidator
         deductions,
         explanation: explainLatinDeductions(deductions, target),
         exploredAssignments: outcome.exploredAssignments,
+        fullGridSolutionCount: outcome.fullGridSolutionCount,
+        fullGridSolutionCountCapped: outcome.fullGridSolutionCountCapped,
       },
       checks,
     };

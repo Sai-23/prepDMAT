@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { seededShuffle } from "@/lib/tests/randomization";
 import { createPracticeSnapshots, gradePracticeAnswer } from "@/lib/practice/native";
 import type { PracticeAnswer } from "@/lib/practice/schemas";
+import { buildCoreAttemptSnapshot } from "@/lib/mocks";
 import { activeSectionAt, type ExamSectionSnapshot, validateOfficialFullMockSections } from "@/lib/tests/exam-spec";
 import type {
   TestAttemptPayload,
@@ -235,6 +236,7 @@ export async function startTestAttempt(userId: string, testId: string) {
     .select("id, expires_at")
     .eq("user_id", userId)
     .eq("test_id", testId)
+    .eq("mock_origin", "curated")
     .eq("status", "in_progress")
     .order("started_at", { ascending: false })
     .limit(1)
@@ -305,57 +307,71 @@ export async function startTestAttempt(userId: string, testId: string) {
     id: section.id, title: section.title, sectionType: section.section_type,
     durationSeconds: section.duration_seconds, sortOrder: section.sort_order,
   }));
-  const { data: attempt, error } = await admin
-    .from("test_attempts")
-    .insert({
-      test_id: testId,
-      user_id: userId,
-      status: "assembling",
-      expires_at: null,
-      randomization_seed: seed,
-      test_snapshot: { version: 1, title: test.title, examSpecVersion: "dmat-core-2026-08-09", sections: sectionSnapshots },
-    })
-    .select("id")
-    .single();
-  if (error || !attempt) throw new Error("Unable to start this test.");
-  const { error: itemError } = await admin.from("practice_attempt_items").insert(assembled.map(({ mapping, section, snapshot, position }) => ({
-    attempt_id: attempt.id, source_question_id: snapshot.publicQuestion.id, position: position + 1,
+  const startedAt = new Date();
+  const firstSection = sectionSnapshots[0];
+  const expiresAt = new Date(startedAt.getTime() + sectionSnapshots.reduce((sum, section) => sum + section.durationSeconds, 0) * 1000);
+  const sectionExpiresAt = new Date(startedAt.getTime() + firstSection.durationSeconds * 1000);
+  const attemptId = crypto.randomUUID();
+  const attemptSnapshot = buildCoreAttemptSnapshot({
+    title: test.title,
+    mockSeed: seed,
+    createdAt: startedAt.toISOString(),
+    sections: sectionSnapshots,
+    questions: assembled.map(({ snapshot, position }) => ({
+      questionId: snapshot.publicQuestion.id,
+      sectionType: snapshot.publicQuestion.questionType,
+      position: position + 1,
+      generatorVersion: typeof snapshot.privateSnapshot.provenance.generatorVersion === "string"
+        ? snapshot.privateSnapshot.provenance.generatorVersion
+        : null,
+      validatorVersion: typeof snapshot.privateSnapshot.provenance.validatorVersion === "string"
+        ? snapshot.privateSnapshot.provenance.validatorVersion
+        : null,
+      seed: typeof snapshot.privateSnapshot.provenance.seed === "string"
+        ? snapshot.privateSnapshot.provenance.seed
+        : null,
+      fingerprint: typeof snapshot.privateSnapshot.provenance.fingerprint === "string"
+        ? snapshot.privateSnapshot.provenance.fingerprint
+        : null,
+    })),
+  });
+  const immutableItems = assembled.map(({ mapping, section, snapshot, position }) => ({
+    source_question_id: snapshot.publicQuestion.id,
+    position: position + 1,
     test_section_id: section.id,
-    section_position: orderedMappings.filter((item) => item.test_section_id === mapping.test_section_id).findIndex((item) => item.question_id === mapping.question_id) + 1,
-    question_type: snapshot.publicQuestion.questionType, public_snapshot: snapshot.publicQuestion,
+    section_position: orderedMappings
+      .filter((item) => item.test_section_id === mapping.test_section_id)
+      .findIndex((item) => item.question_id === mapping.question_id) + 1,
+    question_type: snapshot.publicQuestion.questionType,
+    public_snapshot: snapshot.publicQuestion,
     private_snapshot: snapshot.privateSnapshot,
     generator_version: snapshot.privateSnapshot.provenance.generatorVersion ?? null,
     validator_version: snapshot.privateSnapshot.provenance.validatorVersion ?? null,
     seed: snapshot.privateSnapshot.provenance.seed ?? null,
     fingerprint: snapshot.privateSnapshot.provenance.fingerprint ?? null,
-  })));
-  if (itemError) {
-    await admin.from("test_attempts").update({ status: "abandoned" }).eq("id", attempt.id);
-    throw new Error("Unable to snapshot every mock question before timing begins.");
+  }));
+  const { error: persistenceError } = await admin.rpc("create_core_mock_attempt", {
+    p_attempt_id: attemptId,
+    p_test_id: testId,
+    p_user_id: userId,
+    p_mock_seed: seed,
+    p_protocol_version: attemptSnapshot.protocolVersion,
+    p_generator_versions: attemptSnapshot.generatorVersions,
+    p_question_fingerprints: attemptSnapshot.fingerprints,
+    p_test_snapshot: attemptSnapshot,
+    p_items: immutableItems,
+    p_response_question_ids: questionIds,
+    p_started_at: startedAt.toISOString(),
+    p_expires_at: expiresAt.toISOString(),
+    p_current_section_id: firstSection.id,
+    p_section_expires_at: sectionExpiresAt.toISOString(),
+    p_current_question_id: assembled[0].snapshot.publicQuestion.id,
+  });
+  if (persistenceError) {
+    throw new Error("Unable to atomically snapshot and start this test.");
   }
-  const { error: responseError } = await admin.from("user_responses").insert(
-    questionIds.map((questionId) => ({
-      attempt_id: attempt.id,
-      question_id: questionId,
-      response_status: "unanswered",
-    })),
-  );
-  if (responseError) {
-    await admin.from("test_attempts").update({ status: "abandoned" }).eq("id", attempt.id);
-    throw new Error("Unable to initialize the snapshotted responses.");
-  }
-  const startedAt = new Date();
-  const firstSection = sectionSnapshots[0];
-  const expiresAt = new Date(startedAt.getTime() + sectionSnapshots.reduce((sum, section) => sum + section.durationSeconds, 0) * 1000);
-  const sectionExpiresAt = new Date(startedAt.getTime() + firstSection.durationSeconds * 1000);
-  const { error: lockError } = await admin.from("test_attempts").update({
-    status: "in_progress", started_at: startedAt.toISOString(), expires_at: expiresAt.toISOString(),
-    current_section_id: firstSection.id, section_started_at: startedAt.toISOString(),
-    section_expires_at: sectionExpiresAt.toISOString(), current_question_id: assembled[0].snapshot.publicQuestion.id,
-  }).eq("id", attempt.id).eq("status", "assembling");
-  if (lockError) throw new Error("The assembled test could not be locked before timing.");
 
-  return { attemptId: attempt.id as string, resumed: false };
+  return { attemptId, resumed: false };
 }
 
 export async function getTestAttempt(
@@ -365,13 +381,13 @@ export async function getTestAttempt(
 ): Promise<TestAttemptPayload> {
   const admin = createSupabaseAdminClient();
   const { data: attempt } = await admin.from("test_attempts")
-    .select("id, test_id, user_id, status, started_at, expires_at, current_section_id, section_expires_at, current_question_id, test_snapshot")
+    .select("id, test_id, generated_mock_id, mock_origin, user_id, status, started_at, expires_at, current_section_key, section_expires_at, current_question_key, test_snapshot")
     .eq("id", attemptId).maybeSingle();
 
   if (
     !attempt ||
     attempt.user_id !== userId ||
-    attempt.test_id !== testId ||
+    (attempt.mock_origin === "generated" ? attempt.generated_mock_id !== testId : attempt.test_id !== testId) ||
     attempt.status !== "in_progress" ||
     !attempt.expires_at || !attempt.started_at
   ) {
@@ -386,30 +402,30 @@ export async function getTestAttempt(
     throw new Error("Time expired. The test was submitted automatically; open Results to review it.");
   }
   const [{ data: itemData }, { data: responseData }] = await Promise.all([
-    admin.from("practice_attempt_items").select("source_question_id, test_section_id, section_position, public_snapshot, position")
+    admin.from("practice_attempt_items").select("question_key, section_key, section_position, public_snapshot, position")
       .eq("attempt_id", attemptId).order("position"),
-    admin.from("user_responses").select("question_id, response_payload, selected_option_id, is_marked_for_review, time_spent_seconds")
+    admin.from("user_responses").select("question_key, response_payload, selected_option_id, is_marked_for_review, time_spent_seconds")
       .eq("attempt_id", attemptId),
   ]);
   const items = itemData ?? [];
-  const activeItems = items.filter((item) => item.test_section_id === active.section.id);
+  const activeItems = items.filter((item) => item.section_key === active.section.id);
   if (!activeItems.length) throw new Error("The immutable section snapshot is incomplete.");
-  const responseMap = new Map((responseData ?? []).map((response) => [response.question_id, response]));
-  const currentQuestionId = activeItems.some((item) => item.source_question_id === attempt.current_question_id)
-    ? String(attempt.current_question_id)
-    : String(activeItems.find((item) => !responseMap.get(item.source_question_id)?.response_payload)?.source_question_id ?? activeItems[0].source_question_id);
-  if (attempt.current_section_id !== active.section.id || attempt.current_question_id !== currentQuestionId) {
+  const responseMap = new Map((responseData ?? []).map((response) => [response.question_key, response]));
+  const currentQuestionId = activeItems.some((item) => item.question_key === attempt.current_question_key)
+    ? String(attempt.current_question_key)
+    : String(activeItems.find((item) => !responseMap.get(item.question_key)?.response_payload)?.question_key ?? activeItems[0].question_key);
+  if (attempt.current_section_key !== active.section.id || attempt.current_question_key !== currentQuestionId) {
     await admin.from("test_attempts").update({
-      current_section_id: active.section.id, section_started_at: new Date(active.startedAt).toISOString(),
-      section_expires_at: new Date(active.expiresAt).toISOString(), current_question_id: currentQuestionId,
+      current_section_key: active.section.id, section_started_at: new Date(active.startedAt).toISOString(),
+      section_expires_at: new Date(active.expiresAt).toISOString(), current_question_key: currentQuestionId,
       last_activity_at: new Date(now).toISOString(),
     }).eq("id", attemptId).eq("user_id", userId).eq("status", "in_progress");
   }
   const sectionById = new Map(sections.map((section) => [section.id, section]));
   const questions: TestQuestion[] = items.map((item) => {
     const publicQuestion = item.public_snapshot as PracticeQuestion;
-    const section = sectionById.get(String(item.test_section_id));
-    return { ...publicQuestion, sectionId: String(item.test_section_id), sectionTitle: section?.title ?? "Test section", sectionPosition: Number(item.section_position ?? 1) };
+    const section = sectionById.get(String(item.section_key));
+    return { ...publicQuestion, sectionId: String(item.section_key), sectionTitle: section?.title ?? "Test section", sectionPosition: Number(item.section_position ?? 1) };
   });
 
   return {
@@ -422,7 +438,7 @@ export async function getTestAttempt(
     sections: sections.map((section) => ({ id: section.id, title: section.title, durationSeconds: section.durationSeconds, sortOrder: section.sortOrder })),
     questions,
     initialResponses: (responseData ?? []).map((response) => ({
-      questionId: response.question_id,
+      questionId: response.question_key,
       answer: (response.response_payload as PracticeAnswer | null) ?? (response.selected_option_id ? { kind: "single_choice", optionId: response.selected_option_id } : null),
       markedForReview: response.is_marked_for_review,
       timeSpentSeconds: response.time_spent_seconds,
@@ -451,7 +467,7 @@ export async function saveTestResponse(
       .from("user_responses")
       .select("id, shown_at")
       .eq("attempt_id", input.attemptId)
-      .eq("question_id", input.questionId)
+      .eq("question_key", input.questionId)
       .maybeSingle(),
   ]);
 
@@ -470,9 +486,9 @@ export async function saveTestResponse(
     throw new Error("Time expired and the test was submitted automatically.");
   }
   const { data: item } = await admin.from("practice_attempt_items")
-    .select("test_section_id, public_snapshot").eq("attempt_id", input.attemptId)
-    .eq("source_question_id", input.questionId).maybeSingle();
-  if (!item || item.test_section_id !== active.section.id) throw new Error("Only the current timed section can be changed.");
+    .select("section_key, public_snapshot").eq("attempt_id", input.attemptId)
+    .eq("question_key", input.questionId).maybeSingle();
+  if (!item || item.section_key !== active.section.id) throw new Error("Only the current timed section can be changed.");
   if (input.answer) {
     const publicQuestion = item.public_snapshot as PracticeQuestion;
     if (publicQuestion.response?.kind !== input.answer.kind) throw new Error("The response type does not match this question.");
@@ -493,7 +509,7 @@ export async function saveTestResponse(
       answered_at: input.answer ? new Date().toISOString() : null,
     })
     .eq("id", response.id);
-  await admin.from("test_attempts").update({ current_question_id: input.questionId, last_activity_at: new Date().toISOString() })
+  await admin.from("test_attempts").update({ current_question_key: input.questionId, last_activity_at: new Date().toISOString() })
     .eq("id", input.attemptId).eq("user_id", userId).eq("status", "in_progress");
 
   if (error) throw new Error("Unable to save this response.");
@@ -518,11 +534,11 @@ export async function gradeAndSubmitTest(
 
   const { data: responses } = await admin
     .from("user_responses")
-    .select("id, question_id, selected_option_id, response_payload")
+    .select("id, question_key, selected_option_id, response_payload")
     .eq("attempt_id", attemptId);
   const { data: items } = await admin.from("practice_attempt_items")
-    .select("source_question_id, private_snapshot").eq("attempt_id", attemptId);
-  const privateByQuestion = new Map((items ?? []).map((item) => [item.source_question_id, item.private_snapshot]));
+    .select("question_key, private_snapshot").eq("attempt_id", attemptId);
+  const privateByQuestion = new Map((items ?? []).map((item) => [item.question_key, item.private_snapshot]));
 
   const gradingResults = await Promise.all(
     (responses ?? []).map((response) =>
@@ -530,7 +546,7 @@ export async function gradeAndSubmitTest(
         .from("user_responses")
         .update({
           is_correct: response.response_payload
-            ? gradePracticeAnswer(response.response_payload as PracticeAnswer, privateByQuestion.get(response.question_id) as Parameters<typeof gradePracticeAnswer>[1])
+            ? gradePracticeAnswer(response.response_payload as PracticeAnswer, privateByQuestion.get(response.question_key) as Parameters<typeof gradePracticeAnswer>[1])
             : false,
         })
         .eq("id", response.id),
@@ -541,7 +557,7 @@ export async function gradeAndSubmitTest(
     throw new Error("Unable to grade every response.");
   }
 
-  const correct = (responses ?? []).filter((response) => response.response_payload && gradePracticeAnswer(response.response_payload as PracticeAnswer, privateByQuestion.get(response.question_id) as Parameters<typeof gradePracticeAnswer>[1])).length;
+  const correct = (responses ?? []).filter((response) => response.response_payload && gradePracticeAnswer(response.response_payload as PracticeAnswer, privateByQuestion.get(response.question_key) as Parameters<typeof gradePracticeAnswer>[1])).length;
   const total = (responses ?? []).length;
   const accuracy = total ? (correct / total) * 100 : 0;
   const totalDuration = (((attempt.test_snapshot as { sections?: ExamSectionSnapshot[] }).sections ?? []).reduce((sum, section) => sum + section.durationSeconds, 0));
@@ -565,11 +581,11 @@ export async function processTestClock(userId: string, attemptId: string) {
   const active = activeSectionAt(sections, new Date(attempt.started_at).getTime(), Date.now());
   if (!active) return { finalized: true, ...(await gradeAndSubmitTest(userId, attemptId, true)) };
   const { data: firstItem } = await admin.from("practice_attempt_items")
-    .select("source_question_id").eq("attempt_id", attemptId).eq("test_section_id", active.section.id)
+    .select("question_key").eq("attempt_id", attemptId).eq("section_key", active.section.id)
     .order("section_position").limit(1).maybeSingle();
   await admin.from("test_attempts").update({
-    current_section_id: active.section.id, section_started_at: new Date(active.startedAt).toISOString(),
-    section_expires_at: new Date(active.expiresAt).toISOString(), current_question_id: firstItem?.source_question_id ?? null,
+    current_section_key: active.section.id, section_started_at: new Date(active.startedAt).toISOString(),
+    section_expires_at: new Date(active.expiresAt).toISOString(), current_question_key: firstItem?.question_key ?? null,
     last_activity_at: new Date().toISOString(),
   }).eq("id", attemptId).eq("user_id", userId).eq("status", "in_progress");
   return { finalized: false, sectionExpiresAt: new Date(active.expiresAt).toISOString() };

@@ -1,0 +1,12 @@
+{
+  "version": "phase9-real-generated-mock-audit@1",
+  "generatedMocks": 100,
+  "generatedQuestions": 6000,
+  "skillMetadataCoverage": 1,
+  "sectionSummaryAccuracy": 1,
+  "mistakeRankingAccuracy": 1,
+  "timingClassificationAccuracy": 1,
+  "falseInsightAvoidance": 1,
+  "recommendationAccuracy": 1,
+  "failures": []
+}

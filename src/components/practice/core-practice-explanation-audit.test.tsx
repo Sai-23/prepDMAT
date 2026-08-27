@@ -93,7 +93,8 @@ describe("Core Practice explanation 27-sample structural audit", () => {
       expect(html).toContain('data-walkthrough-view="all"');
       expect(html).toContain("Missing from this row");
       expect(html).toContain("Missing from this column");
-      expect(html).toContain("Completely solved matrix");
+      expect(html).toContain("Cells used in this proof");
+      expect(html).toContain("not needed for this proof");
       expect(html).toContain(`Correct answer: ${question.correctAnswer}`);
       expect(html).not.toContain("single_candidate");
       expect(html).not.toContain('"dependencies"');

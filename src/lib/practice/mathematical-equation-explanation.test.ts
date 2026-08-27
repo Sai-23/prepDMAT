@@ -51,7 +51,7 @@ describe("Mathematical Equation Practice explanation mapping", () => {
       question.correctAnswer,
     );
     const substitutionSteps = walkthrough.steps.filter((step) => step.type === "substitute");
-    expect(substitutionSteps.length).toBeGreaterThanOrEqual(3);
+    expect(substitutionSteps.length).toBeGreaterThanOrEqual(2);
     substitutionSteps.forEach((step) => {
       Object.entries(step.knownValues).forEach(([symbol, value]) => {
         expect(step.instruction).toContain(`${symbol} = ${value}`);

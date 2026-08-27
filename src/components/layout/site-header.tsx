@@ -76,11 +76,11 @@ async function HeaderAccount() {
       ) : null}
       <Link
         href="/profile"
-        className="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-high sm:px-3"
+        className="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-3"
         title={`Signed in as ${displayName}`}
       >
         <UserRound aria-hidden="true" className="size-4 shrink-0 text-primary" />
-        <span className="max-w-24 truncate sm:max-w-36">{displayName}</span>
+        <span className="sr-only sm:not-sr-only sm:max-w-36 sm:truncate">{displayName}</span>
       </Link>
       <form action={logoutAction}>
         <Button
@@ -114,12 +114,12 @@ export function SiteHeader() {
       className="sticky top-0 z-40 border-b border-workspace-border bg-surface-lowest/95 backdrop-blur"
       data-site-header
     >
-      <div className="mx-auto flex min-h-14 w-full max-w-7xl items-center justify-between gap-4 px-4 py-2 lg:px-6">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="mx-auto flex min-h-14 w-full max-w-7xl items-center justify-between gap-2 px-4 py-2 sm:gap-4 lg:px-6">
+        <Link href="/" className="flex items-center gap-2 sm:gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-md border border-primary bg-primary text-sm font-bold text-primary-foreground">
             dM
           </span>
-          <div>
+          <div className="hidden sm:block">
             <p className="text-sm font-semibold tracking-[0.12em] text-on-surface">
               dMAT Prep
             </p>
@@ -131,7 +131,7 @@ export function SiteHeader() {
 
         <SiteHeaderNavigation />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="hidden xl:block">
             <ThemeToggle />
           </div>

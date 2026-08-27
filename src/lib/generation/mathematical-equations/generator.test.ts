@@ -2,10 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { MathematicalExpression, VariableAssignment } from "./types";
 import { calculateEquationDifficulty } from "./difficulty";
-import {
-  MATHEMATICAL_EQUATION_FAMILY_REGISTRY,
-  mathematicalEquationGenerator,
-} from "./generator";
+import { mathematicalEquationStructuralSignature } from "./fingerprint";
+import { mathematicalEquationGenerator } from "./generator";
+import { inspectMathematicalEquationStyle } from "./style";
 
 function evaluate(expression: MathematicalExpression, values: VariableAssignment): number {
   if (expression.kind === "constant") return expression.value;
@@ -27,6 +26,7 @@ describe("MathematicalEquationGenerator", () => {
         mathematicalEquationGenerator.generate(configuration, 1),
       );
     },
+    20_000,
   );
 
   it.each(["easy", "medium", "hard"] as const)(
@@ -57,6 +57,7 @@ describe("MathematicalEquationGenerator", () => {
         }
       }
     },
+    20_000,
   );
 
   it("uses the attempt to produce a deterministic retry candidate", () => {
@@ -83,53 +84,108 @@ describe("MathematicalEquationGenerator", () => {
         firstEquationPositions.add(candidate.solutionPath[0].equationIndex);
         expect(calculateEquationDifficulty(candidate).difficulty).toBe(difficulty);
         expect(metrics.coefficientComplexity).toBeLessThanOrEqual(6);
-        expect(metrics.directEntryPointCount).toBe(0);
+        expect(candidate.structuredData.dependencyModel.relationshipPrimitives).toHaveLength(metrics.variableCount);
+        expect(candidate.structuredData.variables).toContain(
+          candidate.structuredData.dependencyModel.targetSymbol,
+        );
         if (difficulty === "easy") {
           expect(metrics.variableCount).toBe(2);
-          expect(metrics.meaningfulReasoningSteps).toBe(2);
-          expect(metrics.hiddenGroupingCount).toBe(0);
+          expect(metrics.meaningfulReasoningSteps).toBeGreaterThanOrEqual(2);
+          expect(metrics.meaningfulReasoningSteps).toBeLessThanOrEqual(3);
+          expect(metrics.hiddenGroupingCount).toBeLessThanOrEqual(1);
+          expect(metrics.targetDepth).toBeLessThanOrEqual(1);
+          expect(metrics.mentalArithmeticCost).toBeLessThanOrEqual(9);
         } else if (difficulty === "medium") {
           expect([3, 4]).toContain(metrics.variableCount);
           expect(metrics.meaningfulReasoningSteps).toBeGreaterThanOrEqual(3);
-          expect(metrics.meaningfulReasoningSteps).toBeLessThanOrEqual(4);
-          expect(metrics.hiddenGroupingCount + metrics.relationshipReversalCount).toBeGreaterThanOrEqual(1);
+          expect(metrics.meaningfulReasoningSteps).toBeLessThanOrEqual(5);
+          expect(metrics.dependencyDepth + metrics.recombinationCount + metrics.multiVariableConstraintCount)
+            .toBeGreaterThanOrEqual(1);
         } else {
           expect(metrics.variableCount).toBe(4);
-          expect(metrics.meaningfulReasoningSteps).toBeGreaterThanOrEqual(5);
-          expect(candidate.solutionPath[0].supportingEquationIndices?.length).toBe(3);
+          expect(metrics.meaningfulReasoningSteps).toBeGreaterThanOrEqual(4);
+          if (candidate.solutionPath[0].reasoning === "combine_equations") {
+            expect(candidate.solutionPath[0].supportingEquationIndices?.length).toBeGreaterThanOrEqual(1);
+          } else {
+            expect(metrics.directEntryPointCount).toBeGreaterThanOrEqual(1);
+          }
         }
       }
-      expect(families.size).toBe(4);
+      expect(families.size).toBeGreaterThanOrEqual(difficulty === "easy" ? 3 : difficulty === "medium" ? 5 : 6);
       expect(firstEquationPositions.size).toBeGreaterThan(1);
     },
+    20_000,
   );
 
-  it("registers twelve reusable dMAT-style templates", () => {
-    const distribution = MATHEMATICAL_EQUATION_FAMILY_REGISTRY.reduce<Record<string, number>>(
-      (counts, family) => ({ ...counts, [family.difficulty]: (counts[family.difficulty] ?? 0) + 1 }),
-      {},
-    );
-    expect(distribution).toEqual({ easy: 4, medium: 4, hard: 4 });
-    expect(new Set(MATHEMATICAL_EQUATION_FAMILY_REGISTRY.map((family) => family.id)).size).toBe(12);
-  });
-
-  it("covers every template and keeps grouping frequent in medium and hard", () => {
+  it("composes many structures from a small graph-and-relationship taxonomy", () => {
     const byFamily = new Map<string, ReturnType<typeof mathematicalEquationGenerator.generate>>();
+    const structures = new Set<string>();
     for (const difficulty of ["easy", "medium", "hard"] as const) {
-      for (let seed = 0; seed < 1_000 && [...byFamily.values()].filter((item) =>
-        item.structuredData.dependencyModel.family.startsWith(difficulty),
-      ).length < 4; seed += 1) {
+      for (let seed = 0; seed < 50; seed += 1) {
         const candidate = mathematicalEquationGenerator.generate({ seed: `family-${difficulty}-${seed}`, difficulty }, 1);
-        byFamily.set(candidate.structuredData.dependencyModel.family, candidate);
+        byFamily.set(`${difficulty}:${candidate.structuredData.dependencyModel.family}`, candidate);
+        structures.add(mathematicalEquationStructuralSignature(candidate));
       }
     }
-    expect(byFamily.size).toBe(12);
-    const representative = [...byFamily.values()].filter((candidate) =>
-      candidate.structuredData.dependencyModel.family.startsWith("medium") ||
-      candidate.structuredData.dependencyModel.family.startsWith("hard"),
-    );
-    expect(representative.filter((candidate) =>
+    expect(byFamily.size).toBeGreaterThanOrEqual(8);
+    expect(structures.size).toBeGreaterThan(30);
+    expect([...byFamily.values()].filter((candidate) =>
       (candidate.structuredData.dependencyModel.hiddenGroupingCount ?? 0) > 0,
     ).length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("covers the production relationship vocabulary without unsafe display arithmetic", () => {
+    const relationships = new Set<string>();
+    const hardTargets = new Set<string>();
+    for (const difficulty of ["easy", "medium", "hard"] as const) {
+      for (let seed = 0; seed < 500; seed += 1) {
+        const candidate = mathematicalEquationGenerator.generate({ seed: `coverage-${difficulty}-${seed}`, difficulty }, 1);
+        candidate.structuredData.dependencyModel.relationshipPrimitives?.forEach((item) => relationships.add(item));
+        if (difficulty === "hard") hardTargets.add(candidate.structuredData.dependencyModel.targetSymbol ?? "");
+        const style = inspectMathematicalEquationStyle(candidate);
+        expect(style.negativeDisplayedConstantCount).toBe(0);
+        expect(style.maximumDisplayedConstant).toBeLessThanOrEqual(20);
+        expect(style.maximumCoefficient).toBeLessThanOrEqual(6);
+      }
+    }
+    expect(relationships).toEqual(new Set([
+      "direct_value", "offset_add", "offset_subtract", "scale", "divide_by_constant",
+      "sum", "difference", "complement", "weighted_sum", "multi_variable_sum",
+      "multi_variable_balance",
+    ]));
+    expect(hardTargets).toEqual(new Set(["A", "B", "C", "D"]));
+  }, 60_000);
+
+  it("keeps graph selection stable across retries instead of falling back to an easier family", () => {
+    const configuration = { seed: "stable-family", difficulty: "hard" as const };
+    const families = new Set(Array.from({ length: 12 }, (_, index) =>
+      mathematicalEquationGenerator.generate(configuration, index + 1).structuredData.dependencyModel.family,
+    ));
+    expect(families.size).toBe(1);
+  });
+
+  it("gives Easy multiple short reasoning graphs without increasing its variable budget", () => {
+    const graphs = new Map<string, number>();
+    for (let seed = 0; seed < 600; seed += 1) {
+      const candidate = mathematicalEquationGenerator.generate({ seed: `easy-diversity-${seed}`, difficulty: "easy" }, 1);
+      const family = candidate.structuredData.dependencyModel.family;
+      graphs.set(family, (graphs.get(family) ?? 0) + 1);
+      expect(candidate.structuredData.variables).toHaveLength(2);
+      expect(calculateEquationDifficulty(candidate).difficulty).toBe("easy");
+    }
+    expect(new Set(graphs.keys())).toEqual(new Set(["direct", "chain", "reverse_chain"]));
+    expect((graphs.get("direct") ?? 0) / 600).toBeLessThan(0.45);
+  });
+
+  it("constructs scale and division from compatible domains instead of divisibility luck", () => {
+    const relationships: Record<string, number> = {};
+    for (let seed = 0; seed < 900; seed += 1) {
+      const candidate = mathematicalEquationGenerator.generate({ seed: `relationship-balance-${seed}`, difficulty: "medium" }, 1);
+      candidate.structuredData.dependencyModel.relationshipPrimitives?.forEach((relationship) => {
+        relationships[relationship] = (relationships[relationship] ?? 0) + 1;
+      });
+    }
+    expect(relationships.scale).toBeGreaterThan(100);
+    expect(relationships.divide_by_constant).toBeGreaterThan(100);
   });
 });

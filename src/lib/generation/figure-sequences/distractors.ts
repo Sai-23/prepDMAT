@@ -1,5 +1,10 @@
 import { SeededRandom } from "../random";
+import { evolveFigureFrame } from "./engine";
 import { validateFigureFrameStructure } from "./validation";
+import {
+  canonicalRenderedMatrix,
+  canonicalRenderedSymbol,
+} from "./render-contract";
 import type {
   FigureCandidate,
   FigureFrame,
@@ -8,41 +13,23 @@ import type {
 } from "./types";
 
 export function visibleFrameValue(frame: FigureFrame): string {
-  return JSON.stringify(
-    [...frame.symbols]
-      .sort((first, second) => first.id.localeCompare(second.id))
-      .map(({ id, shape, color, fill, orientation, row, column }) => ({
-        id,
-        shape,
-        color,
-        fill,
-        orientation: shape === "circle" ? 0 : orientation,
-        row,
-        column,
-      })),
-  );
+  return canonicalRenderedMatrix(frame);
 }
 
 function visibleSymbolValue(symbol: FigureFrame["symbols"][number]): string {
-  const { id, shape, color, fill, orientation, row, column } = symbol;
-  return JSON.stringify({
-    id,
-    shape,
-    color,
-    fill,
-    orientation: shape === "circle" ? 0 : orientation,
-    row,
-    column,
-  });
+  return canonicalRenderedSymbol(symbol);
 }
 
 export function figureFrameSimilarity(first: FigureFrame, second: FigureFrame): number {
   if (first.symbols.length === 0 || first.symbols.length !== second.symbols.length) return 0;
-  const secondById = new Map(second.symbols.map((symbol) => [symbol.id, symbol]));
-  const unchanged = first.symbols.filter((symbol) => {
-    const other = secondById.get(symbol.id);
-    return other && visibleSymbolValue(symbol) === visibleSymbolValue(other);
-  }).length;
+  const remaining = second.symbols.map(visibleSymbolValue);
+  const unchanged = first.symbols.reduce((count, symbol) => {
+    const value = visibleSymbolValue(symbol);
+    const index = remaining.indexOf(value);
+    if (index < 0) return count;
+    remaining.splice(index, 1);
+    return count + 1;
+  }, 0);
   return unchanged / first.symbols.length;
 }
 
@@ -50,11 +37,70 @@ function candidateFrame(frame: FigureFrame, index: number): FigureFrame {
   return { ...structuredClone(frame), index };
 }
 
+function mutatedRuleVariants(rule: FigureSymbolRuleSet): FigureSymbolRuleSet[] {
+  const variants: FigureSymbolRuleSet[] = [];
+  const add = (mutate: (copy: FigureSymbolRuleSet) => void) => {
+    const copy = structuredClone(rule);
+    mutate(copy);
+    variants.push(copy);
+  };
+  if (rule.movement) {
+    add((copy) => { copy.movement!.steps = Math.max(1, copy.movement!.steps - 1); });
+    add((copy) => { copy.movement!.steps += 1; });
+    if (rule.movement.progression === "incrementing") {
+      add((copy) => { copy.movement!.progression = "fixed"; });
+    }
+    if (rule.movement.kind === "border") {
+      add((copy) => {
+        if (copy.movement?.kind === "border") {
+          copy.movement.direction = copy.movement.direction === "clockwise"
+            ? "counter_clockwise"
+            : "clockwise";
+        }
+      });
+    }
+    if (rule.movement.kind === "direction_cycle") {
+      add((copy) => {
+        if (copy.movement?.kind === "direction_cycle") {
+          copy.movement.directions = [
+            ...copy.movement.directions.slice(1),
+            copy.movement.directions[0],
+          ];
+        }
+      });
+    }
+  }
+  if (rule.rotation) {
+    add((copy) => { delete copy.rotation; });
+    add((copy) => {
+      if (copy.rotation) {
+        copy.rotation.direction = copy.rotation.direction === "clockwise"
+          ? "counter_clockwise"
+          : "clockwise";
+      }
+    });
+    if (rule.rotation.progression === "incrementing") {
+      add((copy) => { if (copy.rotation) copy.rotation.progression = "fixed"; });
+    }
+  }
+  if (rule.colour) {
+    add((copy) => { delete copy.colour; });
+    add((copy) => {
+      if (copy.colour) copy.colour.cycle = [copy.colour.cycle[0], ...copy.colour.cycle.slice(1).reverse()];
+    });
+    if (rule.colour.progression === "incrementing") {
+      add((copy) => { if (copy.colour) copy.colour.progression = "fixed"; });
+    }
+  }
+  return variants;
+}
+
 export function createFigureCandidates(
   grid: FigureGridDefinition,
   correctFrame: FigureFrame,
   previousFrame: FigureFrame,
   rules: readonly FigureSymbolRuleSet[],
+  transitionIndex: number,
   random: SeededRandom,
   slot: number,
 ): { candidates: FigureCandidate[]; correctCandidateId: string } {
@@ -64,65 +110,39 @@ export function createFigureCandidates(
   const add = (frame: FigureFrame) => {
     const normalized = candidateFrame(frame, correctFrame.index);
     const value = visibleFrameValue(normalized);
-    if (
-      !seen.has(value) &&
-      validateFigureFrameStructure(grid, normalized).valid
-    ) {
+    if (!seen.has(value) && validateFigureFrameStructure(grid, normalized).valid) {
       seen.add(value);
       variants.push(normalized);
     }
   };
 
-  for (const symbol of random.shuffle(correctFrame.symbols)) {
-    const rule = rules.find((item) => item.symbolId === symbol.id);
-    const previousSymbol = previousFrame.symbols.find((item) => item.id === symbol.id);
+  for (const rule of random.shuffle(rules)) {
+    const previousSymbol = previousFrame.symbols.find((symbol) => symbol.id === rule.symbolId);
     if (previousSymbol) {
       const stalled = structuredClone(correctFrame);
-      const target = stalled.symbols.find((item) => item.id === symbol.id);
+      const target = stalled.symbols.find((symbol) => symbol.id === rule.symbolId);
       if (target) Object.assign(target, structuredClone(previousSymbol));
       add(stalled);
     }
-    if (rule?.rotation && symbol.shape !== "circle") {
-      for (const turn of random.shuffle([90, 270] as const)) {
-        const rotated = structuredClone(correctFrame);
-        const target = rotated.symbols.find((item) => item.id === symbol.id);
-        if (target) target.orientation = ((target.orientation + turn) % 360) as typeof target.orientation;
-        add(rotated);
+    for (const mutated of random.shuffle(mutatedRuleVariants(rule))) {
+      const mutatedRules = rules.map((source) =>
+        source.symbolId === rule.symbolId ? mutated : structuredClone(source));
+      try {
+        add(evolveFigureFrame(grid, previousFrame, mutatedRules, transitionIndex));
+      } catch {
+        // A plausible wrong rule may violate a hard constraint; it is not a usable option.
       }
     }
-    if (rule?.colour) {
-      for (const phase of random.shuffle([-1, 1])) {
-        const recoloured = structuredClone(correctFrame);
-        const colourTarget = recoloured.symbols.find((item) => item.id === symbol.id);
-        if (colourTarget) {
-          const current = rule.colour.cycle.indexOf(colourTarget.color);
-          colourTarget.color = rule.colour.cycle[
-            (current + phase + rule.colour.cycle.length) % rule.colour.cycle.length
-          ];
-        }
-        add(recoloured);
-      }
-    }
-    if (rule?.movement) {
-      const directions = random.shuffle([
-        { row: -1, column: 0 },
-        { row: 1, column: 0 },
-        { row: 0, column: -1 },
-        { row: 0, column: 1 },
-      ]);
-      for (const direction of directions) {
-        const shifted = structuredClone(correctFrame);
-        const target = shifted.symbols.find((item) => item.id === symbol.id);
-        if (target) {
-          target.row += direction.row;
-          target.column += direction.column;
-        }
-        add(shifted);
-      }
+    if (rule.movement?.kind === "linear") {
+      const withoutBounceState = structuredClone(previousFrame);
+      const target = withoutBounceState.symbols.find((symbol) => symbol.id === rule.symbolId);
+      if (target) target.motionState = undefined;
+      try { add(evolveFigureFrame(grid, withoutBounceState, rules, transitionIndex)); }
+      catch { /* The naive non-bounce continuation can leave the grid. */ }
     }
   }
   if (variants.length < 2) {
-    throw new Error("Unable to construct two distinct plausible figure distractors.");
+    throw new Error("Unable to construct two distinct replay-based figure distractors.");
   }
 
   const correctCandidateId = `slot-${slot}-correct`;

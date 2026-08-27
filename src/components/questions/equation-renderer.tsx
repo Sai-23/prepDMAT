@@ -1,40 +1,12 @@
 import type {
   MathematicalEquation,
   MathematicalEquationStructuredData,
-  MathematicalExpression,
 } from "@/lib/generation/mathematical-equations";
+import { renderMathematicalEquation } from "@/lib/generation/mathematical-equations";
 import { cn } from "@/lib/utils";
 
-function precedence(expression: MathematicalExpression): number {
-  if (expression.kind !== "operation") return 3;
-  return expression.operator === "multiply" || expression.operator === "divide" ? 2 : 1;
-}
-
-function expressionText(
-  expression: MathematicalExpression,
-  parentPrecedence = 0,
-  isRight = false,
-): string {
-  if (expression.kind === "constant") return String(expression.value);
-  if (expression.kind === "variable") return expression.symbol;
-  const operator = {
-    add: "+",
-    subtract: "−",
-    multiply: "×",
-    divide: "÷",
-  }[expression.operator];
-  const currentPrecedence = precedence(expression);
-  const left = expressionText(expression.left, currentPrecedence);
-  const right = expressionText(expression.right, currentPrecedence, true);
-  const text = `${left} ${operator} ${right}`;
-  const needsParentheses = currentPrecedence < parentPrecedence ||
-    (isRight && currentPrecedence === parentPrecedence &&
-      (expression.operator === "subtract" || expression.operator === "divide"));
-  return needsParentheses ? `(${text})` : text;
-}
-
 export function equationText(equation: MathematicalEquation): string {
-  return `${expressionText(equation.left)} = ${expressionText(equation.right)}`;
+  return renderMathematicalEquation(equation);
 }
 
 export function EquationRenderer({

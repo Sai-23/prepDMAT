@@ -1,5 +1,6 @@
 import type { GenerationDifficulty } from "../types";
 import { equationVariables } from "./solver";
+import { inspectMathematicalEquationStyle } from "./style";
 import type {
   EquationDifficultyMetrics,
   EquationOperator,
@@ -87,6 +88,9 @@ export function calculateEquationDifficulty(candidate: MathematicalEquationCandi
   }
 
   const dependencyDepth = Math.max(0, ...depth.values());
+  const targetDepth = dependencyModel.targetSymbol
+    ? depth.get(dependencyModel.targetSymbol) ?? 0
+    : dependencyDepth;
   const outgoingCounts = [...outgoing.values()].map((targets) => targets.size);
   const branchingFactor = Math.max(0, ...outgoingCounts);
   const branchCount = outgoingCounts.filter((count) => count >= 2).length;
@@ -101,6 +105,9 @@ export function calculateEquationDifficulty(candidate: MathematicalEquationCandi
   const meaningfulReasoningSteps = dependencyModel.meaningfulReasoningSteps ?? candidate.solutionPath.length;
   const solveStepCount = meaningfulReasoningSteps;
   const workingMemoryEstimate = maximumStepLoad + Math.min(2, hiddenGroupingCount + branchCount);
+  const multiVariableConstraintCount = equations.filter((equation) => equationVariables(equation).size >= 3).length;
+  const termCount = equations.reduce((total, equation) => total + equationVariables(equation).size, 0);
+  const mentalArithmeticCost = inspectMathematicalEquationStyle(candidate).mentalArithmeticCost;
 
   const score =
     pointsForCount(variables.length, 2) +
@@ -109,25 +116,42 @@ export function calculateEquationDifficulty(candidate: MathematicalEquationCandi
     hiddenGroupingCount +
     Math.min(1, relationshipReversalCount) +
     Math.min(2, dependencyDepth) +
-    Math.max(0, maximumStepLoad - 2);
+    Math.min(2, targetDepth) +
+    Math.min(2, recombinationCount + multiVariableConstraintCount) +
+    Math.max(0, maximumStepLoad - 2) +
+    Math.min(2, Math.floor(mentalArithmeticCost / 7));
 
   const easyProfile =
     variables.length === 2 &&
     equations.length === 2 &&
-    meaningfulReasoningSteps <= 2 &&
-    hiddenGroupingCount === 0;
+    meaningfulReasoningSteps <= 3 &&
+    hiddenGroupingCount <= 1 &&
+    targetDepth <= 1 &&
+    workingMemoryEstimate <= 3 &&
+    mentalArithmeticCost <= 9;
   const hardProfile =
     variables.length === 4 &&
     equations.length >= 4 &&
-    (meaningfulReasoningSteps >= 5 || hiddenGroupingCount >= 2 || maximumStepLoad >= 4);
+    (
+      meaningfulReasoningSteps >= 5 ||
+      dependencyDepth >= 2 ||
+      branchCount >= 1 ||
+      recombinationCount >= 1 ||
+      multiVariableConstraintCount >= 1
+    );
   const mediumProfile =
     variables.length >= 3 &&
     variables.length <= 4 &&
     equations.length >= 3 &&
     equations.length <= 4 &&
     meaningfulReasoningSteps >= 3 &&
-    meaningfulReasoningSteps <= 4 &&
-    (hiddenGroupingCount >= 1 || relationshipReversalCount >= 1 || maximumStepLoad >= 2);
+    meaningfulReasoningSteps <= 5 &&
+    (
+      dependencyDepth >= 1 ||
+      recombinationCount >= 1 ||
+      multiVariableConstraintCount >= 1 ||
+      relationshipReversalCount >= 1
+    );
   const difficulty: GenerationDifficulty = easyProfile
     ? "easy"
     : hardProfile
@@ -162,6 +186,10 @@ export function calculateEquationDifficulty(candidate: MathematicalEquationCandi
       hiddenGroupingCount,
       relationshipReversalCount,
       meaningfulReasoningSteps,
+      targetDepth,
+      multiVariableConstraintCount,
+      termCount,
+      mentalArithmeticCost,
       score,
     },
   };

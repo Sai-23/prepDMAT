@@ -1,11 +1,7 @@
-export const DMAT_EXAM_SPEC = {
-  version: "dmat-core-2026-08-09",
-  core: [
-    { sectionType: "figure_sequence", title: "Figure Sequences", questionCount: 20, durationSeconds: 25 * 60 },
-    { sectionType: "mathematical_equation", title: "Mathematical Equations", questionCount: 20, durationSeconds: 25 * 60 },
-    { sectionType: "latin_square", title: "Latin Squares", questionCount: 20, durationSeconds: 25 * 60 },
-  ],
-} as const;
+import { DMAT_CURRENT_CORE_PROTOCOL } from "../protocol";
+
+/** Backward-compatible name used by the existing mock-test workflow. */
+export const DMAT_EXAM_SPEC = DMAT_CURRENT_CORE_PROTOCOL;
 
 export type ExamSectionSnapshot = {
   id: string;

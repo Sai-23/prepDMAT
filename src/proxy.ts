@@ -5,9 +5,11 @@ import { updateSupabaseSession } from "@/lib/supabase/proxy";
 import type { UserRole } from "@/types/auth";
 
 const authenticatedRoutes = [
+  "/onboarding",
   "/practice",
   "/tests",
   "/dashboard",
+  "/progress",
   "/results",
   "/mistakes",
   "/bookmarks",

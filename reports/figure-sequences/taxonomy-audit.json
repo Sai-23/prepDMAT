@@ -1,0 +1,1149 @@
+{
+  "generatedAt": "2026-08-20T22:07:58.556Z",
+  "accepted": 5000,
+  "requestedDifficultyDistribution": {
+    "easy": {
+      "count": 1667,
+      "percentage": 33.34
+    },
+    "medium": {
+      "count": 1667,
+      "percentage": 33.34
+    },
+    "hard": {
+      "count": 1666,
+      "percentage": 33.32
+    }
+  },
+  "totalAttempts": 17556,
+  "rejectionRates": {
+    "construction": 0,
+    "constraint": 0,
+    "difficulty": 0.5718,
+    "novelty": 0.1434
+  },
+  "rejectionCounts": {
+    "constructionRejections": 0,
+    "constraintRejections": 0,
+    "difficultyRejections": 10039,
+    "noveltyRejections": 2517
+  },
+  "exactDuplicateRate": 0,
+  "uniqueStructuralFingerprints": 3220,
+  "structuralDuplicateRate": 0.356,
+  "averageQuestionsPerStructure": 1.5528,
+  "largestStructuralCluster": {
+    "fingerprint": "figure_sequence-rules:v1:97d85d60187d4bb4",
+    "count": 136,
+    "percentage": 2.72
+  },
+  "recentNearCloneRateAt090": 0,
+  "averageStructuralSimilarity": 0.4179,
+  "normalizedRuleEntropy": 0.901,
+  "diversityFormula": "100 * (0.35 * uniqueStructuralRatio + 0.35 * normalizedRuleEntropy + 0.30 * (1 - recentNearCloneRateAt0.90))",
+  "diversityScore": 84.0746,
+  "ruleDistribution": {
+    "MOVE_HORIZONTAL": {
+      "count": 3648,
+      "percentage": 31.4293
+    },
+    "MOVE_VERTICAL": {
+      "count": 3736,
+      "percentage": 32.1875
+    },
+    "MOVE_DIAGONAL": {
+      "count": 2026,
+      "percentage": 17.455
+    },
+    "MOVE_BOUNDARY_CLOCKWISE": {
+      "count": 1887,
+      "percentage": 16.2574
+    },
+    "MOVE_BOUNDARY_COUNTERCLOCKWISE": {
+      "count": 1779,
+      "percentage": 15.327
+    },
+    "STEP_CONSTANT": {
+      "count": 8678,
+      "percentage": 74.7652
+    },
+    "STEP_PROGRESSIVE": {
+      "count": 2929,
+      "percentage": 25.2348
+    },
+    "BOUNDARY_BOUNCE": {
+      "count": 7941,
+      "percentage": 68.4156
+    },
+    "BOUNDARY_FOLLOW": {
+      "count": 3666,
+      "percentage": 31.5844
+    },
+    "ROTATE_CLOCKWISE": {
+      "count": 2545,
+      "percentage": 21.9264
+    },
+    "ROTATE_COUNTERCLOCKWISE": {
+      "count": 2574,
+      "percentage": 22.1763
+    },
+    "ROTATE_PROGRESSIVE": {
+      "count": 1054,
+      "percentage": 9.0807
+    },
+    "COLOR_ALTERNATE": {
+      "count": 1919,
+      "percentage": 16.5331
+    },
+    "COLOR_CYCLE": {
+      "count": 2942,
+      "percentage": 25.3468
+    }
+  },
+  "compoundRuleDistribution": {
+    "movement only": {
+      "count": 3617,
+      "percentage": 31.1622
+    },
+    "movement + boundary": {
+      "count": 11607,
+      "percentage": 100
+    },
+    "movement + rotation": {
+      "count": 5119,
+      "percentage": 44.1027
+    },
+    "multi-object mixed rules": {
+      "count": 3636,
+      "percentage": 72.72
+    },
+    "movement + progressive step": {
+      "count": 2929,
+      "percentage": 25.2348
+    },
+    "movement + colour": {
+      "count": 4861,
+      "percentage": 41.8799
+    },
+    "movement + rotation + colour": {
+      "count": 2571,
+      "percentage": 22.1504
+    },
+    "movement + progressive rotation": {
+      "count": 1054,
+      "percentage": 9.0807
+    }
+  },
+  "dominantCompoundFlags": [
+    {
+      "combination": "movement + boundary",
+      "count": 11607
+    }
+  ],
+  "objectCountDistribution": {
+    "easy": {
+      "1": {
+        "count": 1226,
+        "percentage": 73.5453
+      },
+      "2": {
+        "count": 441,
+        "percentage": 26.4547
+      },
+      "3": {
+        "count": 0,
+        "percentage": 0
+      },
+      "4": {
+        "count": 0,
+        "percentage": 0
+      }
+    },
+    "medium": {
+      "1": {
+        "count": 138,
+        "percentage": 8.2783
+      },
+      "2": {
+        "count": 760,
+        "percentage": 45.5909
+      },
+      "3": {
+        "count": 769,
+        "percentage": 46.1308
+      },
+      "4": {
+        "count": 0,
+        "percentage": 0
+      }
+    },
+    "hard": {
+      "1": {
+        "count": 0,
+        "percentage": 0
+      },
+      "2": {
+        "count": 225,
+        "percentage": 13.5054
+      },
+      "3": {
+        "count": 680,
+        "percentage": 40.8163
+      },
+      "4": {
+        "count": 761,
+        "percentage": 45.6783
+      }
+    }
+  },
+  "periodicity": {
+    "overall": {
+      "averageMovementPeriod": 12.3343,
+      "averageRotationPeriod": 2.4625,
+      "averageColourPeriod": 1.7243,
+      "averageCombinedStatePeriod": 28.252,
+      "trivialCycleCount": 0,
+      "combinedStatePeriodDistribution": {
+        "4": 62,
+        "8": 1390,
+        "12": 67,
+        "16": 1510,
+        "24": 272,
+        "32": 624,
+        "48": 516,
+        "96": 559
+      }
+    },
+    "byDifficulty": {
+      "easy": {
+        "averageMovementPeriod": 11.9376,
+        "averageRotationPeriod": 1.5948,
+        "averageColourPeriod": 1.1758,
+        "averageCombinedStatePeriod": 12.4535,
+        "trivialCycleCount": 0,
+        "combinedStatePeriodDistribution": {
+          "8": 883,
+          "16": 712,
+          "32": 72
+        }
+      },
+      "medium": {
+        "averageMovementPeriod": 9.6325,
+        "averageRotationPeriod": 2.1426,
+        "averageColourPeriod": 1.4955,
+        "averageCombinedStatePeriod": 19.6929,
+        "trivialCycleCount": 0,
+        "combinedStatePeriodDistribution": {
+          "4": 62,
+          "8": 478,
+          "12": 67,
+          "16": 526,
+          "24": 234,
+          "32": 99,
+          "48": 178,
+          "96": 23
+        }
+      },
+      "hard": {
+        "averageMovementPeriod": 15.4348,
+        "averageRotationPeriod": 3.6509,
+        "averageColourPeriod": 2.502,
+        "averageCombinedStatePeriod": 52.6242,
+        "trivialCycleCount": 0,
+        "combinedStatePeriodDistribution": {
+          "8": 29,
+          "16": 272,
+          "24": 38,
+          "32": 453,
+          "48": 338,
+          "96": 536
+        }
+      }
+    }
+  },
+  "referenceSimilarity": {
+    "available": false,
+    "profileCount": 0,
+    "reason": "The repository contains official provenance and abstract Figure rule evidence, but no normalized reasoning structures derived from actual official Figure examples; fabricating profiles would violate reference-protection policy."
+  },
+  "developmentSamples": {
+    "easy": [
+      {
+        "seed": "figure-taxonomy-v2-0",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "linear:left",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:ad993cc25624986e",
+        "recentNoveltyScore": 1,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-3",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 2,
+        "objectRules": [
+          {
+            "movement": "linear:down_right",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:up",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:2d24137731769a13",
+        "recentNoveltyScore": 0.4238,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-6",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:48745afd27b7c439",
+        "recentNoveltyScore": 0.6429,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-9",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "linear:right",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:02708db265cd5ea6",
+        "recentNoveltyScore": 0.6571,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-12",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 2,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:69590f55611798b9",
+        "recentNoveltyScore": 0.5714,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-15",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:48745afd27b7c439",
+        "recentNoveltyScore": 0.3571,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-18",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "linear:down",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:07e03bf2c2d6d7a6",
+        "recentNoveltyScore": 0.6,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-21",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:97d85d60187d4bb4",
+        "recentNoveltyScore": 0.6571,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-24",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "linear:right",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:07e03bf2c2d6d7a6",
+        "recentNoveltyScore": 0.5714,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-27",
+        "requestedDifficulty": "easy",
+        "calculatedDifficulty": "easy",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:incrementing",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:754216046efb0568",
+        "recentNoveltyScore": 0.7,
+        "referenceSimilarity": null
+      }
+    ],
+    "medium": [
+      {
+        "seed": "figure-taxonomy-v2-1",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "linear:up",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:up_left",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "2:fixed",
+            "boundary": "follow",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:f132e52418142ad0",
+        "recentNoveltyScore": 0.5095,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-4",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 1,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "1:incrementing",
+            "boundary": "follow",
+            "rotation": "clockwise:1:fixed",
+            "colour": "3:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 96,
+        "structuralFingerprint": "figure_sequence-rules:v1:dd2474513e890dfd",
+        "recentNoveltyScore": 0.719,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-7",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:0d02ebc5dffa2c31",
+        "recentNoveltyScore": 0.5667,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-10",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "linear:down",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:left",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:c445dd32891aa1ee",
+        "recentNoveltyScore": 0.4229,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-13",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "direction-cycle:right>up>left>down",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "linear:up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:up_left",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:b05c42fbabb1651f",
+        "recentNoveltyScore": 0.5771,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-16",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 2,
+        "objectRules": [
+          {
+            "movement": "border:counter_clockwise",
+            "step": "2:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "direction-cycle:left>down>right>up",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:662f64fd0e1af411",
+        "recentNoveltyScore": 0.6714,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-19",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "2:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:down",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:99f3490ed3874312",
+        "recentNoveltyScore": 0.6286,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-22",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 2,
+        "objectRules": [
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "clockwise:1:fixed",
+            "colour": "3:1:fixed"
+          },
+          {
+            "movement": "linear:right",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 48,
+        "structuralFingerprint": "figure_sequence-rules:v1:9f3f446eeade6e52",
+        "recentNoveltyScore": 0.6476,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-25",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "linear:down_right",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:up",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:da96acdf245da683",
+        "recentNoveltyScore": 0.6857,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-28",
+        "requestedDifficulty": "medium",
+        "calculatedDifficulty": "medium",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "linear:down_left",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:right",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:e8c76c813856ff65",
+        "recentNoveltyScore": 0.4143,
+        "referenceSimilarity": null
+      }
+    ],
+    "hard": [
+      {
+        "seed": "figure-taxonomy-v2-2",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 4,
+        "objectRules": [
+          {
+            "movement": "linear:down_left",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "border:clockwise",
+            "step": "1:incrementing",
+            "boundary": "follow",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:incrementing",
+            "boundary": "follow",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:44af9e4a1233e56e",
+        "recentNoveltyScore": 0.7386,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-5",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "border:clockwise",
+            "step": "2:fixed",
+            "boundary": "follow",
+            "rotation": "clockwise:1:fixed",
+            "colour": "3:1:fixed"
+          },
+          {
+            "movement": "linear:up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "4:1:fixed"
+          },
+          {
+            "movement": "linear:right",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:incrementing",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 24,
+        "structuralFingerprint": "figure_sequence-rules:v1:84f9d3c07d0ae86c",
+        "recentNoveltyScore": 0.6852,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-8",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "linear:right",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "3:1:incrementing"
+          },
+          {
+            "movement": "direction-cycle:left>down>right>up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:incrementing",
+            "colour": "none"
+          },
+          {
+            "movement": "direction-cycle:right>down>left>up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "2:1:incrementing"
+          }
+        ],
+        "combinedStatePeriod": 48,
+        "structuralFingerprint": "figure_sequence-rules:v1:c44aa749c8471b8d",
+        "recentNoveltyScore": 0.6356,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-11",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 4,
+        "objectRules": [
+          {
+            "movement": "border:counter_clockwise",
+            "step": "2:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "clockwise:1:incrementing",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:down_left",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "3:1:fixed"
+          },
+          {
+            "movement": "border:clockwise",
+            "step": "1:incrementing",
+            "boundary": "follow",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "2:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 96,
+        "structuralFingerprint": "figure_sequence-rules:v1:bd542ba1deada85d",
+        "recentNoveltyScore": 0.6742,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-14",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 4,
+        "objectRules": [
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "direction-cycle:right>down>left>up",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:incrementing",
+            "colour": "none"
+          },
+          {
+            "movement": "direction-cycle:right>down>left>up",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:incrementing",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "linear:down_left",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:d431279d3bdd6aa1",
+        "recentNoveltyScore": 0.6,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-17",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 3,
+        "objectRules": [
+          {
+            "movement": "linear:down_right",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:left",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "4:1:fixed"
+          },
+          {
+            "movement": "direction-cycle:right>down>left>up",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:a6cb1416a85afcf2",
+        "recentNoveltyScore": 0.59,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-20",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 2,
+        "objectRules": [
+          {
+            "movement": "direction-cycle:up>right>down>left",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "border:clockwise",
+            "step": "2:fixed",
+            "boundary": "follow",
+            "rotation": "counter_clockwise:1:incrementing",
+            "colour": "4:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 8,
+        "structuralFingerprint": "figure_sequence-rules:v1:f9436b2178d0d1bd",
+        "recentNoveltyScore": 0.6286,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-23",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 2,
+        "objectRules": [
+          {
+            "movement": "linear:up",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "none"
+          },
+          {
+            "movement": "direction-cycle:right>down>left>up",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "2:1:incrementing"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:c96fdbaefc16949a",
+        "recentNoveltyScore": 0.6048,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-26",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 4,
+        "objectRules": [
+          {
+            "movement": "linear:down",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:right",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "border:counter_clockwise",
+            "step": "1:incrementing",
+            "boundary": "follow",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "linear:right",
+            "step": "1:fixed",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:fixed",
+            "colour": "none"
+          }
+        ],
+        "combinedStatePeriod": 32,
+        "structuralFingerprint": "figure_sequence-rules:v1:17431e172b376473",
+        "recentNoveltyScore": 0.636,
+        "referenceSimilarity": null
+      },
+      {
+        "seed": "figure-taxonomy-v2-29",
+        "requestedDifficulty": "hard",
+        "calculatedDifficulty": "hard",
+        "objectCount": 4,
+        "objectRules": [
+          {
+            "movement": "linear:left",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "none",
+            "colour": "2:1:fixed"
+          },
+          {
+            "movement": "linear:down",
+            "step": "2:fixed",
+            "boundary": "bounce",
+            "rotation": "counter_clockwise:1:fixed",
+            "colour": "none"
+          },
+          {
+            "movement": "border:clockwise",
+            "step": "1:fixed",
+            "boundary": "follow",
+            "rotation": "none",
+            "colour": "4:1:fixed"
+          },
+          {
+            "movement": "linear:down",
+            "step": "1:incrementing",
+            "boundary": "bounce",
+            "rotation": "clockwise:1:incrementing",
+            "colour": "2:1:fixed"
+          }
+        ],
+        "combinedStatePeriod": 16,
+        "structuralFingerprint": "figure_sequence-rules:v1:9095ff4790f226a3",
+        "recentNoveltyScore": 0.5437,
+        "referenceSimilarity": null
+      }
+    ]
+  },
+  "baselineComparison": {
+    "oldSampleSize": 2000,
+    "oldUniqueStructures": 788,
+    "oldStructuralDuplicateRate": 0.606,
+    "oldLargestClusterPercentage": 10.95,
+    "oldDiversityScore": 71.9735,
+    "newSampleSize": 2000,
+    "newUniqueStructures": 1401,
+    "newStructuralDuplicateRate": 0.2995,
+    "newLargestClusterPercentage": 4.8,
+    "newDiversityScore": 86.6189,
+    "uniqueStructureIncreasePercent": 77.7919,
+    "structuralDuplicateRateImprovementPoints": 30.65,
+    "diversityScoreIncrease": 14.6454
+  }
+}

@@ -91,7 +91,7 @@ describe("Latin-square Practice explanation mapping", () => {
   );
 
   it.each(["easy", "medium", "hard"] as const)(
-    "finishes with a valid deterministic solved matrix for %s",
+    "finishes with a deterministic target-only proof grid for %s",
     (difficulty) => {
       const question = fixture(difficulty);
       const walkthrough = buildLatinSquareWalkthrough(
@@ -99,24 +99,27 @@ describe("Latin-square Practice explanation mapping", () => {
         question.deductionTrace,
         question.correctAnswer,
       );
-      const solved = walkthrough.completedGrid;
-      expect(solved).not.toBeNull();
-      expect(solved).toEqual(question.completedGrid);
-      expect(solved?.[question.structuredData.target.row][question.structuredData.target.column])
+      const proofGrid = walkthrough.proofGrid;
+      expect(proofGrid).not.toBeNull();
+      expect(proofGrid?.[question.structuredData.target.row][question.structuredData.target.column])
         .toBe(question.correctAnswer);
-      solved?.forEach((row, rowIndex) => {
-        expect([...row].sort()).toEqual([...DEFAULT_LATIN_SYMBOLS]);
+      const proofCells = new Set(walkthrough.steps
+        .filter((step) => step.type === "intermediate" || step.isTarget)
+        .map((step) => `${step.coordinate.row}:${step.coordinate.column}`));
+      proofGrid?.forEach((row, rowIndex) => {
         expect(question.structuredData.grid[rowIndex].every((clue, columnIndex) =>
-          clue === null || solved[rowIndex][columnIndex] === clue,
+          clue === null || proofGrid[rowIndex][columnIndex] === clue,
         )).toBe(true);
+        row.forEach((symbol, columnIndex) => {
+          if (question.structuredData.grid[rowIndex][columnIndex] === null && !proofCells.has(`${rowIndex}:${columnIndex}`)) {
+            expect(symbol).toBeNull();
+          }
+        });
       });
-      for (let column = 0; column < 5; column += 1) {
-        expect(solved?.map((row) => row[column]).sort()).toEqual([...DEFAULT_LATIN_SYMBOLS]);
-      }
     },
   );
 
-  it("falls back safely while retaining a verified solved matrix when a trace is invalid", () => {
+  it("falls back safely while retaining the verified target in a proof grid when a trace is invalid", () => {
     const question = fixture("hard");
     const walkthrough = buildLatinSquareWalkthrough(
       question.structuredData,
@@ -125,7 +128,8 @@ describe("Latin-square Practice explanation mapping", () => {
     );
     expect(walkthrough.valid).toBe(false);
     expect(walkthrough.steps).toEqual([]);
-    expect(walkthrough.completedGrid).not.toBeNull();
+    expect(walkthrough.proofGrid?.[question.structuredData.target.row][question.structuredData.target.column])
+      .toBe(question.correctAnswer);
     expect(walkthrough.fallbackMessage).toContain(`verified answer is ${question.correctAnswer}`);
   });
 

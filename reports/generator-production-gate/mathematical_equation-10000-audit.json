@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-08-25T07:55:58.797Z",
+  "module": "mathematical_equation",
+  "requestedAccepted": 10000,
+  "accepted": 10000,
+  "acceptedByDifficulty": {
+    "easy": 3334,
+    "medium": 3333,
+    "hard": 3333
+  },
+  "acceptedBySeedGroup": {
+    "sequential": 2000,
+    "hashed": 2000,
+    "edge-case": 2000,
+    "retry-heavy": 2000,
+    "regression": 2000
+  },
+  "generationAttempts": 10078,
+  "attemptsPerAccepted": 1.008,
+  "rejectionReasons": {
+    "NOVELTY_REJECTION": 78
+  },
+  "latencyMilliseconds": {
+    "p50": 4.022,
+    "p95": 44.49,
+    "p99": 157.401,
+    "maximum": 2401.73,
+    "mean": 14.707
+  },
+  "exactDuplicateFingerprints": 2534,
+  "structuralReuseCount": 7580,
+  "invariantFailures": {
+    "hidden_value_outside_1_20": 0,
+    "visible_constant_outside_1_20": 0,
+    "non_integer_hidden_value": 0,
+    "non_unique_solution": 0,
+    "zero_solution": 0,
+    "unsatisfied_equation": 0,
+    "invalid_division": 0,
+    "unsupported_mechanic": 0,
+    "stored_answer_mismatch": 0,
+    "difficulty_mismatch": 0,
+    "accepted_invalid": 0,
+    "public_presentation_mismatch": 0
+  },
+  "distributions": {
+    "graph": {
+      "direct": 1112,
+      "branch": 1168,
+      "merged": 1320,
+      "reverse_chain": 1739,
+      "triangle": 670,
+      "mixed": 628,
+      "chain": 1776,
+      "star": 455,
+      "cascade": 464,
+      "branch_recombine": 668
+    },
+    "relationship": {
+      "direct_value": 5074,
+      "offset_add": 2379,
+      "sum": 2676,
+      "multi_variable_balance": 3553,
+      "weighted_sum": 4417,
+      "offset_subtract": 2344,
+      "complement": 2612,
+      "difference": 2423,
+      "scale": 1665,
+      "multi_variable_sum": 1164,
+      "divide_by_constant": 1692
+    },
+    "coefficient": {
+      "2": 3026,
+      "3": 1445,
+      "4": 912,
+      "5": 780
+    },
+    "hiddenValue": {
+      "1": 3861,
+      "2": 2602,
+      "3": 2013,
+      "4": 1745,
+      "5": 2048,
+      "6": 1867,
+      "7": 1293,
+      "8": 1551,
+      "9": 1351,
+      "10": 1350,
+      "11": 956,
+      "12": 1506,
+      "13": 898,
+      "14": 1048,
+      "15": 1577,
+      "16": 1289,
+      "17": 883,
+      "18": 1067,
+      "19": 544,
+      "20": 550
+    }
+  }
+}

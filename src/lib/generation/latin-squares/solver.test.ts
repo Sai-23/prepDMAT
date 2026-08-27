@@ -15,6 +15,7 @@ describe("LatinSquareSolver", () => {
     const outcome = latinSquareSolver.solve(candidate);
     expect(outcome.status).toBe("unique");
     expect(outcome.possibleTargetSymbols).toEqual([candidate.correctAnswer]);
+    expect(outcome.fullGridSolutionCount).toBe(1);
   });
 
   it("rejects an ambiguous target", () => {
@@ -28,6 +29,7 @@ describe("LatinSquareSolver", () => {
     const outcome = latinSquareSolver.solve(candidate);
     expect(outcome.status).toBe("multiple");
     expect(outcome.possibleTargetSymbols).toEqual(["A", "B", "C", "D", "E"]);
+    expect(outcome.fullGridSolutionCountCapped).toBe(true);
   });
 
   it("rejects duplicate visible symbols in a row", () => {
@@ -40,4 +42,3 @@ describe("LatinSquareSolver", () => {
     expect(latinSquareSolver.solve(candidate).status).toBe("invalid");
   });
 });
-

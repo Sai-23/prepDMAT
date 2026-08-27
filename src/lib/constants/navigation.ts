@@ -20,6 +20,7 @@ export const primaryNavigation: NavigationItem[] = [
 
 export const studentNavigation: NavigationItem[] = [
   { href: "/dashboard", label: "Dashboard", requiresAuth: true },
+  { href: "/progress" as Route, label: "Progress", requiresAuth: true },
   { href: "/results", label: "Results", requiresAuth: true },
   { href: "/mistakes", label: "Mistake Notebook", requiresAuth: true },
   { href: "/bookmarks", label: "Bookmarks", requiresAuth: true },

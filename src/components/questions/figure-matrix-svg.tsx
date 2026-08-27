@@ -1,15 +1,6 @@
-import type { FigureColor, FigureFrame, FigureGridDefinition } from "@/lib/generation";
+import type { FigureFrame, FigureGridDefinition } from "@/lib/generation";
 import { validateFigureFrameStructure } from "@/lib/generation";
-
-const COLOR_VALUES: Record<FigureColor, string> = {
-  blue: "#2563eb",
-  pink: "#ec4899",
-  yellow: "#facc15",
-  orange: "#f97316",
-  green: "#16a34a",
-  black: "#111827",
-  white: "#ffffff",
-};
+import { figureSymbolRenderModel } from "@/lib/generation/figure-sequences";
 
 const CELL_SIZE = 64;
 
@@ -69,17 +60,19 @@ export function FigureMatrixSvg({
       {frame.symbols.map((symbol) => {
         const centerX = symbol.column * CELL_SIZE + CELL_SIZE / 2;
         const centerY = symbol.row * CELL_SIZE + CELL_SIZE / 2;
-        const color = COLOR_VALUES[symbol.color];
-        const fill = symbol.fill === "solid" ? color : "none";
-        const stroke = symbol.color === "white" ? "#334155" : color;
-        const common = { fill, stroke, strokeWidth: 4 };
+        const renderModel = figureSymbolRenderModel(symbol);
+        const common = {
+          fill: renderModel.fill,
+          stroke: renderModel.stroke,
+          strokeWidth: renderModel.strokeWidth,
+        };
         const highlighted = !highlightSymbolId || symbol.id === highlightSymbolId;
         return (
           <g
             key={symbol.id}
             opacity={highlighted ? 1 : 0.18}
             className="transition-opacity motion-reduce:transition-none"
-            transform={`translate(${centerX} ${centerY}) rotate(${symbol.orientation})`}
+            transform={`translate(${centerX} ${centerY}) rotate(${renderModel.orientation})`}
           >
             {highlightSymbolId === symbol.id ? (
               <circle

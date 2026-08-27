@@ -1,6 +1,14 @@
 import type { ValidationCheck, ValidationIssue } from "../types";
 import {
+  assessStructuralNovelty,
+  fingerprintStructuralProfile,
+  type StructuralProfile,
+} from "../novelty";
+import { referenceProfilesFor } from "../reference-protection";
+import {
   fingerprintMathematicalEquation,
+  MATHEMATICAL_EQUATION_SIMILARITY_WEIGHTS,
+  mathematicalEquationStructuralProfile,
   mathematicalEquationStructuralSignature,
 } from "./fingerprint";
 import { mathematicalEquationGenerator } from "./generator";
@@ -42,6 +50,7 @@ function acceptedQuestion(
     );
   }
   const fingerprint = fingerprintMathematicalEquation(candidate);
+  const structuralProfile = mathematicalEquationStructuralProfile(candidate);
   const timestamp = new Date().toISOString();
   return {
     ...candidate,
@@ -54,6 +63,8 @@ function acceptedQuestion(
       generatedAt: timestamp,
       attemptCount: attempt,
       fingerprint,
+      ruleFingerprint: fingerprintStructuralProfile(structuralProfile),
+      structuralProfile: structuralProfile as never,
     },
     validation: {
       valid: true,
@@ -71,8 +82,16 @@ export function reproduceValidatedMathematicalEquation(
     throw new RangeError(`attempt must be an integer from 1 through ${MAX_GENERATION_ATTEMPTS}.`);
   }
   const question = acceptedQuestion(configuration, attempt);
+  const novelty = assessStructuralNovelty(mathematicalEquationStructuralProfile(question), {
+    references: referenceProfilesFor("mathematical_equation"),
+    weights: MATHEMATICAL_EQUATION_SIMILARITY_WEIGHTS,
+  });
+  if (!novelty.accepted) {
+    throw new MathematicalEquationGenerationError("The reproduced question matches a protected reference structure.", attempt, [{ stage: "duplicate", code: "reference_near_clone", message: "The reproduced structure exceeds the reference-similarity threshold." }]);
+  }
   return {
     ...question,
+    metadata: { ...question.metadata, novelty },
     validation: {
       ...question.validation,
       checks: [
@@ -92,6 +111,7 @@ export function generateValidatedMathematicalEquation(
   configuration: MathematicalEquationGenerationConfiguration,
   acceptedFingerprints: ReadonlySet<string> = new Set(),
   acceptedStructuralSignatures: ReadonlySet<string> = new Set(),
+  recentStructuralProfiles: readonly StructuralProfile[] = [],
 ): MathematicalEquationQuestion {
   const maxAttempts = configuration.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > MAX_GENERATION_ATTEMPTS) {
@@ -127,14 +147,32 @@ export function generateValidatedMathematicalEquation(
       }];
       continue;
     }
+    const profile = mathematicalEquationStructuralProfile(question);
+    const novelty = assessStructuralNovelty(profile, {
+      references: referenceProfilesFor("mathematical_equation"),
+      recent: recentStructuralProfiles,
+      weights: MATHEMATICAL_EQUATION_SIMILARITY_WEIGHTS,
+    });
+    if (!novelty.accepted) {
+      lastIssues = [{
+        stage: "duplicate",
+        code: novelty.maximumReferenceSimilarity !== null &&
+          novelty.maximumReferenceSimilarity >= novelty.referenceThreshold
+          ? "reference_near_clone"
+          : "recent_near_clone",
+        message: "The candidate is too structurally similar to protected or recently generated reasoning.",
+      }];
+      continue;
+    }
     const duplicateCheck: ValidationCheck = {
       stage: "duplicate",
       passed: true,
       validatorVersion: MATHEMATICAL_EQUATION_VALIDATOR_VERSION,
-      details: { fingerprint, structuralSignature },
+      details: { fingerprint, structuralSignature, ...novelty },
     };
     return {
       ...question,
+      metadata: { ...question.metadata, novelty },
       validation: {
         ...question.validation,
         checks: [...question.validation.checks, duplicateCheck],

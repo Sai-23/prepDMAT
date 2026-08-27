@@ -2,9 +2,21 @@ import { canonicalize } from "../fingerprint";
 import { SeededRandom } from "../random";
 import type { QuestionGenerator } from "../types";
 import {
+  EQUATION_GRAPH_REGISTRY,
+  EQUATION_RELATIONSHIP_REGISTRY,
+  type GraphDefinition,
+} from "./taxonomy";
+import { renderMathematicalEquation } from "./presentation";
+import {
+  inspectEquationPresentation,
+  MATHEMATICAL_EQUATION_STYLE_POLICY,
+} from "./style";
+import {
   MATHEMATICAL_EQUATION_DOMAIN,
   MATHEMATICAL_EQUATION_GENERATOR_VERSION,
+  type EquationEvidenceLevel,
   type EquationOperator,
+  type EquationRelationshipPrimitive,
   type EquationSolutionStep,
   type EquationStructuralFamily,
   type MathematicalEquation,
@@ -14,36 +26,74 @@ import {
   type VariableAssignment,
 } from "./types";
 
-const ESTIMATED_SECONDS = { easy: 15, medium: 35, hard: 55 } as const;
+const ESTIMATED_SECONDS = { easy: 18, medium: 38, hard: 60 } as const;
 const SYMBOLS = ["A", "B", "C", "D"] as const;
+const COEFFICIENTS = [2, 3, 4, 5] as const;
+const STRICT_VISIBLE_MAX = MATHEMATICAL_EQUATION_STYLE_POLICY.hardVisibleConstantMax;
 
 type Difficulty = MathematicalEquationGenerationConfiguration["difficulty"];
-type Reasoning = NonNullable<EquationSolutionStep["reasoning"]>;
-type BuiltStep = {
-  targetSymbol: string;
-  equations: MathematicalEquation[];
-  dependencies: string[];
-  reasoning: Reasoning;
+type BuiltEquation = {
+  equation: MathematicalEquation;
+  symbols: string[];
+  relationship: EquationRelationshipPrimitive;
+  coefficients: Readonly<Record<string, number>>;
 };
-type FamilyContext = { roles: string[]; random: SeededRandom };
+
 type BuiltModel = {
   family: EquationStructuralFamily;
-  assignment: VariableAssignment;
+  evidenceLevel: EquationEvidenceLevel;
+  rootStrategy: GraphDefinition["rootStrategy"];
+  variables: string[];
+  values: VariableAssignment;
   equations: MathematicalEquation[];
-  steps: BuiltStep[];
+  relationships: EquationRelationshipPrimitive[];
+  steps: EquationSolutionStep[];
   reasoningPath: string[];
-  fastestMethod: string;
   hiddenGroupingCount: number;
   relationshipReversalCount: number;
   meaningfulReasoningSteps: number;
+  targetSymbol: string;
 };
-type FamilyDefinition = {
-  id: EquationStructuralFamily;
-  difficulty: Difficulty;
-  variableCount: 2 | 3 | 4;
-  weight: number;
-  build: (context: FamilyContext) => Omit<BuiltModel, "family">;
+
+type PlannedRelationship = {
+  relationship: EquationRelationshipPrimitive;
+  coefficient?: (typeof COEFFICIENTS)[number];
 };
+
+type RelationshipPlan = {
+  rootStrategy: GraphDefinition["rootStrategy"];
+  coupledRoots: readonly [PlannedRelationship, PlannedRelationship] | null;
+  derived: ReadonlyMap<number, PlannedRelationship>;
+  global: PlannedRelationship | null;
+};
+
+const UNARY_RELATIONSHIP_WEIGHTS = [
+  ["offset_add", 9],
+  ["offset_subtract", 9],
+  ["scale", 6],
+  ["divide_by_constant", 6],
+  ["sum", 9],
+  ["difference", 9],
+  ["complement", 9],
+  ["weighted_sum", 7],
+] as const satisfies readonly (readonly [EquationRelationshipPrimitive, number])[];
+
+const MULTI_RELATIONSHIP_WEIGHTS = [
+  ["multi_variable_sum", 4],
+  ["multi_variable_balance", 12],
+  ["weighted_sum", 7],
+] as const satisfies readonly (readonly [EquationRelationshipPrimitive, number])[];
+
+const COEFFICIENT_WEIGHTS = [
+  [2, 4],
+  [3, 3],
+  [4, 2],
+  [5, 2],
+] as const;
+const WEIGHTED_PAIR_COEFFICIENTS = [
+  [2, 1], [1, 2], [3, 1], [1, 3], [2, 3], [3, 2],
+  [4, 1], [1, 4], [5, 1], [1, 5], [2, 4], [4, 2], [2, 5], [5, 2],
+] as const;
 
 const constant = (value: number): MathematicalExpression => ({ kind: "constant", value });
 const variable = (symbol: string): MathematicalExpression => ({ kind: "variable", symbol });
@@ -52,50 +102,11 @@ const operation = (
   left: MathematicalExpression,
   right: MathematicalExpression,
 ): MathematicalExpression => ({ kind: "operation", operator, left, right });
-const add = (left: MathematicalExpression, right: MathematicalExpression) => operation("add", left, right);
-const subtract = (left: MathematicalExpression, right: MathematicalExpression) => operation("subtract", left, right);
-const multiply = (left: MathematicalExpression, right: MathematicalExpression) => operation("multiply", left, right);
-const divide = (left: MathematicalExpression, right: MathematicalExpression) => operation("divide", left, right);
-const scaled = (symbol: string, coefficient: number) => multiply(constant(coefficient), variable(symbol));
 
-function equation(
-  left: MathematicalExpression,
-  right: MathematicalExpression,
-  random: SeededRandom,
-): MathematicalEquation {
-  if (right.kind === "constant" && left.kind !== "constant") return { left, right };
-  return random.boolean(0.28) ? { left: right, right: left } : { left, right };
-}
-
-function expressionPrecedence(expression: MathematicalExpression): number {
-  if (expression.kind !== "operation") return 3;
-  return expression.operator === "multiply" || expression.operator === "divide" ? 2 : 1;
-}
-
-function renderExpression(expression: MathematicalExpression, parentPrecedence = 0, isRight = false): string {
-  if (expression.kind === "constant") return String(expression.value);
-  if (expression.kind === "variable") return expression.symbol;
-  const operators: Record<EquationOperator, string> = {
-    add: "+",
-    subtract: "−",
-    multiply: "×",
-    divide: "÷",
-  };
-  const precedence = expressionPrecedence(expression);
-  const left = renderExpression(expression.left, precedence);
-  const right = renderExpression(expression.right, precedence, true);
-  const text = `${left} ${operators[expression.operator]} ${right}`;
-  const needsParentheses = precedence < parentPrecedence ||
-    (isRight && precedence === parentPrecedence &&
-      (expression.operator === "subtract" || expression.operator === "divide"));
-  return needsParentheses ? `(${text})` : text;
-}
-
-function renderEquation(value: MathematicalEquation): string {
-  return `${renderExpression(value.left)} = ${renderExpression(value.right)}`;
-}
-
-function createRandom(configuration: MathematicalEquationGenerationConfiguration, attempt: number) {
+function createRandom(
+  configuration: MathematicalEquationGenerationConfiguration,
+  attempt: number,
+): SeededRandom {
   if (!configuration.seed.trim()) throw new Error("A non-empty mathematical-equation seed is required.");
   if (!Number.isSafeInteger(attempt) || attempt < 1) {
     throw new RangeError("Generation attempt must be a positive safe integer.");
@@ -105,393 +116,855 @@ function createRandom(configuration: MathematicalEquationGenerationConfiguration
   );
 }
 
-function assignment(entries: Array<[string, number]>): VariableAssignment {
-  return Object.fromEntries(entries);
-}
-
-function combinedStep(targetSymbol: string, equations: MathematicalEquation[]): BuiltStep {
-  return { targetSymbol, equations, dependencies: [], reasoning: "combine_equations" };
-}
-
-function dependentStep(
-  targetSymbol: string,
-  sourceEquation: MathematicalEquation,
-  dependencies: string[],
-): BuiltStep {
-  return { targetSymbol, equations: [sourceEquation], dependencies, reasoning: "substitute" };
-}
-
-function buildEasySumDifference({ roles: [a, b], random }: FamilyContext) {
-  const bValue = random.integer(1, 6);
-  const aValue = bValue + random.integer(1, 5);
-  const values = assignment([[a, aValue], [b, bValue]]);
-  const sum = equation(add(variable(a), variable(b)), constant(aValue + bValue), random);
-  const difference = equation(subtract(variable(a), variable(b)), constant(aValue - bValue), random);
-  return {
-    assignment: values,
-    equations: [sum, difference],
-    steps: [combinedStep(a, [sum, difference]), dependentStep(b, sum, [a])],
-    reasoningPath: [
-      `Add the two relationships so ${b} cancels, giving ${a} = ${aValue}.`,
-      `Substitute ${a} = ${aValue} into the sum to get ${b} = ${bValue}.`,
-    ],
-    fastestMethod: `Add the sum and difference equations to isolate ${a}, then subtract ${aValue} from the sum to find ${b}.`,
-    hiddenGroupingCount: 0,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 2,
-  };
-}
-
-function buildEasyMultiplierDifference({ roles: [a, b], random }: FamilyContext) {
-  const coefficient = random.integer(2, 4);
-  const bValue = random.integer(1, Math.floor(12 / coefficient));
-  const aValue = coefficient * bValue;
-  const values = assignment([[a, aValue], [b, bValue]]);
-  const relation = equation(scaled(b, coefficient), variable(a), random);
-  const difference = equation(subtract(variable(a), variable(b)), constant(aValue - bValue), random);
-  return {
-    assignment: values,
-    equations: [relation, difference],
-    steps: [combinedStep(b, [relation, difference]), dependentStep(a, relation, [b])],
-    reasoningPath: [
-      `Rewrite the multiplier relationship as ${a} = ${coefficient}${b}; the difference then gives ${b} = ${bValue}.`,
-      `Use ${a} = ${coefficient}${b} to obtain ${a} = ${aValue}.`,
-    ],
-    fastestMethod: `Replace ${a} by ${coefficient}${b} in the difference, solve the single short equation for ${b}, then multiply once.`,
-    hiddenGroupingCount: 0,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 2,
-  };
-}
-
-function buildEasyDivisionDifference({ roles: [a, b], random }: FamilyContext) {
-  const divisor = random.integer(2, 4);
-  const aValue = random.integer(1, Math.floor(12 / divisor));
-  const bValue = divisor * aValue;
-  const values = assignment([[a, aValue], [b, bValue]]);
-  const relation = equation(divide(variable(b), constant(divisor)), variable(a), random);
-  const difference = equation(subtract(variable(b), variable(a)), constant(bValue - aValue), random);
-  return {
-    assignment: values,
-    equations: [relation, difference],
-    steps: [combinedStep(a, [relation, difference]), dependentStep(b, relation, [a])],
-    reasoningPath: [
-      `Reverse ${b} ÷ ${divisor} = ${a} to ${b} = ${divisor}${a}; the difference gives ${a} = ${aValue}.`,
-      `Multiply ${a} = ${aValue} by ${divisor} to get ${b} = ${bValue}.`,
-    ],
-    fastestMethod: `Turn the division into ${b} = ${divisor}${a}, substitute it into the difference, and solve mentally.`,
-    hiddenGroupingCount: 0,
-    relationshipReversalCount: 1,
-    meaningfulReasoningSteps: 2,
-  };
-}
-
-function buildEasyScaledTotal({ roles: [a, b], random }: FamilyContext) {
-  const coefficient = random.integer(2, 4);
-  const aValue = random.integer(1, Math.floor(12 / (coefficient + 1)));
-  const bValue = coefficient * aValue;
-  const values = assignment([[a, aValue], [b, bValue]]);
-  const relation = equation(scaled(a, coefficient), variable(b), random);
-  const total = equation(add(variable(a), variable(b)), constant(aValue + bValue), random);
-  return {
-    assignment: values,
-    equations: [relation, total],
-    steps: [combinedStep(a, [relation, total]), dependentStep(b, relation, [a])],
-    reasoningPath: [
-      `Replace ${b} with ${coefficient}${a} in the total, giving ${a} = ${aValue}.`,
-      `Use the multiplier relationship to get ${b} = ${bValue}.`,
-    ],
-    fastestMethod: `See the total as ${a} + ${coefficient}${a}; divide by ${coefficient + 1}, then multiply once.`,
-    hiddenGroupingCount: 0,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 2,
-  };
-}
-
-function buildMediumHiddenDifference({ roles: [a, b, c, d], random }: FamilyContext) {
-  const coefficient = random.integer(2, 3);
-  const bValue = random.integer(2, 5);
-  const aValue = coefficient * bValue;
-  const differenceValue = random.integer(1, 5);
-  const cValue = bValue + differenceValue;
-  const dValue = coefficient;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const hidden = subtract(variable(c), variable(b));
-  const difference = equation(hidden, constant(differenceValue), random);
-  const multiplier = equation(scaled(b, coefficient), variable(a), random);
-  const grouped = equation(add(variable(a), hidden), constant(aValue + differenceValue), random);
-  const quotient = equation(variable(d), divide(variable(a), variable(b)), random);
-  return {
-    assignment: values,
-    equations: [difference, multiplier, grouped, quotient],
-    steps: [
-      combinedStep(a, [difference, grouped]),
-      dependentStep(b, multiplier, [a]),
-      dependentStep(c, difference, [b]),
-      dependentStep(d, quotient, [a, b]),
-    ],
-    reasoningPath: [
-      `Use ${c} − ${b} = ${differenceValue} inside the grouped equation to get ${a} = ${aValue}.`,
-      `From ${coefficient} × ${b} = ${aValue}, obtain ${b} = ${bValue}.`,
-      `Use ${c} − ${bValue} = ${differenceValue} to get ${c} = ${cValue}.`,
-      `Finally ${d} = ${aValue} ÷ ${bValue}, so ${d} = ${dValue}.`,
-    ],
-    fastestMethod: `Spot ${c} − ${b} inside the longer equation first. That reveals ${a}; the multiplier, difference, and quotient then finish the chain.`,
-    hiddenGroupingCount: 1,
-    relationshipReversalCount: 1,
-    meaningfulReasoningSteps: 4,
-  };
-}
-
-function buildMediumHiddenSum({ roles: [a, b, c, d], random }: FamilyContext) {
-  const coefficient = random.integer(2, 3);
-  const divisor = random.integer(2, 3);
-  const aValue = random.integer(2, 4);
-  const cValue = coefficient * aValue;
-  const dValue = divisor * aValue;
-  const bValue = random.integer(1, 5);
-  const groupValue = bValue + dValue;
-  const totalValue = aValue + bValue + cValue + dValue;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const group = add(variable(b), variable(d));
-  const scale = equation(scaled(a, coefficient), variable(c), random);
-  const reverse = equation(divide(variable(d), constant(divisor)), variable(a), random);
-  const groupEquation = equation(group, constant(groupValue), random);
-  const total = equation(add(add(variable(a), variable(c)), group), constant(totalValue), random);
-  return {
-    assignment: values,
-    equations: [scale, reverse, groupEquation, total],
-    steps: [
-      combinedStep(a, [groupEquation, total, scale]),
-      dependentStep(c, scale, [a]),
-      dependentStep(d, reverse, [a]),
-      dependentStep(b, groupEquation, [d]),
-    ],
-    reasoningPath: [
-      `Replace ${b} + ${d} by ${groupValue} in the total and use ${c} = ${coefficient}${a}; this gives ${a} = ${aValue}.`,
-      `The multiplier relationship gives ${c} = ${cValue}.`,
-      `Reverse ${d} ÷ ${divisor} = ${aValue} to get ${d} = ${dValue}.`,
-      `Use ${b} + ${dValue} = ${groupValue} to get ${b} = ${bValue}.`,
-    ],
-    fastestMethod: `Insert the known group ${b} + ${d} directly into the total. With ${c} = ${coefficient}${a}, the remaining equation has only ${a}.`,
-    hiddenGroupingCount: 1,
-    relationshipReversalCount: 1,
-    meaningfulReasoningSteps: 4,
-  };
-}
-
-function buildMediumReverseRelationship({ roles: [a, b, c], random }: FamilyContext) {
-  const divisor = random.integer(2, 4);
-  const bValue = random.integer(2, 4);
-  const aValue = divisor * bValue;
-  const differenceValue = random.integer(1, 5);
-  const cValue = bValue + differenceValue;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue]]);
-  const reverse = equation(divide(variable(a), constant(divisor)), variable(b), random);
-  const difference = equation(subtract(variable(c), variable(b)), constant(differenceValue), random);
-  const total = equation(add(variable(a), variable(c)), constant(aValue + cValue), random);
-  return {
-    assignment: values,
-    equations: [reverse, difference, total],
-    steps: [combinedStep(b, [reverse, difference, total]), dependentStep(a, reverse, [b]), dependentStep(c, difference, [b])],
-    reasoningPath: [
-      `Rewrite ${a} ÷ ${divisor} = ${b} as ${a} = ${divisor}${b}, and ${c} − ${b} = ${differenceValue} as ${c} = ${b} + ${differenceValue}; the total gives ${b} = ${bValue}.`,
-      `Multiply by ${divisor} to obtain ${a} = ${aValue}.`,
-      `Add ${differenceValue} to ${bValue} to obtain ${c} = ${cValue}.`,
-    ],
-    fastestMethod: `Express both ${a} and ${c} in terms of ${b}, substitute once into the total, then read off the other values.`,
-    hiddenGroupingCount: 0,
-    relationshipReversalCount: 1,
-    meaningfulReasoningSteps: 3,
-  };
-}
-
-function buildMediumMixedGrouping({ roles: [a, b, c, d], random }: FamilyContext) {
-  const firstCoefficient = random.integer(2, 3);
-  const secondCoefficient = firstCoefficient === 2 ? 3 : 2;
-  const aValue = random.integer(2, 4);
-  const cValue = firstCoefficient * aValue;
-  const dValue = secondCoefficient * aValue;
-  const bValue = random.integer(1, 5);
-  const groupValue = bValue + dValue;
-  const totalValue = aValue + bValue + cValue + dValue;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const cRelation = equation(variable(c), scaled(a, firstCoefficient), random);
-  const dRelation = equation(variable(d), scaled(a, secondCoefficient), random);
-  const groupExpression = add(variable(b), variable(d));
-  const group = equation(groupExpression, constant(groupValue), random);
-  const total = equation(add(add(variable(a), variable(c)), groupExpression), constant(totalValue), random);
-  return {
-    assignment: values,
-    equations: [cRelation, dRelation, group, total],
-    steps: [
-      combinedStep(a, [group, total, cRelation]),
-      dependentStep(c, cRelation, [a]),
-      dependentStep(d, dRelation, [a]),
-      dependentStep(b, group, [d]),
-    ],
-    reasoningPath: [
-      `Use the repeated group ${b} + ${d} = ${groupValue} in the total and ${c} = ${firstCoefficient}${a}; this gives ${a} = ${aValue}.`,
-      `The first multiplier gives ${c} = ${cValue}.`,
-      `The second multiplier gives ${d} = ${dValue}.`,
-      `Subtract ${dValue} from ${groupValue} to get ${b} = ${bValue}.`,
-    ],
-    fastestMethod: `Collapse ${b} + ${d} in the total, replace ${c} by ${firstCoefficient}${a}, and solve the resulting one-letter equation.`,
-    hiddenGroupingCount: 1,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 4,
-  };
-}
-
-function buildHardTwoGroups({ roles: [a, b, c, d], random }: FamilyContext) {
-  const firstCoefficient = random.integer(2, 4);
-  let secondCoefficient = random.integer(2, 4);
-  if (secondCoefficient === firstCoefficient) secondCoefficient = secondCoefficient === 4 ? 2 : secondCoefficient + 1;
-  const aValue = random.integer(1, 4);
-  const bValue = random.integer(1, 4);
-  const cValue = firstCoefficient * aValue;
-  const dValue = secondCoefficient * bValue;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const firstGroup = equation(add(variable(a), variable(b)), constant(aValue + bValue), random);
-  const secondGroup = equation(add(variable(c), variable(d)), constant(cValue + dValue), random);
-  const firstScale = equation(variable(c), scaled(a, firstCoefficient), random);
-  const secondScale = equation(variable(d), scaled(b, secondCoefficient), random);
-  return {
-    assignment: values,
-    equations: [firstGroup, secondGroup, firstScale, secondScale],
-    steps: [combinedStep(a, [firstGroup, secondGroup, firstScale, secondScale]), dependentStep(b, firstGroup, [a]), dependentStep(c, firstScale, [a]), dependentStep(d, secondScale, [b])],
-    reasoningPath: [
-      `Treat ${a} + ${b} and ${c} + ${d} as two groups, then replace ${c} by ${firstCoefficient}${a} and ${d} by ${secondCoefficient}${b}; this isolates ${a} = ${aValue}.`,
-      `Use the first group to obtain ${b} = ${bValue}.`,
-      `Use ${c} = ${firstCoefficient}${a} to obtain ${c} = ${cValue}.`,
-      `Use ${d} = ${secondCoefficient}${b} to obtain ${d} = ${dValue}.`,
-    ],
-    fastestMethod: `Keep both sums grouped, substitute the two multiplier relationships, and compare the resulting weighted sum with ${a} + ${b}.`,
-    hiddenGroupingCount: 2,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 5,
-  };
-}
-
-function buildHardDependencyChain({ roles: [a, b, c, d], random }: FamilyContext) {
-  const offset = random.integer(1, 2);
-  const multiplier = random.integer(2, 3);
-  const aValue = random.integer(1, 2);
-  const bValue = aValue + offset;
-  const cValue = multiplier * bValue;
-  const dValue = cValue - aValue;
-  const totalValue = aValue + bValue + cValue + dValue;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const bRelation = equation(variable(b), add(variable(a), constant(offset)), random);
-  const cRelation = equation(variable(c), scaled(b, multiplier), random);
-  const dRelation = equation(variable(d), subtract(variable(c), variable(a)), random);
-  const total = equation(add(add(variable(a), variable(b)), add(variable(c), variable(d))), constant(totalValue), random);
-  return {
-    assignment: values,
-    equations: [bRelation, cRelation, dRelation, total],
-    steps: [combinedStep(a, [bRelation, cRelation, dRelation, total]), dependentStep(b, bRelation, [a]), dependentStep(c, cRelation, [b]), dependentStep(d, dRelation, [a, c])],
-    reasoningPath: [
-      `Follow the chain ${b} = ${a} + ${offset}, ${c} = ${multiplier}${b}, and ${d} = ${c} − ${a} inside the total; this gives ${a} = ${aValue}.`,
-      `Add ${offset} to get ${b} = ${bValue}.`,
-      `Multiply ${bValue} by ${multiplier} to get ${c} = ${cValue}.`,
-      `Subtract ${aValue} from ${cValue} to get ${d} = ${dValue}.`,
-    ],
-    fastestMethod: `Write every letter in terms of ${a}, insert the chain into the total, and then work forward once.`,
-    hiddenGroupingCount: 1,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 6,
-  };
-}
-
-function buildHardNestedDependency({ roles: [a, b, c, d], random }: FamilyContext) {
-  const multiplier = random.integer(2, 3);
-  const aValue = random.integer(1, 3);
-  const bValue = random.integer(1, 5);
-  const cValue = multiplier * aValue;
-  const dValue = cValue + bValue;
-  const pairValue = aValue + bValue;
-  const totalValue = aValue + cValue + dValue;
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const scale = equation(variable(c), scaled(a, multiplier), random);
-  const nested = equation(variable(d), add(variable(c), variable(b)), random);
-  const pair = equation(add(variable(a), variable(b)), constant(pairValue), random);
-  const total = equation(add(add(variable(a), variable(c)), variable(d)), constant(totalValue), random);
-  return {
-    assignment: values,
-    equations: [scale, nested, pair, total],
-    steps: [combinedStep(a, [scale, nested, pair, total]), dependentStep(c, scale, [a]), dependentStep(b, pair, [a]), dependentStep(d, nested, [b, c])],
-    reasoningPath: [
-      `Use ${b} = ${pairValue} − ${a}, ${c} = ${multiplier}${a}, and ${d} = ${c} + ${b} inside the total; this gives ${a} = ${aValue}.`,
-      `The multiplier gives ${c} = ${cValue}.`,
-      `The pair gives ${b} = ${bValue}.`,
-      `Combine the two known values to obtain ${d} = ${dValue}.`,
-    ],
-    fastestMethod: `Replace ${b}, ${c}, and then ${d} in that order so the final total becomes a short equation in ${a}.`,
-    hiddenGroupingCount: 1,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 5,
-  };
-}
-
-function buildHardGroupBridge({ roles: [a, b, c, d], random }: FamilyContext) {
-  const multiplier = random.integer(2, 4);
-  const aValue = random.integer(1, 4);
-  const bValue = random.integer(1, 6);
-  const cValue = multiplier * aValue;
-  const dValue = random.integer(1, 5);
-  const values = assignment([[a, aValue], [b, bValue], [c, cValue], [d, dValue]]);
-  const firstGroup = equation(add(variable(a), variable(b)), constant(aValue + bValue), random);
-  const secondGroup = equation(subtract(variable(c), variable(d)), constant(cValue - dValue), random);
-  const scale = equation(variable(c), scaled(a, multiplier), random);
-  const bridge = equation(add(variable(b), variable(d)), constant(bValue + dValue), random);
-  return {
-    assignment: values,
-    equations: [firstGroup, secondGroup, scale, bridge],
-    steps: [combinedStep(a, [firstGroup, secondGroup, scale, bridge]), dependentStep(b, firstGroup, [a]), dependentStep(c, scale, [a]), dependentStep(d, secondGroup, [c])],
-    reasoningPath: [
-      `Link the groups ${a} + ${b}, ${c} − ${d}, and ${b} + ${d}, then use ${c} = ${multiplier}${a}; this isolates ${a} = ${aValue}.`,
-      `Use the first group to get ${b} = ${bValue}.`,
-      `Use the multiplier to get ${c} = ${cValue}.`,
-      `Use the difference group to get ${d} = ${dValue}.`,
-    ],
-    fastestMethod: `Add or subtract the three short group equations so ${b} and ${d} cancel, then replace ${c} with ${multiplier}${a}.`,
-    hiddenGroupingCount: 2,
-    relationshipReversalCount: 0,
-    meaningfulReasoningSteps: 5,
-  };
-}
-
-export const MATHEMATICAL_EQUATION_FAMILY_REGISTRY: readonly FamilyDefinition[] = [
-  { id: "easy_sum_difference", difficulty: "easy", variableCount: 2, weight: 1, build: buildEasySumDifference },
-  { id: "easy_multiplier_difference", difficulty: "easy", variableCount: 2, weight: 1, build: buildEasyMultiplierDifference },
-  { id: "easy_division_difference", difficulty: "easy", variableCount: 2, weight: 1, build: buildEasyDivisionDifference },
-  { id: "easy_scaled_total", difficulty: "easy", variableCount: 2, weight: 1, build: buildEasyScaledTotal },
-  { id: "medium_hidden_difference", difficulty: "medium", variableCount: 4, weight: 1.25, build: buildMediumHiddenDifference },
-  { id: "medium_hidden_sum", difficulty: "medium", variableCount: 4, weight: 1.5, build: buildMediumHiddenSum },
-  { id: "medium_reverse_relationship", difficulty: "medium", variableCount: 3, weight: 0.75, build: buildMediumReverseRelationship },
-  { id: "medium_mixed_grouping", difficulty: "medium", variableCount: 4, weight: 1.25, build: buildMediumMixedGrouping },
-  { id: "hard_two_groups", difficulty: "hard", variableCount: 4, weight: 1, build: buildHardTwoGroups },
-  { id: "hard_dependency_chain", difficulty: "hard", variableCount: 4, weight: 1, build: buildHardDependencyChain },
-  { id: "hard_nested_dependency", difficulty: "hard", variableCount: 4, weight: 1, build: buildHardNestedDependency },
-  { id: "hard_group_bridge", difficulty: "hard", variableCount: 4, weight: 1, build: buildHardGroupBridge },
-] as const;
-
-function selectFamily(difficulty: Difficulty, random: SeededRandom): FamilyDefinition {
-  const available = MATHEMATICAL_EQUATION_FAMILY_REGISTRY.filter((family) => family.difficulty === difficulty);
-  const totalWeight = available.reduce((total, family) => total + family.weight, 0);
-  let position = random.next() * totalWeight;
-  for (const family of available) {
-    position -= family.weight;
-    if (position < 0) return family;
+function graphFor(configuration: MathematicalEquationGenerationConfiguration): GraphDefinition {
+  const eligible = EQUATION_GRAPH_REGISTRY.filter((definition) =>
+    definition.productionEnabled && definition.difficulties.includes(configuration.difficulty),
+  );
+  const selector = new SeededRandom(
+    `${MATHEMATICAL_EQUATION_GENERATOR_VERSION}\u001f${configuration.seed}\u001f${configuration.difficulty}\u001fgraph`,
+  );
+  if (configuration.difficulty === "hard") {
+    const recombiningFamilies = new Set<EquationStructuralFamily>([
+      "branch_recombine",
+      "merged",
+      "mixed",
+    ]);
+    return weightedPick(
+      eligible.map((definition) => [
+        definition,
+        recombiningFamilies.has(definition.id) ? 4 : 3,
+      ] as const),
+      selector,
+    );
   }
-  return available.at(-1) as FamilyDefinition;
+  return eligible[selector.integer(0, eligible.length - 1)];
 }
 
-function buildModel(difficulty: Difficulty, random: SeededRandom): BuiltModel & { variables: string[] } {
-  const family = selectFamily(difficulty, random);
-  const variables = [...SYMBOLS.slice(0, family.variableCount)];
-  const roles = random.shuffle(variables);
-  return { family: family.id, variables, ...family.build({ roles, random }) };
+function parentsFor(family: EquationStructuralFamily, count: number): number[][] {
+  if (family === "direct") return [[], [0]];
+  if (family === "chain" || family === "reverse_chain" || family === "cascade") {
+    return Array.from({ length: count }, (_, index) => index === 0 ? [] : [index - 1]);
+  }
+  if (family === "star") return Array.from({ length: count }, (_, index) => index === 0 ? [] : [0]);
+  if (family === "triangle") return [[], [], [0, 1]];
+  if (family === "branch") {
+    return count === 3 ? [[], [0], [0]] : [[], [0], [0], [2]];
+  }
+  if (family === "branch_recombine" || family === "mixed") return [[], [0], [0], [1, 2]];
+  if (family === "merged") return count === 3 ? [[], [], [0, 1]] : [[], [], [0, 1], [2]];
+  return Array.from({ length: count }, (_, index) => index === 0 ? [] : [index - 1]);
+}
+
+function weightedPick<T>(
+  values: readonly (readonly [T, number])[],
+  random: SeededRandom,
+): T {
+  const total = values.reduce((sum, [, weight]) => sum + weight, 0);
+  let selection = random.integer(1, total);
+  for (const [value, weight] of values) {
+    selection -= weight;
+    if (selection <= 0) return value;
+  }
+  return values.at(-1)![0];
+}
+
+function rankBiasedSample<T>(
+  ranked: readonly T[],
+  count: number,
+  random: SeededRandom,
+): T[] {
+  const remaining = [...ranked];
+  const selected: T[] = [];
+  while (remaining.length > 0 && selected.length < count) {
+    const picked = weightedPick(
+      remaining.map((item, index) => [item, (remaining.length - index) ** 2] as const),
+      random.fork(`rank-${selected.length}`),
+    );
+    selected.push(picked);
+    remaining.splice(remaining.indexOf(picked), 1);
+  }
+  return selected;
+}
+
+function plannedRelationship(
+  parentCount: number,
+  random: SeededRandom,
+): PlannedRelationship {
+  const relationship = weightedPick(
+    parentCount === 1 ? UNARY_RELATIONSHIP_WEIGHTS : MULTI_RELATIONSHIP_WEIGHTS,
+    random,
+  );
+  const coefficient = relationship === "scale" || relationship === "divide_by_constant" ||
+    (relationship === "weighted_sum" && parentCount > 1)
+    ? weightedPick(COEFFICIENT_WEIGHTS, random)
+    : undefined;
+  return { relationship, ...(coefficient ? { coefficient } : {}) };
+}
+
+function relationshipPlan(
+  rootStrategy: GraphDefinition["rootStrategy"],
+  variables: readonly string[],
+  parents: readonly (readonly number[])[],
+  random: SeededRandom,
+): RelationshipPlan {
+  const coupledRoots = rootStrategy === "coupled"
+    ? [plannedRelationship(1, random.fork("coupled-0")), plannedRelationship(1, random.fork("coupled-1"))] as const
+    : null;
+  const derived = new Map<number, PlannedRelationship>();
+  const startingIndex = rootStrategy === "coupled" ? 2 : 1;
+  for (let index = startingIndex; index < variables.length; index += 1) {
+    if (rootStrategy === "direct" && parents[index].length === 0) continue;
+    derived.set(index, plannedRelationship(parents[index].length, random.fork(`derived-${index}`)));
+  }
+  const global = rootStrategy === "global_balance"
+    ? plannedRelationship(variables.length - 1, random.fork("global"))
+    : null;
+  return { rootStrategy, coupledRoots, derived, global };
+}
+
+function plannedCoefficientMatches(
+  candidate: BuiltEquation,
+  planned: PlannedRelationship,
+  target: string,
+  parents: readonly string[],
+): boolean {
+  if (candidate.relationship !== planned.relationship) return false;
+  if (!planned.coefficient) return true;
+  if (planned.relationship === "scale") {
+    return parents.length === 1 && candidate.coefficients[parents[0]] === planned.coefficient;
+  }
+  if (planned.relationship === "divide_by_constant") {
+    return Math.abs(candidate.coefficients[target] ?? 0) === planned.coefficient;
+  }
+  if (planned.relationship === "weighted_sum" && parents.length > 1) {
+    return candidate.coefficients[target] === planned.coefficient;
+  }
+  return true;
+}
+
+function relationshipPossible(
+  planned: PlannedRelationship,
+  target: string,
+  parents: readonly string[],
+  values: Readonly<VariableAssignment>,
+): boolean {
+  const targetValue = values[target];
+  const parentValues = parents.map((parent) => values[parent]);
+  if (targetValue === undefined || parentValues.some((value) => value === undefined)) return true;
+  if (planned.relationship === "direct_value") return true;
+  if (parents.length === 1) {
+    const parentValue = parentValues[0];
+    if (planned.relationship === "offset_add") return targetValue > parentValue;
+    if (planned.relationship === "offset_subtract") return parentValue > targetValue;
+    if (planned.relationship === "scale") return targetValue === parentValue * (planned.coefficient ?? 2);
+    if (planned.relationship === "divide_by_constant") return parentValue === targetValue * (planned.coefficient ?? 2);
+    if (planned.relationship === "difference") return targetValue !== parentValue;
+    if (planned.relationship === "sum" || planned.relationship === "complement") {
+      return targetValue + parentValue <= STRICT_VISIBLE_MAX;
+    }
+    if (planned.relationship === "weighted_sum") {
+      return WEIGHTED_PAIR_COEFFICIENTS.some(
+        ([parentCoefficient, targetCoefficient]) =>
+          parentCoefficient * parentValue + targetCoefficient * targetValue <= STRICT_VISIBLE_MAX,
+      );
+    }
+    return false;
+  }
+
+  const allValues = [targetValue, ...parentValues];
+  if (planned.relationship === "multi_variable_sum") {
+    return allValues.reduce((sum, value) => sum + value, 0) <= STRICT_VISIBLE_MAX;
+  }
+  if (planned.relationship === "weighted_sum") {
+    return (planned.coefficient ?? 2) * targetValue + parentValues.reduce((sum, value) => sum + value, 0) <= STRICT_VISIBLE_MAX;
+  }
+  if (planned.relationship === "multi_variable_balance") {
+    return [
+      [1, -1, 1, -1], [1, 1, -1, 1], [1, -1, -1, 1],
+      [1, 1, 1, -1], [1, -1, 1, 1], [1, 1, -1, -1],
+    ].some((pattern) => {
+      const total = allValues.reduce((sum, value, index) => sum + value * (pattern[index] ?? 1), 0);
+      return total >= 1 && total <= STRICT_VISIBLE_MAX;
+    });
+  }
+  return false;
+}
+
+function planConstraints(
+  plan: RelationshipPlan,
+  variables: readonly string[],
+  parents: readonly (readonly number[])[],
+): Array<{ target: string; parents: string[]; planned: PlannedRelationship }> {
+  const constraints: Array<{ target: string; parents: string[]; planned: PlannedRelationship }> = [];
+  if (plan.coupledRoots) {
+    plan.coupledRoots.forEach((planned) => constraints.push({
+      target: variables[1],
+      parents: [variables[0]],
+      planned,
+    }));
+  }
+  plan.derived.forEach((planned, index) => constraints.push({
+    target: variables[index],
+    parents: parents[index].map((parent) => variables[parent]),
+    planned,
+  }));
+  if (plan.global) constraints.push({
+    target: variables[0],
+    parents: variables.slice(1),
+    planned: plan.global,
+  });
+  return constraints;
+}
+
+function visibleConstantPenalty(value: number): number {
+  if (value < 1 || value > STRICT_VISIBLE_MAX) return Number.POSITIVE_INFINITY;
+  return Math.max(0, value - 15) * 0.04;
+}
+
+function plannedVisibleConstant(
+  planned: PlannedRelationship,
+  targetValue: number,
+  parentValues: readonly number[],
+): number {
+  if (planned.relationship === "scale" || planned.relationship === "divide_by_constant") {
+    return planned.coefficient ?? 2;
+  }
+  if (parentValues.length === 1) {
+    const parentValue = parentValues[0];
+    if (planned.relationship === "offset_add" || planned.relationship === "offset_subtract" || planned.relationship === "difference") {
+      return Math.abs(targetValue - parentValue);
+    }
+    if (planned.relationship === "sum" || planned.relationship === "complement") return targetValue + parentValue;
+    if (planned.relationship === "weighted_sum") {
+      return Math.min(...WEIGHTED_PAIR_COEFFICIENTS
+        .map(([parentCoefficient, targetCoefficient]) =>
+          parentCoefficient * parentValue + targetCoefficient * targetValue,
+        ).filter((total) => total <= STRICT_VISIBLE_MAX));
+    }
+  }
+  const allValues = [targetValue, ...parentValues];
+  if (planned.relationship === "multi_variable_sum") return allValues.reduce((sum, value) => sum + value, 0);
+  if (planned.relationship === "weighted_sum") {
+    return (planned.coefficient ?? 2) * targetValue + parentValues.reduce((sum, value) => sum + value, 0);
+  }
+  if (planned.relationship === "multi_variable_balance") {
+    return Math.min(...[
+      [1, -1, 1, -1], [1, 1, -1, 1], [1, -1, -1, 1],
+      [1, 1, 1, -1], [1, -1, 1, 1], [1, 1, -1, -1],
+    ].map((pattern) => allValues.reduce((sum, value, index) => sum + value * (pattern[index] ?? 1), 0))
+      .filter((total) => total >= 1 && total <= STRICT_VISIBLE_MAX));
+  }
+  return targetValue;
+}
+
+function assignmentPlanningScore(
+  assignment: Readonly<VariableAssignment>,
+  variables: readonly string[],
+  parents: readonly (readonly number[])[],
+  plan: RelationshipPlan,
+): number {
+  const values = variables.map((symbol) => assignment[symbol]);
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const lowCount = values.filter((value) => value <= 4).length;
+  const highCount = values.filter((value) => value >= 15).length;
+  const plannedPenalty = planConstraints(plan, variables, parents).reduce((sum, constraint) =>
+    sum + visibleConstantPenalty(plannedVisibleConstant(
+      constraint.planned,
+      assignment[constraint.target],
+      constraint.parents.map((parent) => assignment[parent]),
+    )), 0);
+  const directRootPenalty = plan.rootStrategy === "direct"
+    ? parents.reduce((sum, parentIndices, index) =>
+        parentIndices.length === 0 ? sum + visibleConstantPenalty(assignment[variables[index]]) : sum, 0)
+    : 0;
+  return plannedPenalty + directRootPenalty + Math.abs(mean - 10.5) * 1.25 +
+    Math.max(0, lowCount - highCount) * 0.65;
+}
+
+function constraintAwareAssignments(
+  variables: readonly string[],
+  parents: readonly (readonly number[])[],
+  plan: RelationshipPlan,
+  random: SeededRandom,
+  limit = 24,
+): VariableAssignment[] {
+  const constraints = planConstraints(plan, variables, parents);
+  const assignments: VariableAssignment[] = [];
+  const seen = new Set<string>();
+  for (let traversal = 0; traversal < limit * 3 && assignments.length < limit; traversal += 1) {
+    const values: VariableAssignment = {};
+    const traversalRandom = random.fork(`traversal-${traversal}`);
+    const domains = Object.fromEntries(variables.map((symbol) => [
+      symbol,
+      traversalRandom.fork(`domain-${symbol}`).shuffle(Array.from({ length: 20 }, (_, index) => index + 1)),
+    ])) as Record<string, number[]>;
+    let found = false;
+    const search = (index: number): void => {
+      if (found) return;
+      if (index === variables.length) {
+        if (constraints.every((constraint) =>
+          relationshipPossible(constraint.planned, constraint.target, constraint.parents, values),
+        )) {
+          const key = variables.map((symbol) => values[symbol]).join(":");
+          if (!seen.has(key)) {
+            seen.add(key);
+            assignments.push({ ...values });
+          }
+          found = true;
+        }
+        return;
+      }
+      const symbol = variables[index];
+      for (const value of domains[symbol]) {
+        values[symbol] = value;
+        if (constraints.every((constraint) =>
+          relationshipPossible(constraint.planned, constraint.target, constraint.parents, values),
+        )) search(index + 1);
+        delete values[symbol];
+        if (found) return;
+      }
+    };
+    search(0);
+  }
+  return assignments;
+}
+
+function scaledTerm(symbol: string, coefficient: number): MathematicalExpression {
+  if (Math.abs(coefficient) === 1) return variable(symbol);
+  return operation("multiply", constant(Math.abs(coefficient)), variable(symbol));
+}
+
+function linearExpression(terms: readonly { symbol: string; coefficient: number }[]): MathematicalExpression {
+  const ordered = [...terms].sort((first, second) =>
+    Number(second.coefficient > 0) - Number(first.coefficient > 0),
+  );
+  const [first, ...rest] = ordered;
+  let expression = scaledTerm(first.symbol, first.coefficient);
+  if (first.coefficient < 0) expression = operation("subtract", constant(0), expression);
+  rest.forEach((term) => {
+    expression = operation(
+      term.coefficient < 0 ? "subtract" : "add",
+      expression,
+      scaledTerm(term.symbol, term.coefficient),
+    );
+  });
+  return expression;
+}
+
+function oriented(
+  equation: MathematicalEquation,
+  random: SeededRandom,
+  probability: number,
+): { equation: MathematicalEquation; reversed: boolean } {
+  if (!random.boolean(probability)) return { equation, reversed: false };
+  return { equation: { left: equation.right, right: equation.left }, reversed: true };
+}
+
+function built(
+  equation: MathematicalEquation,
+  relationship: EquationRelationshipPrimitive,
+  coefficients: Readonly<Record<string, number>>,
+  random: SeededRandom,
+  orientationProbability: number,
+): BuiltEquation & { reversed: boolean } {
+  const displayed = oriented(equation, random, orientationProbability);
+  return {
+    equation: displayed.equation,
+    symbols: Object.keys(coefficients),
+    relationship,
+    coefficients,
+    reversed: displayed.reversed,
+  };
+}
+
+function relationCandidates(
+  target: string,
+  parents: readonly string[],
+  values: Readonly<VariableAssignment>,
+  random: SeededRandom,
+  orientationProbability: number,
+): Array<BuiltEquation & { reversed: boolean }> {
+  if (parents.length === 0) {
+    return [built(
+      { left: variable(target), right: constant(values[target]) },
+      "direct_value",
+      { [target]: 1 },
+      random,
+      orientationProbability,
+    )];
+  }
+
+  const candidates: Array<BuiltEquation & { reversed: boolean }> = [];
+  if (parents.length === 1) {
+    const parent = parents[0];
+    const parentValue = values[parent];
+    const targetValue = values[target];
+    const sum = parentValue + targetValue;
+    const difference = Math.abs(parentValue - targetValue);
+
+    if (targetValue > parentValue) {
+      const offset = targetValue - parentValue;
+      candidates.push(built(
+        { left: operation("add", variable(parent), constant(offset)), right: variable(target) },
+        "offset_add",
+        { [parent]: 1, [target]: -1 },
+        random,
+        orientationProbability,
+      ));
+    }
+    if (parentValue > targetValue) {
+      const offset = parentValue - targetValue;
+      candidates.push(built(
+        { left: operation("subtract", variable(parent), constant(offset)), right: variable(target) },
+        "offset_subtract",
+        { [parent]: 1, [target]: -1 },
+        random,
+        orientationProbability,
+      ));
+    }
+    if (targetValue % parentValue === 0 && COEFFICIENTS.includes((targetValue / parentValue) as never)) {
+      const coefficient = targetValue / parentValue;
+      candidates.push(built(
+        { left: operation("multiply", constant(coefficient), variable(parent)), right: variable(target) },
+        "scale",
+        { [parent]: coefficient, [target]: -1 },
+        random,
+        orientationProbability,
+      ));
+    }
+    if (parentValue % targetValue === 0 && COEFFICIENTS.includes((parentValue / targetValue) as never)) {
+      const divisor = parentValue / targetValue;
+      candidates.push(built(
+        { left: operation("divide", variable(parent), constant(divisor)), right: variable(target) },
+        "divide_by_constant",
+        { [parent]: 1, [target]: -divisor },
+        random,
+        orientationProbability,
+      ));
+    }
+    if (sum <= STRICT_VISIBLE_MAX) {
+      candidates.push(built(
+        { left: operation("add", variable(parent), variable(target)), right: constant(sum) },
+        "sum",
+        { [parent]: 1, [target]: 1 },
+        random,
+        orientationProbability,
+      ));
+      candidates.push(built(
+        { left: operation("subtract", constant(sum), variable(parent)), right: variable(target) },
+        "complement",
+        { [parent]: 1, [target]: 1 },
+        random,
+        orientationProbability,
+      ));
+    }
+    if (difference > 0) {
+      const larger = parentValue > targetValue ? parent : target;
+      const smaller = larger === parent ? target : parent;
+      candidates.push(built(
+        { left: operation("subtract", variable(larger), variable(smaller)), right: constant(difference) },
+        "difference",
+        { [larger]: 1, [smaller]: -1 },
+        random,
+        orientationProbability,
+      ));
+    }
+    for (const [parentCoefficient, targetCoefficient] of random.shuffle(WEIGHTED_PAIR_COEFFICIENTS)) {
+      const total = parentCoefficient * parentValue + targetCoefficient * targetValue;
+      if (total <= STRICT_VISIBLE_MAX) {
+        candidates.push(built(
+          {
+            left: operation(
+              "add",
+              scaledTerm(parent, parentCoefficient),
+              scaledTerm(target, targetCoefficient),
+            ),
+            right: constant(total),
+          },
+          "weighted_sum",
+          { [parent]: parentCoefficient, [target]: targetCoefficient },
+          random,
+          orientationProbability,
+        ));
+      }
+    }
+    return candidates;
+  }
+
+  const terms = [target, ...parents];
+  const sum = terms.reduce((total, symbol) => total + values[symbol], 0);
+  if (sum <= STRICT_VISIBLE_MAX) {
+    candidates.push(built(
+      { left: linearExpression(terms.map((symbol) => ({ symbol, coefficient: 1 }))), right: constant(sum) },
+      "multi_variable_sum",
+      Object.fromEntries(terms.map((symbol) => [symbol, 1])),
+      random,
+      orientationProbability,
+    ));
+  }
+  const signPatterns = random.shuffle([
+    [1, -1, 1, -1], [1, 1, -1, 1], [1, -1, -1, 1], [1, 1, 1, -1],
+    [1, -1, 1, 1], [1, 1, -1, -1],
+  ] as const);
+  for (const pattern of signPatterns) {
+    const coefficients = Object.fromEntries(terms.map((symbol, index) => [symbol, pattern[index] ?? 1]));
+    const total = terms.reduce((result, symbol) => result + coefficients[symbol] * values[symbol], 0);
+    if (total >= 1 && total <= STRICT_VISIBLE_MAX) {
+      candidates.push(built(
+        { left: linearExpression(terms.map((symbol) => ({ symbol, coefficient: coefficients[symbol] }))), right: constant(total) },
+        "multi_variable_balance",
+        coefficients,
+        random,
+        orientationProbability,
+      ));
+    }
+  }
+  for (const coefficient of COEFFICIENTS) {
+    const coefficients = Object.fromEntries(terms.map((symbol, index) => [symbol, index === 0 ? coefficient : 1]));
+    const total = terms.reduce((result, symbol) => result + coefficients[symbol] * values[symbol], 0);
+    if (total <= STRICT_VISIBLE_MAX) {
+      candidates.push(built(
+        { left: linearExpression(terms.map((symbol) => ({ symbol, coefficient: coefficients[symbol] }))), right: constant(total) },
+        "weighted_sum",
+        coefficients,
+        random,
+        orientationProbability,
+      ));
+    }
+  }
+  return candidates;
+}
+
+function determinant(
+  first: Readonly<Record<string, number>>,
+  second: Readonly<Record<string, number>>,
+  variables: readonly string[],
+): number {
+  return (first[variables[0]] ?? 0) * (second[variables[1]] ?? 0) -
+    (first[variables[1]] ?? 0) * (second[variables[0]] ?? 0);
+}
+
+function chooseCoupledPair(
+  variables: readonly string[],
+  values: Readonly<VariableAssignment>,
+  random: SeededRandom,
+  orientationProbability: number,
+  planned: readonly [PlannedRelationship, PlannedRelationship],
+): [BuiltEquation & { reversed: boolean }, BuiltEquation & { reversed: boolean }] {
+  const pool = relationCandidates(variables[1], [variables[0]], values, random, orientationProbability);
+  const firstPool = pool.filter((candidate) =>
+    plannedCoefficientMatches(candidate, planned[0], variables[1], [variables[0]]),
+  );
+  const secondPool = pool.filter((candidate) =>
+    plannedCoefficientMatches(candidate, planned[1], variables[1], [variables[0]]),
+  );
+  const pairs = firstPool.flatMap((first) => secondPool.map((second) => [first, second] as const))
+    .filter(([first, second]) => first !== second && determinant(first.coefficients, second.coefficients, variables) !== 0);
+  if (pairs.length === 0) throw new Error("Unable to compose independent coupled constraints.");
+  return [...random.pick(pairs)];
+}
+
+function selectRelationship(
+  candidates: readonly (BuiltEquation & { reversed: boolean })[],
+  random: SeededRandom,
+  planned?: PlannedRelationship,
+  target?: string,
+  parents: readonly string[] = [],
+): BuiltEquation & { reversed: boolean } {
+  if (candidates.length === 0) throw new Error("No clean relationship fits the hidden assignment.");
+  const preferred = candidates.filter((candidate) => {
+    const definition = EQUATION_RELATIONSHIP_REGISTRY.find((item) => item.id === candidate.relationship);
+    return definition?.productionEnabled;
+  });
+  const production = (preferred.length ? preferred : candidates).filter((candidate) =>
+    !planned || plannedCoefficientMatches(candidate, planned, target ?? "", parents),
+  );
+  if (production.length === 0) throw new Error(`No clean ${planned?.relationship ?? "production"} relationship fits the hidden assignment.`);
+  const maximumConstant = (expression: MathematicalExpression): number => {
+    if (expression.kind === "constant") return expression.value;
+    if (expression.kind === "variable") return 0;
+    return Math.max(maximumConstant(expression.left), maximumConstant(expression.right));
+  };
+  const relationship = planned?.relationship ?? random.pick([...new Set(production.map((candidate) => candidate.relationship))]);
+  const sameRelationship = production.filter((candidate) => candidate.relationship === relationship);
+  const scored = sameRelationship.map((candidate) => ({
+    candidate,
+    maximum: Math.max(maximumConstant(candidate.equation.left), maximumConstant(candidate.equation.right)),
+  })).sort((first, second) => first.maximum - second.maximum);
+  const strict = scored.filter((item) => item.maximum >= 1 && item.maximum <= STRICT_VISIBLE_MAX);
+  if (strict.length === 0) {
+    throw new Error("No relationship satisfies the strict 1-20 visible-constant policy.");
+  }
+  return random.pick(strict.map((item) => item.candidate));
+}
+
+function evidenceRank(level: EquationEvidenceLevel): number {
+  return ["official", "official_composition", "third_party_supported", "experimental"].indexOf(level);
+}
+
+function buildFromValues(
+  definition: GraphDefinition,
+  variables: string[],
+  values: VariableAssignment,
+  parents: number[][],
+  difficulty: Difficulty,
+  random: SeededRandom,
+  rootStrategy: GraphDefinition["rootStrategy"],
+  plan: RelationshipPlan,
+): BuiltModel {
+  const orientationProbability = difficulty === "easy" ? 0.2 : difficulty === "medium" ? 0.4 : 0.5;
+  const constructed: Array<BuiltEquation & { reversed: boolean }> = [];
+  const plannedSteps: Array<Omit<EquationSolutionStep, "equationIndex" | "supportingEquationIndices"> & {
+    equation: BuiltEquation & { reversed: boolean };
+    supporting?: Array<BuiltEquation & { reversed: boolean }>;
+  }> = [];
+
+  if (rootStrategy === "coupled") {
+    if (!plan.coupledRoots) throw new Error("Coupled generation requires two planned entry relationships.");
+    const roots = chooseCoupledPair(variables.slice(0, 2), values, random, orientationProbability, plan.coupledRoots);
+    constructed.push(...roots);
+    plannedSteps.push({
+      equation: roots[0],
+      supporting: [roots[1]],
+      targetSymbol: variables[0],
+      knownSymbols: [],
+      dependencySymbols: [],
+      reasoning: "combine_equations",
+    });
+    plannedSteps.push({
+      equation: roots[0],
+      targetSymbol: variables[1],
+      knownSymbols: [variables[0]],
+      dependencySymbols: [variables[0]],
+      reasoning: "substitute",
+    });
+  } else if (rootStrategy === "direct") {
+    const rootIndices = parents.flatMap((items, index) => items.length === 0 ? [index] : []);
+    for (const index of rootIndices) {
+      const equation = selectRelationship(
+        relationCandidates(variables[index], [], values, random, orientationProbability),
+        random,
+      );
+      constructed.push(equation);
+      plannedSteps.push({
+        equation,
+        targetSymbol: variables[index],
+        knownSymbols: plannedSteps.map((step) => step.targetSymbol),
+        dependencySymbols: [],
+        reasoning: "solve_variable",
+      });
+    }
+  }
+
+  const startingIndex = rootStrategy === "coupled" ? 2 : 1;
+  const derived: Array<{ index: number; equation: BuiltEquation & { reversed: boolean } }> = [];
+  for (let index = startingIndex; index < variables.length; index += 1) {
+    if (rootStrategy === "direct" && parents[index].length === 0) continue;
+    const parentSymbols = parents[index].map((parentIndex) => variables[parentIndex]);
+    const planned = plan.derived.get(index);
+    if (!planned) throw new Error(`Missing planned relationship for ${variables[index]}.`);
+    const equation = selectRelationship(
+      relationCandidates(variables[index], parentSymbols, values, random, orientationProbability),
+      random,
+      planned,
+      variables[index],
+      parentSymbols,
+    );
+    constructed.push(equation);
+    derived.push({ index, equation });
+  }
+
+  if (rootStrategy === "global_balance") {
+    const sensitivities = new Map<string, number>([[variables[0], 1]]);
+    derived.forEach((item) => {
+      const target = variables[item.index];
+      const targetCoefficient = item.equation.coefficients[target] ?? 0;
+      const parentContribution = parents[item.index].reduce((total, parentIndex) => {
+        const parent = variables[parentIndex];
+        return total + (item.equation.coefficients[parent] ?? 0) * (sensitivities.get(parent) ?? 0);
+      }, 0);
+      if (targetCoefficient === 0) throw new Error("Derived relationship does not constrain its target.");
+      sensitivities.set(target, -parentContribution / targetCoefficient);
+    });
+    const globalCandidates = relationCandidates(
+      variables[0],
+      variables.slice(1),
+      values,
+      random,
+      orientationProbability,
+    ).filter((candidate) => {
+      const rootCoefficient = variables.reduce((total, symbol) =>
+        total + (candidate.coefficients[symbol] ?? 0) * (sensitivities.get(symbol) ?? 0), 0);
+      return Math.abs(rootCoefficient) > 1e-9;
+    });
+    const global = selectRelationship(
+      globalCandidates,
+      random,
+      plan.global ?? undefined,
+      variables[0],
+      variables.slice(1),
+    );
+    constructed.push(global);
+    plannedSteps.push({
+      equation: global,
+      supporting: derived.map((item) => item.equation),
+      targetSymbol: variables[0],
+      knownSymbols: [],
+      dependencySymbols: [],
+      reasoning: "combine_equations",
+    });
+  }
+
+  const solved = plannedSteps.map((step) => step.targetSymbol);
+  for (const item of derived) {
+    const parentSymbols = parents[item.index].map((parentIndex) => variables[parentIndex]);
+    plannedSteps.push({
+      equation: item.equation,
+      targetSymbol: variables[item.index],
+      knownSymbols: [...solved],
+      dependencySymbols: parentSymbols,
+      reasoning: "substitute",
+    });
+    solved.push(variables[item.index]);
+  }
+
+  if (constructed.length !== variables.length || plannedSteps.length !== variables.length) {
+    throw new Error("Composed system must contain one independent equation and solve step per variable.");
+  }
+
+  const displayed = random.shuffle(constructed);
+  const steps: EquationSolutionStep[] = plannedSteps.map((step) => ({
+    equationIndex: displayed.indexOf(step.equation),
+    ...(step.supporting?.length
+      ? { supportingEquationIndices: step.supporting.map((equation) => displayed.indexOf(equation)) }
+      : {}),
+    targetSymbol: step.targetSymbol,
+    knownSymbols: step.knownSymbols,
+    dependencySymbols: step.dependencySymbols,
+    reasoning: step.reasoning,
+  }));
+  const reasoningPath = steps.map((step) => {
+    const dependencies = step.dependencySymbols ?? [];
+    if (step.reasoning === "combine_equations") {
+      return `Combine the linked constraints to isolate ${step.targetSymbol} = ${values[step.targetSymbol]}.`;
+    }
+    if (dependencies.length === 0) return `Read the direct constraint to obtain ${step.targetSymbol} = ${values[step.targetSymbol]}.`;
+    return `Substitute ${dependencies.map((symbol) => `${symbol} = ${values[symbol]}`).join(" and ")} to obtain ${step.targetSymbol} = ${values[step.targetSymbol]}.`;
+  });
+  const depth = new Map<string, number>();
+  steps.forEach((step) => depth.set(
+    step.targetSymbol,
+    (step.dependencySymbols ?? []).length
+      ? Math.max(...(step.dependencySymbols ?? []).map((symbol) => depth.get(symbol) ?? 0)) + 1
+      : 0,
+  ));
+  const deepest = Math.max(0, ...depth.values());
+  const targetCandidates = difficulty === "easy"
+    ? variables
+    : variables.filter((symbol) => (depth.get(symbol) ?? 0) === deepest);
+  const targetSymbol = random.pick(targetCandidates.length ? targetCandidates : variables);
+  const relationshipDefinitions = displayed.map((item) =>
+    EQUATION_RELATIONSHIP_REGISTRY.find((definition) => definition.id === item.relationship),
+  );
+  const evidenceLevel = relationshipDefinitions.reduce<EquationEvidenceLevel>(
+    (highest, relationship) => relationship && evidenceRank(relationship.evidence) > evidenceRank(highest)
+      ? relationship.evidence
+      : highest,
+    definition.evidence,
+  );
+  const multiVariableCount = displayed.filter((item) => item.symbols.length >= 3).length;
+
+  return {
+    family: definition.id,
+    evidenceLevel,
+    rootStrategy,
+    variables,
+    values,
+    equations: displayed.map((item) => item.equation),
+    relationships: displayed.map((item) => item.relationship),
+    steps,
+    reasoningPath,
+    hiddenGroupingCount: multiVariableCount + Number(rootStrategy === "global_balance"),
+    relationshipReversalCount: displayed.filter((item) => item.reversed).length,
+    meaningfulReasoningSteps: steps.length + steps.reduce(
+      (total, step) => total + (step.supportingEquationIndices?.length ?? 0),
+      0,
+    ),
+    targetSymbol,
+  };
+}
+
+function buildModel(
+  configuration: MathematicalEquationGenerationConfiguration,
+  random: SeededRandom,
+): BuiltModel {
+  const definition = graphFor(configuration);
+  const count = definition.variableCounts[configuration.difficulty];
+  if (!count) throw new Error(`Graph ${definition.id} does not support ${configuration.difficulty}.`);
+  const variables = random.shuffle([...SYMBOLS.slice(0, count)]);
+  const parents = parentsFor(definition.id, count);
+  const rootStrategy = definition.id === "direct" && random.fork("root-strategy").boolean(0.45)
+    ? "coupled"
+    : definition.rootStrategy;
+  let lastError: unknown = null;
+  for (let planAttempt = 0; planAttempt < 12; planAttempt += 1) {
+    const planRandom = random.fork(`relationship-plan-${planAttempt}`);
+    const plan = relationshipPlan(rootStrategy, variables, parents, planRandom);
+    const assignments = constraintAwareAssignments(
+      variables,
+      parents,
+      plan,
+      planRandom.fork("finite-domain-assignment"),
+      configuration.difficulty === "easy" ? 40 : 24,
+    );
+    if (assignments.length === 0) {
+      lastError = new Error("The planned relationship graph has no assignment in the 1-20 integer domain.");
+      continue;
+    }
+    const rankedAssignments = [...assignments].sort((first, second) =>
+        assignmentPlanningScore(first, variables, parents, plan) -
+        assignmentPlanningScore(second, variables, parents, plan),
+      );
+    const shortlistedAssignments = rankBiasedSample(
+      rankedAssignments,
+      10,
+      planRandom.fork("assignment-quality-sampling"),
+    );
+    const models = shortlistedAssignments.flatMap((values, assignmentIndex) => {
+      try {
+        const model = buildFromValues(
+          definition,
+          variables,
+          values,
+          parents,
+          configuration.difficulty,
+          planRandom.fork(`model-${assignmentIndex}`),
+          rootStrategy,
+          plan,
+        );
+        const style = inspectEquationPresentation(model.equations, model.values);
+        if (configuration.difficulty === "easy" && style.mentalArithmeticCost > 9) return [];
+        const solutionValues = Object.values(model.values);
+        const solutionMean = solutionValues.reduce((sum, value) => sum + value, 0) / solutionValues.length;
+        const lowValueCount = solutionValues.filter((value) => value <= 4).length;
+        const highValueCount = solutionValues.filter((value) => value >= 15).length;
+        const valueBalancePenalty = Math.abs(solutionMean - 10.5) * 1.25 +
+          Math.max(0, lowValueCount - highValueCount) * 0.65;
+        const quality = style.presentationPenalty + style.mentalArithmeticCost * 0.25 + valueBalancePenalty;
+        return [{ model, quality }];
+      } catch (error) {
+        lastError = error;
+        return [];
+      }
+    });
+    if (models.length > 0) {
+      models.sort((first, second) => first.quality - second.quality);
+      return rankBiasedSample(models, 1, planRandom.fork("model-quality-sampling"))[0].model;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Unable to compose a constraint-aware equation system for the selected graph.");
 }
 
 export class MathematicalEquationGenerator implements QuestionGenerator<MathematicalEquationGenerationConfiguration, MathematicalEquationCandidate> {
@@ -500,39 +973,28 @@ export class MathematicalEquationGenerator implements QuestionGenerator<Mathemat
 
   generate(configuration: MathematicalEquationGenerationConfiguration, attempt: number): MathematicalEquationCandidate {
     const random = createRandom(configuration, attempt);
-    const model = buildModel(configuration.difficulty, random);
-    const displayedEquations = random.shuffle(model.equations);
-    const solved: string[] = [];
-    const solutionPath = model.steps.map((step) => {
-      const indices = step.equations.map((item) => displayedEquations.indexOf(item));
-      const result: EquationSolutionStep = {
-        equationIndex: indices[0],
-        ...(indices.length > 1 ? { supportingEquationIndices: indices.slice(1) } : {}),
-        targetSymbol: step.targetSymbol,
-        knownSymbols: [...solved],
-        dependencySymbols: [...step.dependencies],
-        reasoning: step.reasoning,
-      };
-      solved.push(step.targetSymbol);
-      return result;
+    const model = buildModel(configuration, random);
+    const solvedBefore = new Set<string>();
+    const edges = model.steps.flatMap((step) => {
+      const stepEdges = (step.dependencySymbols ?? [])
+        .filter((symbol) => solvedBefore.has(symbol))
+        .map((source) => ({ source, target: step.targetSymbol }));
+      solvedBefore.add(step.targetSymbol);
+      return stepEdges;
     });
-    const edges = model.steps.flatMap((step) =>
-      step.dependencies.map((source) => ({ source, target: step.targetSymbol })),
-    );
     const explanation = model.reasoningPath.map((step, index) => `${index + 1}. ${step}`).join("\n");
-
     return {
       questionType: "mathematical_equation",
       module: "core",
       topic: "Mathematical Equations",
-      subtopic: "dMAT relationship systems",
+      subtopic: "Composed linear relationship systems",
       presentation: {
         prompt: "Find the integer value of every letter so that all equations are true.",
-        blocks: displayedEquations.map((item) => ({ kind: "formula" as const, expression: renderEquation(item) })),
+        blocks: model.equations.map((equation) => ({ kind: "formula", expression: renderMathematicalEquation(equation) })),
       },
       structuredData: {
-        variables: model.variables,
-        equations: displayedEquations,
+        variables: [...model.variables].sort(),
+        equations: model.equations,
         domain: { ...MATHEMATICAL_EQUATION_DOMAIN, integersOnly: true },
         dependencyModel: {
           family: model.family,
@@ -541,15 +1003,23 @@ export class MathematicalEquationGenerator implements QuestionGenerator<Mathemat
           hiddenGroupingCount: model.hiddenGroupingCount,
           relationshipReversalCount: model.relationshipReversalCount,
           meaningfulReasoningSteps: model.meaningfulReasoningSteps,
+          relationshipPrimitives: model.relationships,
+          evidenceLevel: model.evidenceLevel,
+          rootStrategy: model.rootStrategy,
+          targetSymbol: model.targetSymbol,
         },
       },
-      response: { kind: "symbol_assignment", symbols: model.variables },
-      correctAnswer: Object.fromEntries(model.variables.map((symbol) => [symbol, model.assignment[symbol]])),
+      response: { kind: "symbol_assignment", symbols: [...model.variables].sort() },
+      correctAnswer: Object.fromEntries([...model.variables].sort().map((symbol) => [symbol, model.values[symbol]])),
       explanation,
-      fastestMethod: model.fastestMethod,
       reasoningPath: model.reasoningPath,
+      fastestMethod: model.rootStrategy === "global_balance"
+        ? "Express the dependent letters through the anchor, use the balance constraint once, then substitute forward through the graph."
+        : model.rootStrategy === "coupled"
+          ? "Combine the independent entry constraints, then substitute each solved value through the remaining dependency graph."
+          : "Start from the cleanest direct constraint, then substitute through the composed relationships in dependency order.",
       estimatedSolveTimeSeconds: ESTIMATED_SECONDS[configuration.difficulty],
-      solutionPath,
+      solutionPath: model.steps,
     };
   }
 }
