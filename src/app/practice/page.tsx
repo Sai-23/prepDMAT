@@ -1,7 +1,10 @@
+import { redirect } from "next/navigation";
+
 import { PageShell } from "@/components/layout/page-shell";
 import { PracticeExperience } from "@/components/practice/practice-experience";
 import { ErrorState } from "@/components/shared/error-state";
 import { requireUser } from "@/lib/auth/guards";
+import { getOnboardingState } from "@/lib/onboarding/data";
 import { getActivePracticeSession, getExactPracticeModule, getPracticeLandingData } from "@/lib/practice/data";
 import type { PracticeConfig } from "@/lib/practice/schemas";
 import { CORE_SKILLS, coreSkill, type CoreSkillId } from "@/lib/progress/skills";
@@ -20,13 +23,16 @@ export default async function PracticePage({
   let performance = null;
   let initialConfig: PracticeConfig | undefined;
   let loadError: string | null = null;
+  let diagnosticInProgress = false;
 
   try {
-    const [landing, active, exactModule] = await Promise.all([
+    const [landing, active, exactModule, onboarding] = await Promise.all([
       getPracticeLandingData(user.id),
       getActivePracticeSession(user.id),
       questionId ? getExactPracticeModule(questionId) : Promise.resolve(null),
+      getOnboardingState(user.id),
     ]);
+    diagnosticInProgress = onboarding.diagnosticStatus === "in_progress";
     performance = landing;
     initialSession = active;
     if (questionId && exactModule) {
@@ -55,6 +61,8 @@ export default async function PracticePage({
   } catch {
     loadError = "Unable to load practice.";
   }
+
+  if (diagnosticInProgress) redirect("/onboarding/diagnostic");
 
   return (
     <PageShell

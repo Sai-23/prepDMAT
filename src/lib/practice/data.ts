@@ -298,7 +298,10 @@ export async function createPracticeSession(userId: string, config: PracticeConf
   });
   if (error) {
     if (String(error.message).includes("active_practice_session_exists")) {
-      throw new Error("Finish or abandon your current practice session before starting another.");
+      throw new PublicActionError(
+        "ACTION_FAILED",
+        "Finish or leave your active Practice or Diagnostic session before starting another.",
+      );
     }
     throw new Error("Unable to save this practice session. Apply the latest database migration and try again.");
   }

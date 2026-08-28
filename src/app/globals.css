@@ -396,6 +396,19 @@ body.zen-mode [data-site-footer] {
   display: none;
 }
 
+body:has([data-focused-assessment]) [data-site-footer] {
+  display: none;
+}
+
+[data-workspace-shell]:has([data-focused-assessment]) {
+  padding-top: 0.75rem;
+  padding-bottom: 0;
+}
+
+[data-workspace-shell]:has([data-focused-assessment]) [data-workspace-heading] {
+  display: none;
+}
+
 @supports not (color: color-mix(in srgb, black 50%, white)) {
   :root,
   .light {

@@ -49,15 +49,19 @@ describe("Mock Test student experience contract", () => {
   });
 
   it("uses a responsive navigator with explicit accessible state labels", () => {
-    expect(runner).toContain("repeat(auto-fit,minmax(2.5rem,1fr))");
+    expect(runner).toContain("repeat(auto-fit,minmax(2.75rem,1fr))");
     expect(runner).toContain('isAnswered ? "answered" : "unanswered"');
     expect(runner).toContain('isCurrent ? "current" : null');
     expect(runner).toContain("minmax(0,1fr)");
+    expect(runner).toContain("AssessmentActionZone");
+    expect(runner).toContain("contentRef.current?.scrollTo({ top: 0 })");
   });
 
   it("isolates the one-second timer from the active question surface", () => {
     expect(runner).toContain("const TestTimer = memo");
     expect(runner).toContain('data-testid="isolated-test-timer"');
+    expect(runner).toContain('role="timer"');
+    expect(runner).not.toContain('<span aria-live="polite" className="flex items-center gap-2 rounded-md');
     expect(runner.indexOf("const [remainingSeconds")).toBeLessThan(
       runner.indexOf("export function TestRunner"),
     );

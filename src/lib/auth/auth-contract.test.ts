@@ -77,6 +77,16 @@ describe("authentication contracts", () => {
       expect(proxy).toContain(`"${route}"`);
     }
   });
+
+  it("keeps compact auth forms and their primary action in normal document flow", () => {
+    const form = source("src/components/auth/auth-form.tsx");
+    const pages = [source("src/app/login/page.tsx"), source("src/app/register/page.tsx")].join("\n");
+
+    expect(form).toContain('className="space-y-4"');
+    expect(form).toContain('className="min-h-11 w-full"');
+    expect(form).toContain('role="alert"');
+    expect(`${form}\n${pages}`).not.toMatch(/\bfixed\b|\bsticky\b/);
+  });
 });
 
 describe("marketing consent migration", () => {

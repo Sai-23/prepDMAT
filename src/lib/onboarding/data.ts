@@ -8,6 +8,7 @@ import {
   recordDiagnosticAnswer,
 } from "@/lib/practice/data";
 import { mapQuestionToSkills } from "@/lib/progress/skills";
+import { PublicActionError } from "@/lib/security/public-errors";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 import { generateCoreDiagnosticManifest } from "./diagnostic-generation";
@@ -163,7 +164,10 @@ export async function startInitialDiagnostic(userId: string): Promise<string> {
   });
   if (error) {
     if (String(error.message).includes("active_practice_session_exists")) {
-      throw new Error("Finish your current Practice session before starting the diagnostic.");
+      throw new PublicActionError(
+        "ACTION_FAILED",
+        "Finish or leave your current Practice session before starting the diagnostic.",
+      );
     }
     throw new Error("Unable to save the diagnostic. Apply the latest database migration and try again.");
   }

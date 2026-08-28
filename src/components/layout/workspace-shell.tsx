@@ -53,6 +53,7 @@ export function WorkspaceShell({
         "mx-auto flex w-full gap-4 px-4 py-6 lg:px-6",
         zenMode ? "max-w-[1600px]" : "max-w-7xl",
       ].join(" ")}
+      data-workspace-shell
     >
       {!zenMode ? (
         <div className="hidden shrink-0 lg:block">
@@ -66,7 +67,7 @@ export function WorkspaceShell({
         </div>
       ) : null}
       <div className="min-w-0 flex-1 space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4" data-workspace-heading>
           <div className="min-w-0 flex-1">{heading}</div>
           <div className="flex shrink-0 items-center gap-2">
             <div className="lg:hidden">

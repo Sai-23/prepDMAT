@@ -25,15 +25,18 @@ describe("practice UX contract", () => {
     expect(experience).toContain("session.expiresAt");
     expect(experience).toContain("abandonPracticeAction");
     expect(experience).toContain("initialSession?.feedback");
-    expect(experience).toContain("Complete session");
+    expect(experience).toContain("Finish practice");
     expect(experience).toContain("Review every answer");
   });
 
-  it("provides responsive layouts and accessible live error/timer states", () => {
+  it("provides responsive layouts and non-disruptive error/timer semantics", () => {
     expect(experience).toContain("lg:grid-cols-3");
     expect(experience).toContain("sm:grid-cols-2");
-    expect(experience).toContain('aria-live="assertive"');
+    expect(experience).toContain("ActionError");
     expect(experience).toContain('aria-live="polite"');
+    expect(experience).toContain('role="timer"');
+    expect(experience).not.toContain('aria-live="polite"\n      className={remaining');
+    expect(experience).toContain("AssessmentActionZone");
   });
 
   it("isolates the one-second timer and defers feedback implementations", () => {

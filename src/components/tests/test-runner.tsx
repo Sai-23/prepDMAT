@@ -6,7 +6,9 @@ import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { advanceTestSectionAction, processTestClockAction, saveTestResponseAction, submitTestAction } from "@/app/tests/actions";
+import { AssessmentActionZone, AssessmentShell } from "@/components/assessment/assessment-shell";
 import { NativePracticeResponse } from "@/components/practice/native-practice-response";
+import { ActionError } from "@/components/shared/action-error";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,7 +73,7 @@ const TestTimer = memo(function TestTimer({ expiresAt, onExpire, serverNow }: {
     return () => window.clearInterval(timer);
   }, [onExpire, secondsAt, serverNow]);
 
-  return <span aria-live="polite" className="flex items-center gap-2 rounded-md border border-workspace-border bg-code-background px-3 py-2 font-mono text-sm font-semibold text-code-foreground sm:px-4" data-testid="isolated-test-timer">
+  return <span aria-label={`${formatTimer(remainingSeconds)} remaining`} className="flex items-center gap-2 rounded-md border border-workspace-border bg-code-background px-3 py-2 font-mono text-sm font-semibold text-code-foreground sm:px-4" data-testid="isolated-test-timer" role="timer">
     <Clock3 aria-hidden="true" className="h-4 w-4" />
     {formatTimer(remainingSeconds)}
   </span>;
@@ -111,6 +113,7 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
   const debounceTimers = useRef(new Map<string, number>());
   const submittingRef = useRef(false);
   const changingSectionRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const queueRef = useRef<LatestResponseQueue<PersistedResponse> | null>(null);
   if (queueRef.current == null) {
@@ -124,6 +127,10 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
   useEffect(() => {
     visibleSince.current = Date.now();
   }, []);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [question?.id]);
 
   const timeForQuestion = useCallback((questionId: string) => {
     const accumulated = Number(timeSpent.current.get(questionId) ?? 0);
@@ -311,8 +318,18 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
 
   if (!question) return null;
 
-  return <main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-    <div className="mb-5 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-workspace-border bg-surface-lowest p-3 sm:p-4"><div className="min-w-0"><p className="truncate font-semibold text-on-surface">{attempt.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{question.sectionTitle}</p></div><div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3"><span className="text-sm text-on-surface-variant">{answeredCount}/{attempt.questions.length} answered</span><span aria-live="polite" className="min-w-16 text-right text-xs text-muted-foreground">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "error" ? "Not saved" : ""}</span><TestTimer expiresAt={sectionExpiresAt} onExpire={handleClockExpiry} serverNow={attempt.serverNow} /><ThemeToggle compact /></div></div>
+  return <main className="mx-auto w-full min-w-0 max-w-7xl px-3 pt-2 sm:px-6 lg:px-8">
+    <AssessmentShell
+      actions={<AssessmentActionZone
+        primary={isTrueFinalQuestion ? <Button className="min-h-11 w-full sm:w-auto" disabled={interactionBlocked} onClick={() => setConfirmation("submit")}><Send aria-hidden="true" className="h-4 w-4" />Submit Test</Button> : isLastQuestion ? <Button className="min-h-11 w-full sm:w-auto" disabled={interactionBlocked} onClick={() => setConfirmation("section")}>{isChangingSection ? "Starting next section…" : "End Section & Continue"}<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button> : <Button className="min-h-11 w-full sm:w-auto" disabled={interactionBlocked} onClick={() => moveToQuestion(questionIndex + 1)}>Next<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button>}
+        secondary={<Button className="min-h-11 w-full sm:w-auto" disabled={questionIndex === 0 || interactionBlocked} onClick={() => moveToQuestion(questionIndex - 1)} variant="secondary"><ArrowLeft aria-hidden="true" className="h-4 w-4" />Previous</Button>}
+        status={<span aria-live="polite">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "error" ? "Not saved" : `${answeredCount}/${attempt.questions.length} answered`}</span>}
+        tertiary={<Button className="min-h-11 justify-start px-2 sm:justify-center" disabled={interactionBlocked} onClick={() => { const nextMarked = new Set(markedRef.current); if (nextMarked.has(question.id)) nextMarked.delete(question.id); else nextMarked.add(question.id); markedRef.current = nextMarked; setMarked(nextMarked); setError(null); scheduleSave(question.id, false); }} variant={marked.has(question.id) ? "secondary" : "ghost"}><BookmarkCheck aria-hidden="true" className="h-4 w-4" />{marked.has(question.id) ? "Marked for review" : "Mark for review"}</Button>}
+      />}
+      contentClassName="px-1"
+      contentRef={contentRef}
+      header={<div className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-workspace-border bg-surface-lowest p-3 sm:p-4"><div className="min-w-0"><p className="truncate font-semibold text-on-surface">{attempt.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{question.sectionTitle}</p></div><div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3"><span className="text-sm text-on-surface-variant">{answeredCount}/{attempt.questions.length} answered</span><TestTimer expiresAt={sectionExpiresAt} onExpire={handleClockExpiry} serverNow={attempt.serverNow} /><ThemeToggle compact /></div></div>}
+    >
 
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,17.5rem)]">
       <Card className="min-w-0 overflow-hidden"><CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><Badge variant="subtle">Question {questionIndex + 1} of {sectionQuestions.length}</Badge><Badge>{question.difficulty}</Badge></div><CardTitle className="break-words pt-3 text-2xl leading-9">{question.questionText}</CardTitle></CardHeader><CardContent className="min-w-0 space-y-5">
@@ -321,20 +338,15 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
         {question.formula ? <div className="max-w-full overflow-x-auto rounded-md border border-workspace-border bg-code-background p-5 text-center font-mono text-xl text-code-foreground">{question.formula}</div> : null}
         {question.tableData ? <pre className="max-w-full overflow-x-auto rounded-md bg-code-background p-4 text-sm">{JSON.stringify(question.tableData, null, 2)}</pre> : null}
         <StableMockResponse answer={answers[question.id] ?? null} disabled={interactionBlocked} onChange={handleAnswerChange} question={question} />
-        {error ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-error bg-error-container p-3 text-sm text-error-container-foreground" role="alert"><p>{error}</p>{saveState === "error" ? <Button onClick={() => { stageQuestion(question.id); void flushQuestion(question.id).catch(() => undefined); }} size="sm" variant="outline">Retry</Button> : null}</div> : null}
-        <div className="flex flex-col gap-3 border-t border-workspace-separator pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <Button disabled={interactionBlocked} onClick={() => { const nextMarked = new Set(markedRef.current); if (nextMarked.has(question.id)) nextMarked.delete(question.id); else nextMarked.add(question.id); markedRef.current = nextMarked; setMarked(nextMarked); setError(null); scheduleSave(question.id, false); }} variant={marked.has(question.id) ? "secondary" : "ghost"}><BookmarkCheck aria-hidden="true" className="h-4 w-4" />{marked.has(question.id) ? "Marked for review" : "Mark for review"}</Button>
-          <div className="grid grid-cols-2 gap-2 sm:flex"><Button disabled={questionIndex === 0 || interactionBlocked} onClick={() => moveToQuestion(questionIndex - 1)} variant="secondary"><ArrowLeft aria-hidden="true" className="h-4 w-4" />Previous</Button>
-            {isTrueFinalQuestion ? <Button disabled={interactionBlocked} onClick={() => setConfirmation("submit")}><Send aria-hidden="true" className="h-4 w-4" />Submit Test</Button> : isLastQuestion ? <Button disabled={interactionBlocked} onClick={() => setConfirmation("section")}>{isChangingSection ? "Starting next section…" : "End Section & Continue"}<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button> : <Button disabled={interactionBlocked} onClick={() => moveToQuestion(questionIndex + 1)}>Next<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button>}
-          </div>
-        </div>
+        {error ? <ActionError action={saveState === "error" ? { label: "Retry", onClick: () => { stageQuestion(question.id); void flushQuestion(question.id).catch(() => undefined); } } : undefined} description={`${error} Your current response remains on screen.`} title="That action didn't complete" /> : null}
       </CardContent></Card>
 
       <aside className="min-w-0 space-y-5"><Card className="min-w-0"><CardHeader><CardTitle className="text-base">Question navigator</CardTitle></CardHeader><CardContent className="min-w-0">
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-2" data-testid="question-navigator-grid">{sectionQuestions.map((item, index) => { const isCurrent = index === questionIndex; const isAnswered = isTestAnswerComplete(item, answers[item.id]); const isMarked = marked.has(item.id); const stateLabel = [isCurrent ? "current" : null, isAnswered ? "answered" : "unanswered", isMarked ? "flagged for review" : null].filter(Boolean).join(", "); return <button aria-current={isCurrent ? "step" : undefined} aria-label={`Question ${index + 1}, ${stateLabel}`} className={["relative flex min-h-10 min-w-10 items-center justify-center rounded-md border text-sm font-semibold", isCurrent ? "border-primary bg-primary-muted text-on-surface ring-2 ring-primary ring-offset-1 ring-offset-background" : isAnswered ? "border-success bg-success-container text-success-container-foreground" : "border-workspace-border bg-surface-container text-on-surface-variant"].join(" ")} disabled={interactionBlocked} data-question-state={isCurrent ? "current" : isAnswered ? "answered" : "unanswered"} key={item.id} onClick={() => moveToQuestion(index)} type="button">{isCurrent ? <span aria-hidden="true" className="absolute left-1 top-0 text-primary">•</span> : null}{index + 1}{isAnswered && !isCurrent ? <CheckCircle2 aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-3 w-3" /> : null}{isMarked ? <BookmarkCheck aria-hidden="true" className="absolute right-0.5 top-0.5 h-3.5 w-3.5 text-warning" /> : null}</button>; })}</div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(2.75rem,1fr))] gap-2" data-testid="question-navigator-grid">{sectionQuestions.map((item, index) => { const isCurrent = index === questionIndex; const isAnswered = isTestAnswerComplete(item, answers[item.id]); const isMarked = marked.has(item.id); const stateLabel = [isCurrent ? "current" : null, isAnswered ? "answered" : "unanswered", isMarked ? "flagged for review" : null].filter(Boolean).join(", "); return <button aria-current={isCurrent ? "step" : undefined} aria-label={`Question ${index + 1}, ${stateLabel}`} className={["relative flex min-h-11 min-w-11 items-center justify-center rounded-md border text-sm font-semibold", isCurrent ? "border-primary bg-primary-muted text-on-surface ring-2 ring-primary ring-offset-1 ring-offset-background" : isAnswered ? "border-success bg-success-container text-success-container-foreground" : "border-workspace-border bg-surface-container text-on-surface-variant"].join(" ")} disabled={interactionBlocked} data-question-state={isCurrent ? "current" : isAnswered ? "answered" : "unanswered"} key={item.id} onClick={() => moveToQuestion(index)} type="button">{isCurrent ? <span aria-hidden="true" className="absolute left-1 top-0 text-primary">•</span> : null}{index + 1}{isAnswered && !isCurrent ? <CheckCircle2 aria-hidden="true" className="absolute bottom-0.5 right-0.5 h-3 w-3" /> : null}{isMarked ? <BookmarkCheck aria-hidden="true" className="absolute right-0.5 top-0.5 h-3.5 w-3.5 text-warning" /> : null}</button>; })}</div>
         <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-on-surface-variant"><p className="flex items-center gap-2"><span aria-hidden="true" className="h-3.5 w-3.5 rounded-sm border-2 border-primary bg-primary-muted" />Current</p><p className="flex items-center gap-2"><CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5 text-success" />Answered</p><p className="flex items-center gap-2"><span aria-hidden="true" className="h-3.5 w-3.5 rounded-sm border border-workspace-border bg-surface-container" />Unanswered</p><p className="flex items-center gap-2"><BookmarkCheck aria-hidden="true" className="h-3.5 w-3.5 text-warning" />Flagged for review</p></div>
       </CardContent></Card></aside>
     </div>
+    </AssessmentShell>
 
     <Dialog dismissible={!isSubmitting} onOpenChange={(open) => { if (!open && !isSubmitting) setConfirmation(null); }} open={confirmation === "submit"} title="Submit your mock?"><div className="space-y-5"><div className="grid grid-cols-3 gap-3 text-center"><div className="rounded-md bg-success-container p-3"><p className="text-2xl font-semibold">{answeredCount}</p><p className="text-xs">Answered</p></div><div className="rounded-md bg-surface-container p-3"><p className="text-2xl font-semibold">{unansweredCount}</p><p className="text-xs">Unanswered</p></div><div className="rounded-md bg-warning-container p-3"><p className="text-2xl font-semibold">{flaggedCount}</p><p className="text-xs">Flagged</p></div></div>{unansweredCount ? <p className="text-sm text-on-surface-variant">Unanswered questions will be graded as incorrect. You can return to the test before submitting.</p> : null}<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button disabled={isSubmitting} onClick={() => setConfirmation(null)} variant="secondary">Return to Test</Button><Button disabled={isSubmitting} onClick={() => void submitTest(false)}><Send className="h-4 w-4" />{isSubmitting ? "Submitting…" : "Submit Mock"}</Button></div></div></Dialog>
     <Dialog onOpenChange={(open) => { if (!open && !isChangingSection) setConfirmation(null); }} open={confirmation === "section"} title="End this section?"><div className="space-y-5"><p className="text-sm leading-6 text-on-surface-variant">Your latest answers will be saved before the next timed section begins. You won&apos;t be able to return to this section.</p><div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button disabled={isChangingSection} onClick={() => setConfirmation(null)} variant="secondary">Return to Section</Button><Button disabled={isChangingSection} onClick={() => void advanceSection()}>{isChangingSection ? "Starting…" : "End Section & Continue"}<ArrowRight className="h-4 w-4" /></Button></div></div></Dialog>

@@ -21,9 +21,9 @@ export default async function LoginPage({
   const hasAlternativeProvider = availability.google || availability.phone;
 
   return (
-    <div className="mx-auto flex w-full max-w-md px-4 py-10 sm:px-6 sm:py-16">
+    <div className="mx-auto flex w-full max-w-md px-4 py-6 sm:px-6 sm:py-10">
       <Card className="w-full">
-        <CardHeader>
+        <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-4">
           <CardTitle>Welcome back</CardTitle>
           <CardDescription>
             Sign in to continue your preparation and review your progress.

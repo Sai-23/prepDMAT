@@ -49,6 +49,9 @@ const restrictedTables = [
 ];
 
 const rpcChecks = [
+  ["consume_security_rate_limits", {
+    p_checks: [],
+  }, "rate_limit_check_count_invalid"],
   ["reserve_generated_core_mock", {
     p_user_id: crypto.randomUUID(),
     p_generation_request_id: crypto.randomUUID(),
@@ -105,6 +108,7 @@ const report = {
   anonymousIsolation: [],
   rpc: [],
   latency: [],
+  practiceStartState: null,
 };
 
 function errorDetails(error) {
@@ -133,6 +137,24 @@ for (const [table, columns] of schemaChecks) {
     error: errorDetails(error),
   });
 }
+
+const activePracticeResult = await service
+  .from("practice_sessions")
+  .select("session_type,source_mode,started_at,expires_at")
+  .eq("status", "in_progress")
+  .limit(1000);
+const activePracticeRows = activePracticeResult.data ?? [];
+const staleBefore = Date.now() - 24 * 60 * 60 * 1000;
+report.practiceStartState = {
+  queryOk: !activePracticeResult.error,
+  activeCount: activePracticeRows.length,
+  diagnosticCount: activePracticeRows.filter((row) => row.session_type === "diagnostic").length,
+  standardCount: activePracticeRows.filter((row) => row.session_type === "standard_practice").length,
+  targetedCount: activePracticeRows.filter((row) => row.session_type === "targeted_practice").length,
+  exactReviewCount: activePracticeRows.filter((row) => row.session_type === "exact_review").length,
+  olderThan24Hours: activePracticeRows.filter((row) => new Date(row.started_at).getTime() < staleBefore).length,
+  error: errorDetails(activePracticeResult.error),
+};
 
 for (const [area, table, columns] of [
   ["dashboard/progress", "test_attempts", "id,status"],

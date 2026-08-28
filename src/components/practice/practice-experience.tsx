@@ -1,10 +1,10 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, LogOut } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Flag, LogOut } from "lucide-react";
 import type { Route } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import {
   abandonPracticeAction,
@@ -16,6 +16,8 @@ import {
   startPracticeAction,
   submitPracticeAnswerAction,
 } from "@/app/practice/actions";
+import { AssessmentActionZone, AssessmentShell } from "@/components/assessment/assessment-shell";
+import { ActionError } from "@/components/shared/action-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FigureSequencePresentation, LatinSquareStructuredData, MathematicalEquationStructuredData } from "@/lib/generation";
@@ -104,9 +106,10 @@ const PracticeTimer = memo(function PracticeTimer({
 
   return (
     <span
-      aria-live="polite"
+      aria-label={`${formatSeconds(remaining)} remaining`}
       className={remaining <= 60 ? "font-mono font-semibold text-error" : "font-mono font-semibold"}
       data-testid="isolated-practice-timer"
+      role="timer"
     >
       <Clock3 className="mr-1 inline h-4 w-4" />
       {formatSeconds(remaining)}
@@ -150,8 +153,19 @@ export function PracticeExperience({
 
   const canSubmit = useMemo(() => session ? validAnswer(answer, session) : false, [answer, session]);
 
+  const startPractice = () => startTransition(async () => {
+    if (!selectedModule) return;
+    setError(null);
+    const config: PracticeConfig = initialConfig?.questionId
+      ? { ...initialConfig, module: selectedModule } as PracticeConfig
+      : { module: selectedModule, difficulty, questionCount, timingMode, focusFamilies: initialConfig?.focusFamilies, sourceAttemptId: initialConfig?.sourceAttemptId };
+    const result = await startPracticeAction(config);
+    if (result.error || !result.session) { setError(result.error ?? "Unable to start practice."); return; }
+    setSession(result.session); setExpired(false); setAnswer(result.session.answer); setFeedback(result.session.feedback);
+  });
+
   const submit = () => {
-    if (!session || !answer || feedback || !canSubmit) return;
+    if (!session || !answer || feedback || !canSubmit || expired) return;
     setError(null);
     startTransition(async () => {
       const result = await submitPracticeAnswerAction({ sessionId: session.sessionId, questionId: session.question.id, answer });
@@ -200,6 +214,7 @@ export function PracticeExperience({
         error={error}
         feedback={feedback}
         isPending={isPending}
+        key={session.question.id}
         onAnswer={setAnswer}
         onAdvance={advance}
         onExplanation={() => void openPracticeExplanationAction({ sessionId: session.sessionId, questionId: session.question.id })}
@@ -252,16 +267,8 @@ export function PracticeExperience({
                 <ChoiceGroup label="Questions" options={["5", "10", "20"]} selected={String(questionCount)} onSelect={(value) => setQuestionCount(Number(value) as 5 | 10 | 20)} />
                 <div><p className="mb-2 text-sm font-semibold">Timing</p><div className="grid gap-3 sm:grid-cols-2">{PRACTICE_TIMING_MODES.map((mode) => <button aria-pressed={timingMode === mode.value} className={`rounded-md border p-4 text-left ${timingMode === mode.value ? "border-primary bg-primary-muted" : "border-workspace-border"}`} key={mode.value} onClick={() => setTimingMode(mode.value)} type="button"><span className="font-semibold">{mode.title}</span><span className="mt-1 block text-sm text-muted-foreground">{mode.description}{mode.value === "timed" && questionCount === 20 ? " Uses the official 25-minute module pace." : ""}</span></button>)}</div></div>
               </>}
-              {error ? <ErrorMessage message={error} /> : null}
-              <Button disabled={isPending} onClick={() => startTransition(async () => {
-                setError(null);
-                const config: PracticeConfig = initialConfig?.questionId
-                  ? { ...initialConfig, module: selectedModule } as PracticeConfig
-                  : { module: selectedModule, difficulty, questionCount, timingMode, focusFamilies: initialConfig?.focusFamilies, sourceAttemptId: initialConfig?.sourceAttemptId };
-                const result = await startPracticeAction(config);
-                if (result.error || !result.session) { setError(result.error ?? "Unable to start practice."); return; }
-                setSession(result.session); setExpired(false); setAnswer(result.session.answer); setFeedback(result.session.feedback);
-              })} size="lg">{isPending ? "Preparing questions…" : "Start practice"}<ArrowRight className="h-4 w-4" /></Button>
+              {error ? <ActionError action={{ label: "Retry", onClick: startPractice, disabled: isPending }} description={`${error} Your practice wasn't created.`} title="Couldn't start this practice" /> : null}
+              {!error ? <Button className="min-h-11" disabled={isPending} onClick={startPractice} size="lg">{isPending ? "Preparing questions…" : "Start practice"}<ArrowRight className="h-4 w-4" /></Button> : null}
             </>
         </CardContent>
       </Card> : null}
@@ -282,20 +289,34 @@ function PracticeSession({ session, answer, feedback, canSubmit, expired, error,
   const [reportDetails, setReportDetails] = useState("");
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const [isReporting, startReporting] = useTransition();
+  const contentRef = useRef<HTMLDivElement>(null);
   const progress = (session.currentPosition / session.questionCount) * 100;
-  return <div className="mx-auto max-w-5xl space-y-5">
-    <header className="sticky top-0 z-10 rounded-xl border border-workspace-border bg-surface-lowest/95 p-4 shadow-sm backdrop-blur">
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [session.question.id]);
+
+  return <AssessmentShell
+    actions={<AssessmentActionZone
+      primary={<Button className="min-h-11 w-full sm:w-auto" disabled={isPending || (!feedback && (!canSubmit || expired))} onClick={feedback ? onAdvance : onSubmit} size="lg">{isPending ? (feedback ? "Loading…" : "Checking…") : feedback ? (session.currentPosition === session.questionCount ? "Finish practice" : "Next question") : "Check answer"}<ArrowRight className="h-4 w-4" /></Button>}
+      status={<span>{expired ? "Time expired — your selected answer is preserved." : feedback ? "Answer locked after checking." : "Ctrl/⌘ + Enter"}</span>}
+      tertiary={feedback ? <Button className="min-h-11 justify-start px-2 sm:justify-center" onClick={() => setReportOpen((value) => !value)} variant="ghost"><Flag className="h-4 w-4" />Report question</Button> : undefined}
+    />}
+    className="mx-auto max-w-5xl"
+    contentClassName="space-y-4 px-1"
+    contentRef={contentRef}
+    header={<header className="rounded-xl border border-workspace-border bg-surface-lowest/95 p-3 shadow-sm backdrop-blur sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">{moduleTitle(session.module)}</p><p className="font-semibold">Question {session.currentPosition} of {session.questionCount}</p></div><div className="flex items-center gap-3">{session.expiresAt ? <PracticeTimer expiresAt={session.expiresAt} onExpire={onExpire} /> : <span className="text-sm text-muted-foreground">Untimed</span>}<Button disabled={isPending} onClick={onExit} size="sm" variant="ghost"><LogOut className="h-4 w-4" />Exit</Button></div></div>
       <div aria-label={`${Math.round(progress)} percent complete`} className="mt-3 h-2 overflow-hidden rounded-full bg-surface-high" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}><div className="h-full bg-primary transition-[width] motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
-    </header>
+    </header>}
+  >
     <Card><CardHeader><CardTitle className="text-xl">{session.question.questionText}</CardTitle><CardDescription>{session.question.topic} · {session.question.difficulty} · Target pace {formatSeconds(session.targetPaceSeconds)}</CardDescription></CardHeader><CardContent className="space-y-5">
       <NativePracticeResponse answer={answer} correctAnswer={feedback?.correctAnswer} disabled={Boolean(feedback) || isPending} onChange={onAnswer} question={session.question} />
-      {!feedback ? <div className="flex flex-wrap items-center gap-3"><Button disabled={!canSubmit || isPending || expired} onClick={onSubmit} size="lg">{isPending ? "Checking…" : "Check answer"}</Button><span className="text-xs text-muted-foreground">Ctrl/⌘ + Enter</span></div> : null}
-      {error ? <ErrorMessage message={error} /> : null}
     </CardContent></Card>
-    {feedback ? <div className="space-y-4"><ModuleFeedback answer={answer!} feedback={feedback} onExplanation={onExplanation} session={session} /><div className="flex flex-wrap justify-between gap-3"><Button onClick={() => setReportOpen((value) => !value)} variant="ghost"><Flag className="h-4 w-4" />Report question</Button><Button disabled={isPending} onClick={onAdvance} size="lg">{session.currentPosition === session.questionCount ? "Complete session" : "Next question"}<ArrowRight className="h-4 w-4" /></Button></div>{reportOpen ? <form className="rounded-md border border-workspace-border bg-surface-lowest p-4" onSubmit={(event) => { event.preventDefault(); startReporting(async () => { const result = await reportPracticeQuestionAction({ sessionId: session.sessionId, questionId: session.question.id, reason: reportReason, details: reportDetails }); setReportStatus(result.error ?? "Report submitted. Thank you."); if (!result.error) setReportOpen(false); }); }}><label className="block text-sm font-semibold">Reason<select className="mt-2 h-10 w-full rounded-md border border-workspace-border bg-surface-lowest px-3 font-normal" onChange={(event) => setReportReason(event.target.value)} value={reportReason}><option value="incorrect_answer">Incorrect answer</option><option value="ambiguous_wording">Ambiguous wording</option><option value="unclear_explanation">Unclear explanation</option><option value="formatting_problem">Formatting problem</option><option value="technical_issue">Technical issue</option></select></label><label className="mt-3 block text-sm font-semibold">Details (optional)<textarea className="mt-2 min-h-24 w-full rounded-md border border-workspace-border bg-surface-lowest p-3 font-normal" maxLength={2000} onChange={(event) => setReportDetails(event.target.value)} value={reportDetails} /></label><div className="mt-3 flex justify-end"><Button disabled={isReporting} type="submit" variant="secondary">{isReporting ? "Submitting…" : "Submit report"}</Button></div></form> : null}{reportStatus ? <p aria-live="polite" className="text-sm text-muted-foreground">{reportStatus}</p> : null}</div> : null}
+    {error ? <ActionError action={{ label: "Retry", onClick: feedback ? onAdvance : onSubmit, disabled: isPending }} description={`${error} Your answer and current question are unchanged.`} title="That action didn't complete" /> : null}
+    {feedback ? <div className="space-y-4"><ModuleFeedback answer={answer!} feedback={feedback} onExplanation={onExplanation} session={session} />{reportOpen ? <form className="rounded-md border border-workspace-border bg-surface-lowest p-4" onSubmit={(event) => { event.preventDefault(); startReporting(async () => { const result = await reportPracticeQuestionAction({ sessionId: session.sessionId, questionId: session.question.id, reason: reportReason, details: reportDetails }); setReportStatus(result.error ?? "Report submitted. Thank you."); if (!result.error) setReportOpen(false); }); }}><label className="block text-sm font-semibold">Reason<select className="mt-2 h-11 w-full rounded-md border border-workspace-border bg-surface-lowest px-3 font-normal" onChange={(event) => setReportReason(event.target.value)} value={reportReason}><option value="incorrect_answer">Incorrect answer</option><option value="ambiguous_wording">Ambiguous wording</option><option value="unclear_explanation">Unclear explanation</option><option value="formatting_problem">Formatting problem</option><option value="technical_issue">Technical issue</option></select></label><label className="mt-3 block text-sm font-semibold">Details (optional)<textarea className="mt-2 min-h-24 w-full rounded-md border border-workspace-border bg-surface-lowest p-3 font-normal" maxLength={2000} onChange={(event) => setReportDetails(event.target.value)} value={reportDetails} /></label><div className="mt-3 flex justify-end"><Button className="min-h-11" disabled={isReporting} type="submit" variant="secondary">{isReporting ? "Submitting…" : "Submit report"}</Button></div></form> : null}{reportStatus ? <p aria-live="polite" className="text-sm text-muted-foreground">{reportStatus}</p> : null}</div> : null}
     <p className="text-center text-xs text-muted-foreground"><Flag className="mr-1 inline h-3.5 w-3.5" />Answers lock after Check Answer. Refreshing safely resumes this session.</p>
-  </div>;
+  </AssessmentShell>;
 }
 
 function ModuleFeedback({ session, answer, feedback, onExplanation }: { session: PracticeSessionState; answer: PracticeAnswer; feedback: PracticeFeedback; onExplanation(): void }) {
@@ -310,4 +331,3 @@ function PracticeSummaryView({ summary, onNew }: { summary: PracticeSummary; onN
 }
 
 function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-md bg-surface-low p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p></div>; }
-function ErrorMessage({ message }: { message: string }) { return <p aria-live="assertive" className="flex items-start gap-2 rounded-md bg-error-container p-3 text-sm text-error-container-foreground"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{message}</p>; }

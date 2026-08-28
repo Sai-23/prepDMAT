@@ -8,7 +8,9 @@ import {
   continueDiagnosticAction,
   showDiagnosticQuestionAction,
 } from "@/app/onboarding/actions";
+import { AssessmentActionZone, AssessmentShell } from "@/components/assessment/assessment-shell";
 import { NativePracticeResponse } from "@/components/practice/native-practice-response";
+import { ActionError } from "@/components/shared/action-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DiagnosticSessionState } from "@/lib/onboarding/data";
@@ -42,6 +44,7 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const submissionGuard = useRef(createDiagnosticSubmissionGuard());
+  const contentRef = useRef<HTMLDivElement>(null);
   const canSubmit = useMemo(
     () => isCompleteAnswer(answer, session.question),
     [answer, session.question],
@@ -56,6 +59,10 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
       questionId: session.question.id,
     });
   }, [answered, session.question.id, session.sessionId]);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [session.question.id]);
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
@@ -107,8 +114,22 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
   const progress = Math.round((session.currentPosition / session.questionCount) * 100);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      <header className="rounded-xl border border-workspace-border bg-surface-lowest p-4 shadow-sm">
+    <form
+      className="mx-auto max-w-5xl"
+      onKeyDown={handleKeyboardSubmit}
+      onSubmit={(event) => {
+        event.preventDefault();
+        saveAndContinue();
+      }}
+    >
+      <AssessmentShell
+        actions={<AssessmentActionZone
+          primary={<Button className="min-h-12 w-full px-5 sm:w-auto" disabled={!canContinue} size="lg" type="submit">{pending ? "Saving..." : error ? "Retry" : isFinalQuestion ? "Finish Diagnostic" : "Save & Continue"}{!pending ? <ArrowRight aria-hidden="true" className="h-4 w-4" /> : null}</Button>}
+          status={<div className="min-w-0 flex-1 space-y-1.5"><p className="font-semibold text-on-surface">Question {session.currentPosition} of {session.questionCount}</p><div aria-label={`${progress} percent complete`} aria-valuemax={100} aria-valuemin={0} aria-valuenow={progress} className="h-2 min-w-28 overflow-hidden rounded-full bg-surface-high sm:w-52" role="progressbar"><div className="h-full bg-primary" style={{ width: `${progress}%` }} /></div></div>}
+        />}
+        contentClassName="px-1"
+        contentRef={contentRef}
+        header={<header className="rounded-xl border border-workspace-border bg-surface-lowest p-3 shadow-sm sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Initial Core diagnostic
@@ -118,8 +139,8 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
             Results shown after completion
           </p>
         </div>
-      </header>
-
+      </header>}
+      >
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">{session.question.questionText}</CardTitle>
@@ -127,15 +148,7 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
             {session.question.topic} · {session.question.difficulty} · Untimed
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-6"
-            onKeyDown={handleKeyboardSubmit}
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveAndContinue();
-            }}
-          >
+        <CardContent className="space-y-6">
             <NativePracticeResponse
               answer={answer}
               disabled={answered || pending}
@@ -143,50 +156,10 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
               question={session.question}
             />
 
-            {error ? (
-              <p
-                aria-live="assertive"
-                className="rounded-md bg-error-container p-3 text-sm text-error-container-foreground"
-              >
-                {error} Select Retry to try again.
-              </p>
-            ) : null}
-
-            <div className="grid gap-4 border-t border-workspace-separator pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-              <div className="min-w-0 space-y-2">
-                <p className="text-sm font-semibold text-on-surface">
-                  Question {session.currentPosition} of {session.questionCount}
-                </p>
-                <div
-                  aria-label={`${progress} percent complete`}
-                  aria-valuemax={100}
-                  aria-valuemin={0}
-                  aria-valuenow={progress}
-                  className="h-2 overflow-hidden rounded-full bg-surface-high"
-                  role="progressbar"
-                >
-                  <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-                </div>
-              </div>
-              <Button
-                className="min-h-12 w-full px-5 sm:w-auto"
-                disabled={!canContinue}
-                size="lg"
-                type="submit"
-              >
-                {pending
-                  ? "Saving..."
-                  : error
-                    ? "Retry"
-                    : isFinalQuestion
-                      ? "Finish Diagnostic"
-                      : "Save & Continue"}
-                {!pending ? <ArrowRight aria-hidden="true" className="h-4 w-4" /> : null}
-              </Button>
-            </div>
-          </form>
+            {error ? <ActionError description={`${error} Your selected answer and current question are unchanged. Select Retry to try again.`} title="Answer not saved" /> : null}
         </CardContent>
       </Card>
-    </div>
+      </AssessmentShell>
+    </form>
   );
 }

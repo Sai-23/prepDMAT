@@ -273,7 +273,7 @@ export function AuthForm({
   }
 
   return (
-    <form action={formAction} className="space-y-5" id="email-sign-in" noValidate>
+    <form action={formAction} className="space-y-4" id="email-sign-in" noValidate>
       {fields.map((field) => {
         const errorId = `${field.name}-error`;
         const helpId = field.name === "password" && field.autoComplete === "new-password"
@@ -283,7 +283,7 @@ export function AuthForm({
           .filter(Boolean)
           .join(" ");
         return (
-          <div className="space-y-2" key={field.name}>
+          <div className="space-y-1.5" key={field.name}>
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-semibold text-on-surface" htmlFor={field.name}>
                 {field.label}
@@ -321,7 +321,7 @@ export function AuthForm({
               </p>
             ) : null}
             {state.errors?.[field.name]?.map((error) => (
-              <p className="text-sm text-error" id={errorId} key={error}>
+              <p className="text-sm text-error" id={errorId} key={error} role="alert">
                 {error}
               </p>
             ))}

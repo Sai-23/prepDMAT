@@ -17,10 +17,10 @@ export default async function RegisterPage() {
   const hasAlternativeProvider = availability.google || availability.phone;
 
   return (
-    <div className="mx-auto flex w-full max-w-md px-4 py-10 sm:px-6 sm:py-16">
+    <div className="mx-auto flex w-full max-w-md px-4 py-6 sm:px-6 sm:py-10">
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Create your account</CardTitle>
+        <CardHeader className="p-5 pb-3 sm:p-6 sm:pb-4">
+          <CardTitle>Create your PrepDMAT account</CardTitle>
           <CardDescription>
             Save practice history, review mistakes, and build a focused study plan.
           </CardDescription>

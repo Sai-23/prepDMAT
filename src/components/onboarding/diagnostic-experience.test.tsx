@@ -101,8 +101,10 @@ describe("diagnostic pending-state contract", () => {
 
   it("disables answer mutation and the primary action while saving", () => {
     expect(component).toContain("disabled={answered || pending}");
-    expect(component).toContain('pending\n                  ? "Saving..."');
+    expect(component).toContain('pending ? "Saving..."');
     expect(component).toContain("disabled={!canContinue}");
+    expect(component).toContain("AssessmentActionZone");
+    expect(component).toContain("contentRef.current?.scrollTo({ top: 0 })");
   });
 
   it("guards against double submission and redirects directly to the summary", () => {
