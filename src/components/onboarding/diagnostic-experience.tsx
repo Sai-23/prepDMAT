@@ -140,13 +140,13 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
       </header>}
       >
       <Card>
-        <CardHeader>
+        <CardHeader className={session.question.questionType === "latin_square" ? "p-4 pb-2" : undefined}>
           <CardTitle className="text-xl">{session.question.questionText}</CardTitle>
           <CardDescription>
             {session.question.topic} · {session.question.difficulty} · Untimed
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className={session.question.questionType === "latin_square" ? "space-y-3 px-4 pb-4 pt-0" : "space-y-6"}>
             <NativePracticeResponse
               answer={answer}
               disabled={answered || pending}

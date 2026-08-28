@@ -19,33 +19,37 @@ export function SiteHeader({
   className="sticky top-0 z-40 border-b border-workspace-border bg-surface-lowest/95 backdrop-blur"
   data-site-header
 >
-<div className="mx-auto flex min-h-[54px] w-full max-w-[1500px] items-center justify-between gap-3 px-5 py-0.5 lg:px-8">    <Link
+  <div className="mx-auto flex h-[82px] w-full max-w-[1700px] items-center px-8 lg:px-12">
+
+    <Link
       href="/"
       className="flex shrink-0 items-center"
       aria-label="PrepDMAT home"
     >
       <Image
-        src="/branding/logo/prepdmat-logo-dark.png"
-        alt="PrepDMAT"
-        width={800}
-        height={300}
-        priority
-        className="hidden h-auto w-[175px] object-contain dark:block lg:w-[180px]"
-      />
+  src="/branding/logo/prepdmat-logo-light.png"
+  alt="PrepDMAT"
+  width={800}
+  height={300}
+  priority
+  className="prepdmat-logo-light h-auto w-[220px] object-contain"
+/>
 
-      <Image
-        src="/branding/logo/prepdmat-logo-light.png"
-        alt="PrepDMAT"
-        width={800}
-        height={300}
-        priority
-        className="h-auto w-[175px] object-contain dark:hidden lg:w-[180px]"
-      />
+<Image
+  src="/branding/logo/prepdmat-logo-dark.png"
+  alt="PrepDMAT"
+  width={800}
+  height={300}
+  priority
+  className="prepdmat-logo-dark h-auto w-[220px] object-contain"
+/>
     </Link>
 
-    <SiteHeaderNavigation diagnosticStatus={diagnosticStatus} />
+    <div className="ml-14 flex flex-1 items-center">
+      <SiteHeaderNavigation diagnosticStatus={diagnosticStatus} />
+    </div>
 
-    <div className="flex items-center gap-1 sm:gap-2">
+    <div className="ml-auto flex items-center gap-2">
       <div className="hidden xl:block">
         <ThemeToggle />
       </div>
@@ -63,7 +67,6 @@ export function SiteHeader({
         }
       />
     </div>
-
   </div>
 </header>
   );

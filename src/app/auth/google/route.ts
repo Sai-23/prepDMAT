@@ -23,11 +23,21 @@ export async function GET() {
     return NextResponse.redirect(errorUrl);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: getAuthCallbackUrl() },
-  });
+  let data: { url: string | null };
+  let error: { message?: string } | null;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const result = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: getAuthCallbackUrl() },
+    });
+    data = result.data;
+    error = result.error;
+  } catch {
+    const errorUrl = getApplicationUrl("/login");
+    errorUrl.searchParams.set("error", "auth_unavailable");
+    return NextResponse.redirect(errorUrl);
+  }
 
   if (error || !data.url) {
     const errorUrl = getApplicationUrl("/login");

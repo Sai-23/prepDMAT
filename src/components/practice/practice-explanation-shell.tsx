@@ -8,7 +8,7 @@ import {
   Eye,
   XCircle,
 } from "lucide-react";
-import { type ReactNode, useReducer } from "react";
+import { type ReactNode, useId, useReducer } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +61,7 @@ export function PracticeExplanationShell<Step>({
     stepIndex: Math.min(Math.max(0, steps.length - 1), Math.max(0, initialStep)),
   });
   const currentStep = steps[state.stepIndex];
+  const walkthroughId = useId();
 
   return (
     <section
@@ -96,6 +97,7 @@ export function PracticeExplanationShell<Step>({
           </div>
         ) : null}
         <Button
+          aria-controls={walkthroughId}
           aria-expanded={state.open}
           className="mt-5"
           onClick={() => {
@@ -113,7 +115,7 @@ export function PracticeExplanationShell<Step>({
       </div>
 
       {state.open ? (
-        <div className="border-t border-workspace-separator bg-surface-low p-5 sm:p-6">
+        <div className="border-t border-workspace-separator bg-surface-low p-5 sm:p-6" id={walkthroughId}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">

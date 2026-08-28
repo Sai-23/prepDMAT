@@ -4,6 +4,7 @@ type DisplayNameSource = {
   metadataDisplayName?: unknown;
   metadataFullName?: unknown;
   email?: string | null;
+  phone?: string | null;
 };
 
 function readableString(value: unknown) {
@@ -23,5 +24,10 @@ export function resolveDisplayName(source: DisplayNameSource) {
   if (preferredName) return preferredName;
 
   const emailName = source.email?.split("@")[0]?.trim();
-  return emailName || "Student";
+  if (emailName) return emailName;
+
+  const phoneDigits = source.phone?.replace(/\D/g, "");
+  return phoneDigits && phoneDigits.length >= 4
+    ? `Student ····${phoneDigits.slice(-4)}`
+    : "Student";
 }

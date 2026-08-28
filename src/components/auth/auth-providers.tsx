@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, Phone } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { Mail, Phone } from "lucide-react";
+import { type ReactNode, useActionState, useEffect, useState } from "react";
 
 import {
   googleSignInAction,
@@ -32,12 +32,31 @@ function GoogleButton() {
   return (
     <form action={action} className="space-y-2">
       <Button className="min-h-11 w-full" disabled={pending} type="submit" variant="outline">
-        <span aria-hidden="true" className="text-base font-bold text-on-surface">G</span>
+        <GoogleMark />
         {pending ? "Redirecting to Google..." : "Continue with Google"}
       </Button>
       <ActionMessage state={state} />
     </form>
   );
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" className="size-5 shrink-0" viewBox="0 0 24 24">
+      <path d="M21.6 12.23c0-.71-.06-1.23-.2-1.78H12v3.4h5.52a4.76 4.76 0 0 1-2.05 3.03l-.02.11 2.98 2.3.2.02c1.86-1.71 2.97-4.23 2.97-7.08Z" fill="#4285F4" />
+      <path d="M12 22c2.68 0 4.92-.88 6.56-2.39l-3.16-2.43c-.85.58-1.99.99-3.4.99a5.9 5.9 0 0 1-5.58-4.08l-.1.01-3.1 2.4-.04.1A9.9 9.9 0 0 0 12 22Z" fill="#34A853" />
+      <path d="M6.42 14.09A6.13 6.13 0 0 1 6.1 12c0-.73.13-1.43.31-2.09V9.8L3.28 7.36l-.1.05A10 10 0 0 0 2 12c0 1.65.4 3.21 1.18 4.59l3.24-2.5Z" fill="#FBBC05" />
+      <path d="M12 5.83c1.86 0 3.13.8 3.86 1.47l2.77-2.7C16.91 3.01 14.68 2 12 2a9.9 9.9 0 0 0-8.82 5.41l3.23 2.5A5.92 5.92 0 0 1 12 5.83Z" fill="#EA4335" />
+    </svg>
+  );
+}
+
+export function maskPhoneNumber(phone: string) {
+  const prefix = ["+971", "+91", "+65", "+44", "+1"]
+    .find((countryCode) => phone.startsWith(countryCode)) ?? phone.slice(0, 2);
+  const lastFour = phone.slice(-4);
+  const hiddenLength = Math.max(4, Math.min(6, phone.length - prefix.length - lastFour.length));
+  return `${prefix} ${"•".repeat(hiddenLength)}${lastFour}`;
 }
 
 function ResendPhoneCode({ phone }: { phone: string }) {
@@ -80,7 +99,7 @@ function VerifyPhoneCode({ phone, onChangeNumber }: { phone: string; onChangeNum
   return (
     <div className="space-y-4">
       <p className="text-sm leading-6 text-muted-foreground">
-        Enter the code sent to <span className="font-semibold text-on-surface">{phone}</span>.
+        Code sent to <span className="font-semibold text-on-surface">{maskPhoneNumber(phone)}</span>
       </p>
       <form action={action} className="space-y-4" noValidate>
         <input name="phone" type="hidden" value={phone} />
@@ -110,7 +129,10 @@ function VerifyPhoneCode({ phone, onChangeNumber }: { phone: string; onChangeNum
         </Button>
       </form>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <ResendPhoneCode phone={phone} />
+        <div>
+          <p className="text-xs text-muted-foreground">Didn&apos;t receive the code?</p>
+          <ResendPhoneCode phone={phone} />
+        </div>
         <button
           className="min-h-11 text-sm font-semibold text-primary hover:underline"
           onClick={onChangeNumber}
@@ -186,33 +208,54 @@ function PhonePanel() {
     : <PhoneEntry onCodeSent={setPhone} />;
 }
 
-export function AuthProviderOptions({ availability }: { availability: AuthProviderAvailability }) {
-  const [phoneOpen, setPhoneOpen] = useState(false);
-  if (!availability.google && !availability.phone) return null;
-
+export function AuthProviderOptions({
+  availability,
+  emailForm,
+}: {
+  availability: AuthProviderAvailability;
+  emailForm: ReactNode;
+}) {
+  const [mode, setMode] = useState<"email" | "phone">("email");
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       {availability.google ? <GoogleButton /> : null}
-      {availability.phone ? (
-        <div className="space-y-3">
-          <Button
-            aria-expanded={phoneOpen}
-            className="min-h-11 w-full"
-            onClick={() => setPhoneOpen((current) => !current)}
+      {availability.google ? <AuthDivider /> : null}
+      {availability.phone ? <div className="space-y-4">
+        <div
+          aria-label="Sign-in method"
+          className="grid grid-cols-2 rounded-lg bg-surface-low p-1"
+          role="tablist"
+        >
+          <button
+            aria-controls="auth-email-panel"
+            aria-selected={mode === "email"}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition ${mode === "email" ? "bg-surface-lowest text-on-surface shadow-sm" : "text-muted-foreground hover:text-on-surface"}`}
+            id="auth-email-tab"
+            onClick={() => setMode("email")}
+            role="tab"
             type="button"
-            variant="outline"
           >
-            <Phone aria-hidden="true" className="size-4" />
-            Continue with Phone
-            <ChevronDown aria-hidden="true" className={`ml-auto size-4 transition ${phoneOpen ? "rotate-180" : ""}`} />
-          </Button>
-          {phoneOpen ? (
-            <div className="rounded-md border border-workspace-border bg-surface-low p-4">
-              <PhonePanel />
-            </div>
-          ) : null}
+            <Mail aria-hidden="true" className="size-4" />Email
+          </button>
+          <button
+            aria-controls="auth-phone-panel"
+            aria-selected={mode === "phone"}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition ${mode === "phone" ? "bg-surface-lowest text-on-surface shadow-sm" : "text-muted-foreground hover:text-on-surface"}`}
+            id="auth-phone-tab"
+            onClick={() => setMode("phone")}
+            role="tab"
+            type="button"
+          >
+            <Phone aria-hidden="true" className="size-4" />Phone
+          </button>
         </div>
-      ) : null}
+        <div aria-labelledby="auth-email-tab" hidden={mode !== "email"} id="auth-email-panel" role="tabpanel">
+          {emailForm}
+        </div>
+        <div aria-labelledby="auth-phone-tab" hidden={mode !== "phone"} id="auth-phone-panel" role="tabpanel">
+          <PhonePanel />
+        </div>
+      </div> : emailForm}
     </div>
   );
 }

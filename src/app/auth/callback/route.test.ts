@@ -123,6 +123,29 @@ describe("email verification callback", () => {
     expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
+  it("maps an OAuth consent cancellation to a concise safe login outcome", async () => {
+    const supabase = client();
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(request("?error=access_denied&error_description=raw-provider-detail"));
+    const url = destination(response);
+
+    expect(url.pathname).toBe("/login");
+    expect(url.searchParams.get("error")).toBe("oauth_cancelled");
+    expect(url.toString()).not.toContain("raw-provider-detail");
+  });
+
+  it("maps other OAuth failures without exposing provider details", async () => {
+    const supabase = client();
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(request("?error=server_error&error_description=raw-provider-detail"));
+    const url = destination(response);
+
+    expect(url.searchParams.get("error")).toBe("oauth_failed");
+    expect(url.toString()).not.toContain("raw-provider-detail");
+  });
+
   it("rejects oversized callback credentials before creating a provider client", async () => {
     const response = await GET(request(`?code=${"x".repeat(4097)}`));
 

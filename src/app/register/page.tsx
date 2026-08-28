@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { registerAction } from "@/app/auth/actions";
-import { AuthDivider, AuthProviderOptions } from "@/components/auth/auth-providers";
+import { AuthProviderOptions } from "@/components/auth/auth-providers";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuthProviderAvailability } from "@/lib/auth/config";
@@ -14,7 +14,6 @@ export default async function RegisterPage() {
   if (user) redirect(await getPostAuthRoute(user.id));
 
   const availability = getAuthProviderAvailability();
-  const hasAlternativeProvider = availability.google || availability.phone;
 
   return (
     <div className="mx-auto flex w-full max-w-md px-4 py-6 sm:px-6 sm:py-10">
@@ -26,7 +25,7 @@ export default async function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AuthForm
+          <AuthProviderOptions availability={availability} emailForm={<AuthForm
             action={registerAction}
             fields={[
               { name: "fullName", label: "Full name", type: "text", autoComplete: "name", placeholder: "Your name" },
@@ -37,12 +36,11 @@ export default async function RegisterPage() {
             marketingConsent
             pendingLabel="Creating account..."
             submitLabel="Create account"
-          />
-          {hasAlternativeProvider ? (
-            <div className="mt-5 space-y-5">
-              <AuthDivider />
-              <AuthProviderOptions availability={availability} />
-            </div>
+          />} />
+          {(availability.google || availability.phone) ? (
+            <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">
+              Marketing messages stay off for Google and Phone accounts unless you enable them later in Profile.
+            </p>
           ) : null}
           <p className="mt-5 text-center text-sm text-muted-foreground">
             Already have an account?{" "}

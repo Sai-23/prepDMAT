@@ -23,4 +23,8 @@ describe("resolveDisplayName", () => {
     expect(resolveDisplayName({ email: "alan@example.com" })).toBe("alan");
     expect(resolveDisplayName({})).toBe("Student");
   });
+
+  it("uses a masked phone fallback without exposing the full number", () => {
+    expect(resolveDisplayName({ phone: "+919876543210" })).toBe("Student ····3210");
+  });
 });

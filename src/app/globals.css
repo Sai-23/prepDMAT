@@ -473,3 +473,21 @@ body:has([data-focused-assessment]) [data-site-main] {
     animation-iteration-count: 1 !important;
   }
 }
+/* PrepDMAT theme-aware navbar logo */
+
+.prepdmat-logo-light {
+  display: block;
+}
+
+.prepdmat-logo-dark {
+  display: none;
+}
+
+/* When <html> has class="dark" */
+html.dark .prepdmat-logo-light {
+  display: none;
+}
+
+html.dark .prepdmat-logo-dark {
+  display: block;
+}

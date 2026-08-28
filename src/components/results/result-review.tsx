@@ -7,8 +7,9 @@ import {
   Clock3,
   MinusCircle,
   XCircle,
+  Eye,
 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 
@@ -289,7 +290,6 @@ export function ResultReview({
                     data={question.structuredData as MathematicalEquationStructuredData}
                     difficulty={question.difficulty}
                     educationalExplanation={question.educationalExplanation}
-                    initiallyOpen
                     initialView="all"
                     isCorrect={question.isCorrect}
                     selectedAnswer={equationAnswer}
@@ -301,7 +301,6 @@ export function ResultReview({
                     correctAnswer={question.correctAnswer}
                     difficulty={question.difficulty}
                     educationalExplanation={question.educationalExplanation}
-                    initiallyOpen
                     initialView="all"
                     isCorrect={question.isCorrect}
                     selectedAnswer={figureAnswer}
@@ -314,7 +313,6 @@ export function ResultReview({
                     data={question.structuredData as LatinSquareStructuredData}
                     difficulty={question.difficulty}
                     educationalExplanation={question.educationalExplanation}
-                    initiallyOpen
                     initialView="all"
                     isCorrect={question.isCorrect}
                     selectedAnswer={latinAnswer}
@@ -362,15 +360,12 @@ export function ResultReview({
                 </div>}
 
                 {equationReview || figureReview || latinReview ? null : (
-                  <div className="rounded-md bg-surface-low p-5">
-                  <p className="font-semibold text-on-surface">Explanation</p>
-                  <p className="mt-2 text-sm leading-7 text-on-surface-variant">
-                    {question.explanation}
-                  </p>
-                  <p className="mt-3 text-xs text-slate-500">
+                  <div className="space-y-3">
+                  <p className="text-xs text-slate-500">
                     Your response: {selectedOption?.label ?? "No answer"} · Correct:{" "}
                     {correctOption?.label ?? "Unavailable"}
                   </p>
+                  <ReviewExplanationDisclosure explanation={question.explanation} />
                   </div>
                 )}
               </CardContent>
@@ -384,6 +379,32 @@ export function ResultReview({
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function ReviewExplanationDisclosure({ explanation }: { explanation: string }) {
+  const [open, setOpen] = useState(false);
+  const walkthroughId = useId();
+  return (
+    <div className="rounded-md bg-surface-low p-4">
+      <Button
+        aria-controls={walkthroughId}
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        size="sm"
+        type="button"
+        variant="secondary"
+      >
+        <Eye aria-hidden="true" className="h-4 w-4" />
+        {open ? "Hide walkthrough" : "Show me how to solve it"}
+      </Button>
+      {open ? (
+        <div className="mt-4 border-t border-workspace-separator pt-4" id={walkthroughId}>
+          <p className="font-semibold text-on-surface">How to solve it</p>
+          <p className="mt-2 text-sm leading-7 text-on-surface-variant">{explanation}</p>
+        </div>
+      ) : null}
     </div>
   );
 }

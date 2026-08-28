@@ -10,7 +10,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { type Ref, useMemo, useReducer, useRef } from "react";
+import { type Ref, useId, useMemo, useReducer, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import type {
@@ -82,6 +82,7 @@ export function LatinSquarePracticeFeedback({
   const solvedSection = useRef<HTMLDivElement>(null);
   const answer = typeof correctAnswer === "string" ? correctAnswer : "Unavailable";
   const currentStep = walkthrough.steps[navigation.stepIndex];
+  const walkthroughId = useId();
 
   const focusSolvedMatrix = () => {
     solvedSection.current?.focus();
@@ -124,6 +125,7 @@ export function LatinSquarePracticeFeedback({
           </div>
         ) : null}
         <Button
+          aria-controls={walkthroughId}
           aria-expanded={navigation.open}
           className="mt-4"
           onClick={() => {
@@ -142,7 +144,7 @@ export function LatinSquarePracticeFeedback({
       </div>
 
       {navigation.open ? (
-        <div className="border-t border-workspace-separator bg-surface-low p-4 sm:p-5">
+        <div className="border-t border-workspace-separator bg-surface-low p-4 sm:p-5" id={walkthroughId}>
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
   revalidatePath: vi.fn(),
   getAuthCallbackUrl: vi.fn(),
+  providerAvailability: { google: false, phone: false },
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -14,7 +15,7 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
 vi.mock("@/lib/auth/post-auth", () => ({ getPostAuthRoute: mocks.getPostAuthRoute }));
 vi.mock("@/lib/auth/config", () => ({
   getAuthCallbackUrl: mocks.getAuthCallbackUrl,
-  getAuthProviderAvailability: () => ({ google: false, phone: false }),
+  getAuthProviderAvailability: () => mocks.providerAvailability,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createServerClient,
@@ -29,8 +30,11 @@ vi.mock("@/lib/security/rate-limit", async (importOriginal) => {
 
 import {
   loginAction,
+  googleSignInAction,
   registerAction,
+  requestPhoneOtpAction,
   resendVerificationAction,
+  verifyPhoneOtpAction,
   type AuthActionState,
 } from "./actions";
 import {
@@ -58,6 +62,8 @@ function authClient(response: unknown) {
 describe("loginAction security regression", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.providerAvailability.google = false;
+    mocks.providerAvailability.phone = false;
     mocks.enforceRateLimit.mockResolvedValue(undefined);
     mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
   });
@@ -189,6 +195,8 @@ describe("loginAction security regression", () => {
 describe("email signup verification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.providerAvailability.google = false;
+    mocks.providerAvailability.phone = false;
     mocks.enforceRateLimit.mockResolvedValue(undefined);
     mocks.getAuthCallbackUrl.mockImplementation(
       (flow: string) => `https://prep-dmat.vercel.app/auth/callback?flow=${flow}`,
@@ -268,5 +276,115 @@ describe("email signup verification", () => {
       message: "If this address has a pending account, a verification email is on its way.",
     });
     expect(JSON.stringify(result)).not.toMatch(/user.not.found|raw provider/i);
+  });
+});
+
+describe("optional auth providers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.providerAvailability.google = false;
+    mocks.providerAvailability.phone = false;
+    mocks.enforceRateLimit.mockResolvedValue(undefined);
+    mocks.getPostAuthRoute.mockResolvedValue("/onboarding");
+  });
+
+  it("uses the fixed Google entry route when the feature is enabled", async () => {
+    mocks.providerAvailability.google = true;
+
+    await googleSignInAction(idle, new FormData());
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/auth/google");
+  });
+
+  it("normalizes phone input on the server before rate limiting and sending", async () => {
+    mocks.providerAvailability.phone = true;
+    const signInWithOtp = vi.fn().mockResolvedValue({ data: {}, error: null });
+    mocks.createServerClient.mockResolvedValue({ auth: { signInWithOtp } });
+    const formData = new FormData();
+    formData.set("countryCode", "+91");
+    formData.set("phone", "98765 43210");
+
+    const result = await requestPhoneOtpAction(idle, formData);
+
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith("auth:phone-request", {
+      account: "+919876543210",
+    });
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      phone: "+919876543210",
+      options: {
+        shouldCreateUser: true,
+        data: {
+          marketing_email_opt_in: false,
+          marketing_sms_opt_in: false,
+        },
+      },
+    });
+    expect(result).toEqual(expect.objectContaining({
+      status: "success",
+      view: "phone_code",
+      phone: "+919876543210",
+      retryAfterSeconds: 60,
+    }));
+  });
+
+  it("rejects malformed phone input before the limiter or provider", async () => {
+    mocks.providerAvailability.phone = true;
+    const formData = new FormData();
+    formData.set("countryCode", "+91");
+    formData.set("phone", "123");
+
+    const result = await requestPhoneOtpAction(idle, formData);
+
+    expect(result.status).toBe("error");
+    expect(mocks.enforceRateLimit).not.toHaveBeenCalled();
+    expect(mocks.createServerClient).not.toHaveBeenCalled();
+  });
+
+  it("verifies a bounded OTP through Supabase and uses shared onboarding routing", async () => {
+    mocks.providerAvailability.phone = true;
+    const verifyOtp = vi.fn().mockResolvedValue({
+      data: { user: { id: "phone-user" }, session: { access_token: "not-exposed" } },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { verifyOtp } });
+    const formData = new FormData();
+    formData.set("phone", "+919876543210");
+    formData.set("token", "123456");
+
+    await verifyPhoneOtpAction(idle, formData);
+
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith("auth:phone-verify", {
+      account: "+919876543210",
+    });
+    expect(verifyOtp).toHaveBeenCalledWith({
+      phone: "+919876543210",
+      token: "123456",
+      type: "sms",
+    });
+    expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("phone-user");
+    expect(mocks.redirect).toHaveBeenCalledWith("/onboarding");
+  });
+
+  it("returns one safe response for invalid or expired provider OTP failures", async () => {
+    mocks.providerAvailability.phone = true;
+    mocks.createServerClient.mockResolvedValue({
+      auth: {
+        verifyOtp: vi.fn().mockResolvedValue({
+          data: { user: null, session: null },
+          error: { status: 400, code: "otp_expired", message: "provider internals" },
+        }),
+      },
+    });
+    const formData = new FormData();
+    formData.set("phone", "+919876543210");
+    formData.set("token", "123456");
+
+    const result = await verifyPhoneOtpAction(idle, formData);
+
+    expect(result).toEqual({
+      status: "error",
+      message: "The code is invalid or expired. Request a new code and try again.",
+    });
+    expect(JSON.stringify(result)).not.toContain("provider internals");
   });
 });

@@ -35,6 +35,10 @@ describe("native response rendering", () => {
     expect(html.match(/data-response-interface="latin-square"/g)).toHaveLength(1);
     expect(html).not.toContain('data-response-interface="generic-single-choice"');
     expect(html).toContain("Select the target letter");
+    expect(html).toContain("data-latin-assessment-layout");
+    expect(html).toContain("43dvh");
+    expect(html).toContain("grid-cols-5");
+    expect(html).toContain("min-h-12");
     expect(html).toContain('aria-label="C, selected"');
     expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });

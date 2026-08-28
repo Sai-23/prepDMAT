@@ -38,4 +38,13 @@ describe("header account reconciliation", () => {
       workspace: "admin",
     });
   });
+
+  it("renders a safe phone-only identity fallback", () => {
+    expect(reconcileHeaderAccount(null, {
+      id: "phone-user",
+      email: null,
+      phone: "+919876543210",
+      user_metadata: {},
+    })?.displayName).toBe("Student ····3210");
+  });
 });

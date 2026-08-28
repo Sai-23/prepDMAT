@@ -25,6 +25,12 @@ function loginOutcomeUrl(outcome: "expired" | "session_required" | "unavailable"
   return url;
 }
 
+function oauthFailureUrl(cancelled: boolean) {
+  const url = getApplicationUrl("/login");
+  url.searchParams.set("error", cancelled ? "oauth_cancelled" : "oauth_failed");
+  return url;
+}
+
 function codeExchangeFailureOutcome(
   flow: AuthCallbackFlow,
   error: { code?: string; status?: number } | null,
@@ -71,7 +77,8 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get("token_hash");
   const otpType = parseEmailVerificationOtpType(searchParams.get("type"));
   const flow = parseCallbackFlow(searchParams.get("flow"));
-  const providerError = searchParams.has("error");
+  const providerError = searchParams.get("error");
+  const providerErrorCode = searchParams.get("error_code");
 
   if ((code && code.length > 4096) || (tokenHash && tokenHash.length > 4096)) {
     return NextResponse.redirect(loginOutcomeUrl("expired"));
@@ -94,7 +101,8 @@ export async function GET(request: NextRequest) {
   }
 
   if (providerError) {
-    return NextResponse.redirect(loginOutcomeUrl("expired"));
+    const cancelled = providerError === "access_denied" || providerErrorCode === "access_denied";
+    return NextResponse.redirect(oauthFailureUrl(cancelled));
   }
 
   if (code) {

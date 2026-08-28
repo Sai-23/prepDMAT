@@ -10,6 +10,10 @@ describe("focused assessment viewport contract", () => {
   const shell = source("src/components/assessment/assessment-shell.tsx");
   const workspace = source("src/components/layout/workspace-shell.tsx");
   const figure = source("src/components/questions/figure-sequence-renderer.tsx");
+  const latin = source("src/components/questions/latin-square-renderer.tsx");
+  const practice = source("src/components/practice/practice-experience.tsx");
+  const diagnostic = source("src/components/onboarding/diagnostic-experience.tsx");
+  const mock = source("src/components/tests/test-runner.tsx");
 
   it("builds a continuous viewport-bounded flex chain with body scrolling disabled", () => {
     expect(layout).toContain("data-app-frame");
@@ -43,5 +47,18 @@ describe("focused assessment viewport contract", () => {
     expect(figure).toContain("aria-checked={isSelected}");
     expect(figure).toContain("Selected");
     expect(figure).toContain("border-2");
+  });
+
+  it("keeps Latin question, grid, answer row, and persistent action compact on short viewports", () => {
+    expect(latin).toContain("data-latin-assessment-layout");
+    expect(latin).toContain("clamp(17.5rem,43dvh,21.5rem)");
+    expect(latin).toContain("grid-cols-5 gap-2");
+    expect(latin).toContain("min-h-12");
+    for (const assessment of [practice, diagnostic, mock]) {
+      expect(assessment).toContain('questionType === "latin_square"');
+      expect(assessment).toContain("p-4 pb-2");
+      expect(assessment).toContain("space-y-3 px-4 pb-4 pt-0");
+      expect(assessment).toContain("AssessmentActionZone");
+    }
   });
 });

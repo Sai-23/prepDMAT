@@ -50,8 +50,8 @@ export function LatinSquareRenderer({
   });
 
   return (
-    <div className={cn("space-y-5", className)}>
-      <div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-lg border-2 border-on-surface bg-on-surface">
+    <div className={cn("space-y-3", className)} data-latin-assessment-layout>
+      <div className="mx-auto w-[min(100%,clamp(17.5rem,43dvh,21.5rem))] overflow-hidden rounded-lg border-2 border-on-surface bg-on-surface">
         <div
           aria-label="Five by five Latin square"
           className="grid grid-cols-5 gap-px"
@@ -86,12 +86,12 @@ export function LatinSquareRenderer({
 
       {showResponseOptions ? (
         <div>
-          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="mb-1.5 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Select the target letter
           </p>
           <div
             aria-label="Latin-square answer options"
-            className="mx-auto grid max-w-[390px] grid-cols-5 gap-2"
+            className="mx-auto grid w-[min(100%,21.5rem)] grid-cols-5 gap-2"
             data-response-interface="latin-square"
             role="radiogroup"
           >

@@ -109,7 +109,7 @@ describe("completed Mathematical Equation result review", () => {
     expect(html).toContain("42s recorded");
   });
 
-  it("fixes the structured-response footer bug and reuses the step walkthrough", () => {
+  it("keeps structured answer results visible while collapsing the walkthrough", () => {
     const html = renderToStaticMarkup(<ResultReview questions={[resultQuestion({ A: 3, B: 1 })]} />);
 
     expect(html).toContain('data-answer-review="mathematical-equation"');
@@ -117,9 +117,11 @@ describe("completed Mathematical Equation result review", () => {
     expect(html).toContain("1 of 2 values correct");
     expect(html).toContain("Variable A. Your answer 3. Correct answer 3. Correct.");
     expect(html).toContain("Variable B. Your answer 1. Correct answer 9. Incorrect.");
-    expect(html).toContain("How to solve it");
-    expect(html).toContain("Substitute A = 3");
-    expect(html).toContain("Final answer");
+    expect(html).toContain("Show me how to solve it");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("aria-controls=");
+    expect(html).not.toContain("Substitute A = 3");
+    expect(html).not.toContain("Final answer");
     expect(html).not.toContain("Dense legacy explanation must not render.");
     expect(html).not.toContain("Your response:");
     expect(html).not.toContain("No answer");
@@ -159,8 +161,10 @@ describe("completed generated Core result review", () => {
     const html = renderToStaticMarkup(<ResultReview questions={[question]} />);
     expect(html).toContain('data-feedback-interface="figure-sequence-guided"');
     expect(html).not.toContain("Verified across every transition");
-    expect(html).toContain('data-rule-summary="figure-sequence"');
+    expect(html).not.toContain('data-rule-summary="figure-sequence"');
     expect(html).toContain("Quick explanation");
+    expect(html).toContain("Show me how to solve it");
+    expect(html).not.toContain('data-walkthrough-view="all"');
     expect(html).not.toContain("Legacy figure prose must not render.");
   });
 
@@ -185,8 +189,9 @@ describe("completed generated Core result review", () => {
     };
     const html = renderToStaticMarkup(<ResultReview questions={[question]} />);
     expect(html).toContain('data-feedback-interface="latin-square-guided"');
-    expect(html).toContain("Complete solved matrix");
-    expect(html).toContain("completed value");
+    expect(html).toContain("Show me how to solve it");
+    expect(html).not.toContain("Complete solved matrix");
+    expect(html).not.toContain("completed value");
     expect(html).not.toContain("Legacy Latin prose must not render.");
   });
 });

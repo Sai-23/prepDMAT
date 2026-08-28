@@ -311,7 +311,7 @@ function PracticeSession({ session, answer, feedback, canSubmit, expired, error,
       <div aria-label={`${Math.round(progress)} percent complete`} className="mt-3 h-2 overflow-hidden rounded-full bg-surface-high" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}><div className="h-full bg-primary transition-[width] motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
     </header>}
   >
-    <Card><CardHeader><CardTitle className="text-xl">{session.question.questionText}</CardTitle><CardDescription>{session.question.topic} · {session.question.difficulty} · Target pace {formatSeconds(session.targetPaceSeconds)}</CardDescription></CardHeader><CardContent className="space-y-5">
+    <Card><CardHeader className={session.question.questionType === "latin_square" ? "p-4 pb-2" : undefined}><CardTitle className="text-xl">{session.question.questionText}</CardTitle><CardDescription>{session.question.topic} · {session.question.difficulty} · Target pace {formatSeconds(session.targetPaceSeconds)}</CardDescription></CardHeader><CardContent className={session.question.questionType === "latin_square" ? "space-y-3 px-4 pb-4 pt-0" : "space-y-5"}>
       <NativePracticeResponse answer={answer} correctAnswer={feedback?.correctAnswer} disabled={Boolean(feedback) || isPending} onChange={onAnswer} question={session.question} />
     </CardContent></Card>
     {error ? <ActionError action={{ label: "Retry", onClick: feedback ? onAdvance : onSubmit, disabled: isPending }} description={`${error} Your answer and current question are unchanged.`} title="That action didn't complete" /> : null}

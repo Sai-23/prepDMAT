@@ -14,9 +14,78 @@ const env = getEnv();
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
-  title: "dMAT Prep",
+
+  title: {
+    default: "PrepDMAT | dMAT Preparation, Practice & Mock Tests",
+    template: "%s | PrepDMAT",
+  },
+
   description:
-    "Independent preparation platform for realistic dMAT Core practice, mock tests, and performance analytics.",
+    "Prepare for the dMAT with realistic Core practice, timed mock tests, diagnostics, explanations, and performance analytics. Independent dMAT preparation by PrepDMAT.",
+
+  applicationName: "PrepDMAT",
+
+  keywords: [
+    "dMAT preparation",
+    "dMAT prep",
+    "dMAT practice",
+    "dMAT mock test",
+    "dMAT exam",
+    "dMAT Core Module",
+    "dMAT Figure Sequences",
+    "dMAT Mathematical Equations",
+    "dMAT Latin Squares",
+    "digital Master Test preparation",
+    "PrepDMAT",
+  ],
+
+  authors: [{ name: "PrepDMAT" }],
+  creator: "PrepDMAT",
+  publisher: "PrepDMAT",
+
+  alternates: {
+    canonical: "/",
+  },
+
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "PrepDMAT",
+    title: "PrepDMAT | Prepare for the dMAT with clarity",
+    description:
+      "Realistic dMAT practice, timed mock tests, diagnostics, explanations, and performance analytics.",
+    images: [
+      {
+        url: "/branding/social/prepdmat-og.png",
+        width: 1200,
+        height: 630,
+        alt: "PrepDMAT - Prepare with clarity",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "PrepDMAT | Prepare for the dMAT with clarity",
+    description:
+      "Realistic dMAT practice, mock tests, diagnostics, explanations, and performance analytics.",
+    images: ["/branding/social/prepdmat-og.png"],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
+  category: "education",
 };
 
 export default async function RootLayout({

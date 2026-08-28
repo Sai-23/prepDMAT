@@ -63,6 +63,7 @@ export async function resolveRootAuthState(): Promise<RootAuthState> {
         metadataDisplayName: user.user_metadata.display_name,
         metadataFullName: user.user_metadata.full_name,
         email: user.email,
+        phone: user.phone,
       }),
       workspace: roles.includes("admin")
         ? "admin"

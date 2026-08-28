@@ -289,25 +289,33 @@ export async function requestPhoneOtpAction(
     return rateLimitActionState(error);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    phone,
-    options: {
-      shouldCreateUser: true,
-      data: {
-        marketing_email_opt_in: false,
-        marketing_sms_opt_in: false,
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
+      options: {
+        shouldCreateUser: true,
+        data: {
+          marketing_email_opt_in: false,
+          marketing_sms_opt_in: false,
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
+    if (error) {
+      return {
+        status: "error",
+        message: providerErrorMessage(
+          error,
+          "We could not send a code. Check the number or try again shortly.",
+        ),
+      };
+    }
+  } catch {
     return {
       status: "error",
-      message: providerErrorMessage(
-        error,
-        "We could not send a code. Check the number or try again shortly.",
-      ),
+      code: "TEMPORARILY_UNAVAILABLE",
+      message: "The authentication service is temporarily unavailable. Try again shortly.",
     };
   }
 
@@ -340,25 +348,35 @@ export async function verifyPhoneOtpAction(
     return rateLimitActionState(error);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone: result.data.phone,
-    token: result.data.token,
-    type: "sms",
-  });
+  let authenticatedUserId: string;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: result.data.phone,
+      token: result.data.token,
+      type: "sms",
+    });
 
-  if (error || !data.user || !data.session) {
+    if (error || !data.user || !data.session) {
+      return {
+        status: "error",
+        message: providerErrorMessage(
+          error,
+          "The code is invalid or expired. Request a new code and try again.",
+        ),
+      };
+    }
+    authenticatedUserId = data.user.id;
+  } catch {
     return {
       status: "error",
-      message: providerErrorMessage(
-        error,
-        "The code is invalid or expired. Request a new code and try again.",
-      ),
+      code: "TEMPORARILY_UNAVAILABLE",
+      message: "The authentication service is temporarily unavailable. Try again shortly.",
     };
   }
 
   revalidatePath("/", "layout");
-  redirect(await getPostAuthRoute(data.user.id));
+  redirect(await getPostAuthRoute(authenticatedUserId));
 }
 
 export async function forgotPasswordAction(

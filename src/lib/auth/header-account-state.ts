@@ -4,6 +4,7 @@ import type { HeaderAccountState } from "@/types/auth";
 export type BrowserAuthUser = {
   id: string;
   email?: string | null;
+  phone?: string | null;
   user_metadata?: Record<string, unknown>;
 };
 
@@ -22,6 +23,7 @@ export function reconcileHeaderAccount(
           metadataDisplayName: user.user_metadata?.display_name,
           metadataFullName: user.user_metadata?.full_name,
           email: user.email,
+          phone: user.phone,
         }),
     workspace: sameUser ? current.workspace : null,
   };

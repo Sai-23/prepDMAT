@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { loginAction } from "@/app/auth/actions";
-import { AuthDivider, AuthProviderOptions } from "@/components/auth/auth-providers";
+import { AuthProviderOptions } from "@/components/auth/auth-providers";
 import { AuthForm, VerificationRecovery } from "@/components/auth/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuthProviderAvailability } from "@/lib/auth/config";
@@ -18,7 +18,6 @@ export default async function LoginPage({
   if (user) redirect(await getPostAuthRoute(user.id));
 
   const availability = getAuthProviderAvailability();
-  const hasAlternativeProvider = availability.google || availability.phone;
 
   return (
     <div className="mx-auto flex w-full max-w-md px-4 py-6 sm:px-6 sm:py-10">
@@ -45,6 +44,21 @@ export default async function LoginPage({
               Google sign-in could not start. Try again shortly or use email.
             </p>
           ) : null}
+          {params.error === "oauth_cancelled" ? (
+            <p className="mb-5 rounded-md bg-surface-low p-3 text-sm text-on-surface-variant" role="status">
+              Google sign-in was cancelled. You can try again or use another method.
+            </p>
+          ) : null}
+          {params.error === "oauth_failed" ? (
+            <p className="mb-5 rounded-md bg-error-container p-3 text-sm text-error-container-foreground" role="alert">
+              Google sign-in could not be completed. Try again or use another method.
+            </p>
+          ) : null}
+          {params.error === "rate_limited" ? (
+            <p className="mb-5 rounded-md bg-error-container p-3 text-sm text-error-container-foreground" role="alert">
+              Too many attempts. Wait a little before trying again.
+            </p>
+          ) : null}
           {params.verification === "session_required" ? (
             <div className="mb-5 rounded-md bg-success-container p-4 text-success-container-foreground" role="status">
               <p className="font-semibold">Email verified successfully</p>
@@ -52,13 +66,7 @@ export default async function LoginPage({
             </div>
           ) : null}
           {params.verification === "expired" ? <VerificationRecovery /> : null}
-          {hasAlternativeProvider ? (
-            <div className="mb-5 space-y-5">
-              <AuthProviderOptions availability={availability} />
-              <AuthDivider />
-            </div>
-          ) : null}
-          <AuthForm
+          <AuthProviderOptions availability={availability} emailForm={<AuthForm
             action={loginAction}
             fields={[
               { name: "email", label: "Email", type: "email", autoComplete: "email", placeholder: "you@example.com" },
@@ -68,7 +76,7 @@ export default async function LoginPage({
             forgotPassword
             pendingLabel="Signing in..."
             submitLabel="Sign in with email"
-          />
+          />} />
         </CardContent>
       </Card>
     </div>
