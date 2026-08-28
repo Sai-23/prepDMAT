@@ -23,6 +23,7 @@ export function BookmarksLibrary({
 }) {
   const [bookmarks, setBookmarks] = useState(initialBookmarks);
   const [query, setQuery] = useState("");
+  const [module, setModule] = useState("all");
   const [difficulty, setDifficulty] = useState("all");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -31,12 +32,13 @@ export function BookmarksLibrary({
     const normalizedQuery = query.trim().toLowerCase();
     return bookmarks.filter(
       (bookmark) =>
+        (module === "all" || bookmark.questionType === module) &&
         (difficulty === "all" || bookmark.difficulty === difficulty) &&
         (!normalizedQuery ||
           bookmark.questionText.toLowerCase().includes(normalizedQuery) ||
           bookmark.topic.toLowerCase().includes(normalizedQuery)),
     );
-  }, [bookmarks, difficulty, query]);
+  }, [bookmarks, difficulty, module, query]);
 
   const remove = (questionId: string) => {
     setError(null);
@@ -58,7 +60,7 @@ export function BookmarksLibrary({
   return (
     <div className="space-y-5">
       <Card>
-        <CardContent className="grid gap-4 p-5 md:grid-cols-[1fr_180px]">
+        <CardContent className="grid gap-4 p-5 md:grid-cols-[1fr_190px_180px]">
           <label className="relative">
             <span className="sr-only">Search bookmarks</span>
             <Search className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
@@ -70,6 +72,12 @@ export function BookmarksLibrary({
               value={query}
             />
           </label>
+          <select aria-label="Filter by module" className="h-12 rounded-xl border border-slate-300 bg-white px-4" onChange={(event) => setModule(event.target.value)} value={module}>
+            <option value="all">All modules</option>
+            <option value="figure_sequence">Figure Sequences</option>
+            <option value="mathematical_equation">Mathematical Equations</option>
+            <option value="latin_square">Latin Squares</option>
+          </select>
           <select
             aria-label="Filter by difficulty"
             className="h-12 rounded-xl border border-slate-300 bg-white px-4"

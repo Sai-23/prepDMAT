@@ -17,7 +17,12 @@ export type SecurityRateLimitOperation =
   | "auth:google"
   | "generation:practice"
   | "generation:diagnostic"
-  | "generation:mock";
+  | "generation:mock"
+  | "assessment:answer"
+  | "assessment:mock-start"
+  | "assessment:mock-write"
+  | "learning:mutation"
+  | "learning:report";
 
 type RateLimitRule = { maxAttempts: number; windowSeconds: number };
 type RateLimitPolicy = {
@@ -76,6 +81,31 @@ const POLICIES: Record<SecurityRateLimitOperation, RateLimitPolicy> = {
     global: { maxAttempts: 10, windowSeconds: 60 },
     user: { maxAttempts: 2, windowSeconds: 3600 },
     ip: { maxAttempts: 4, windowSeconds: 3600 },
+  },
+  "assessment:answer": {
+    global: { maxAttempts: 5000, windowSeconds: 60 },
+    user: { maxAttempts: 600, windowSeconds: 3600 },
+    ip: { maxAttempts: 1200, windowSeconds: 3600 },
+  },
+  "assessment:mock-start": {
+    global: { maxAttempts: 300, windowSeconds: 60 },
+    user: { maxAttempts: 20, windowSeconds: 3600 },
+    ip: { maxAttempts: 50, windowSeconds: 3600 },
+  },
+  "assessment:mock-write": {
+    global: { maxAttempts: 5000, windowSeconds: 60 },
+    user: { maxAttempts: 600, windowSeconds: 3600 },
+    ip: { maxAttempts: 1200, windowSeconds: 3600 },
+  },
+  "learning:mutation": {
+    global: { maxAttempts: 2000, windowSeconds: 60 },
+    user: { maxAttempts: 300, windowSeconds: 3600 },
+    ip: { maxAttempts: 600, windowSeconds: 3600 },
+  },
+  "learning:report": {
+    global: { maxAttempts: 300, windowSeconds: 60 },
+    user: { maxAttempts: 30, windowSeconds: 3600 },
+    ip: { maxAttempts: 60, windowSeconds: 3600 },
   },
 };
 

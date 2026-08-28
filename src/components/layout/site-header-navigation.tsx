@@ -8,26 +8,36 @@ import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  diagnosticNavigationItem,
   primaryNavigation,
   studentNavigation,
+  type StudentDiagnosticStatus,
 } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 
-export function SiteHeaderNavigation() {
+export function SiteHeaderNavigation({ diagnosticStatus = null }: { diagnosticStatus?: StudentDiagnosticStatus | null }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const effectiveDiagnosticStatus = pathname.startsWith("/onboarding/diagnostic/summary")
+    ? "completed"
+    : pathname === "/onboarding/diagnostic"
+      ? "in_progress"
+      : diagnosticStatus;
+  const navigation = primaryNavigation.map((item) =>
+    item.href === "/onboarding" ? diagnosticNavigationItem(effectiveDiagnosticStatus) : item,
+  );
 
   const mobileNavigation = [
-    ...primaryNavigation,
+    ...navigation,
     ...studentNavigation.filter(
-      (item) => !primaryNavigation.some((primary) => primary.href === item.href),
+      (item) => !navigation.some((primary) => primary.href === item.href),
     ),
   ];
 
   return (
     <>
       <nav aria-label="Primary navigation" className="hidden items-center gap-2 lg:flex">
-        {primaryNavigation.map((item) => {
+        {navigation.map((item) => {
           const isActive =
             item.href === "/"
               ? pathname === item.href

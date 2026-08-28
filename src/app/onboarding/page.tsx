@@ -9,6 +9,7 @@ export default async function OnboardingPage() {
   const user = await requireUser();
   const state = await getOnboardingState(user.id);
   if (state.diagnosticStatus === "in_progress") redirect("/onboarding/diagnostic");
+  if (state.diagnosticStatus === "completed") redirect("/onboarding/diagnostic/summary");
   if (state.completedAt) redirect("/dashboard");
 
   return (

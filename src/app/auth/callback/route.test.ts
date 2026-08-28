@@ -123,6 +123,13 @@ describe("email verification callback", () => {
     expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
+  it("rejects oversized callback credentials before creating a provider client", async () => {
+    const response = await GET(request(`?code=${"x".repeat(4097)}`));
+
+    expect(destination(response).searchParams.get("verification")).toBe("expired");
+    expect(mocks.createServerClient).not.toHaveBeenCalled();
+  });
+
   it("rejects external redirect input and always uses a centralized internal destination", async () => {
     const supabase = client();
     supabase.auth.exchangeCodeForSession.mockResolvedValue({

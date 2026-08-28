@@ -1,8 +1,9 @@
 "use client";
 
 import type { Route } from "next";
-import { ArrowLeft, ArrowRight, BookmarkCheck, CheckCircle2, Clock3, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookmarkCheck, CheckCircle2, Clock3, LogOut, Send } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { advanceTestSectionAction, processTestClockAction, saveTestResponseAction, submitTestAction } from "@/app/tests/actions";
@@ -80,11 +81,13 @@ const TestTimer = memo(function TestTimer({ expiresAt, onExpire, serverNow }: {
 });
 
 export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
+  const router = useRouter();
   const [currentSectionId, setCurrentSectionId] = useState(attempt.currentSectionId);
   const [sectionExpiresAt, setSectionExpiresAt] = useState(attempt.sectionExpiresAt);
+  const [availableQuestions, setAvailableQuestions] = useState(attempt.questions);
   const sectionQuestions = useMemo(
-    () => attempt.questions.filter((item) => item.sectionId === currentSectionId),
-    [attempt.questions, currentSectionId],
+    () => availableQuestions.filter((item) => item.sectionId === currentSectionId),
+    [availableQuestions, currentSectionId],
   );
   const initialQuestionIndex = Math.max(0, sectionQuestions.findIndex((item) => item.id === attempt.currentQuestionId));
   const [questionIndex, setQuestionIndex] = useState(initialQuestionIndex);
@@ -97,7 +100,7 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TestResult | null>(null);
-  const [confirmation, setConfirmation] = useState<"section" | "submit" | null>(null);
+  const [confirmation, setConfirmation] = useState<"exit" | "section" | "submit" | null>(null);
   const [isChangingSection, setIsChangingSection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -204,10 +207,33 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
     setError(null);
   }, [accrueCurrentQuestionTime, flushQuestion, sectionQuestions, stageQuestion]);
 
-  const applySectionTransition = useCallback((transition: { sectionId: string; questionId: string | null; sectionExpiresAt: string }) => {
-    const nextQuestions = attempt.questions.filter((item) => item.sectionId === transition.sectionId);
+  const applySectionTransition = useCallback((transition: {
+    sectionId: string;
+    questionId: string | null;
+    sectionExpiresAt: string;
+    questions: TestQuestion[];
+    initialResponses: TestAttemptPayload["initialResponses"];
+  }) => {
+    const nextQuestions = transition.questions;
     const nextIndex = Math.max(0, nextQuestions.findIndex((item) => item.id === transition.questionId));
     const nextQuestion = nextQuestions[nextIndex];
+    setAvailableQuestions((current) => [
+      ...current.filter((item) => item.sectionId !== transition.sectionId),
+      ...nextQuestions,
+    ]);
+    const restoredAnswers = Object.fromEntries(
+      transition.initialResponses.map((response) => [response.questionId, response.answer]),
+    );
+    answersRef.current = { ...answersRef.current, ...restoredAnswers };
+    setAnswers(answersRef.current);
+    const restoredMarked = new Set(markedRef.current);
+    transition.initialResponses.forEach((response) => {
+      if (response.markedForReview) restoredMarked.add(response.questionId);
+      else restoredMarked.delete(response.questionId);
+      timeSpent.current.set(response.questionId, response.timeSpentSeconds);
+    });
+    markedRef.current = restoredMarked;
+    setMarked(restoredMarked);
     currentSectionIdRef.current = transition.sectionId;
     currentQuestionIdRef.current = nextQuestion?.id ?? transition.questionId ?? "";
     visibleSince.current = Date.now();
@@ -215,7 +241,7 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
     setQuestionIndex(nextIndex);
     setSectionExpiresAt(transition.sectionExpiresAt);
     setSaveState("idle");
-  }, [attempt.questions]);
+  }, []);
 
   const flushAllResponses = useCallback(async () => {
     accrueCurrentQuestionTime();
@@ -269,12 +295,27 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
         setError(response.error);
         return;
       }
-      setResult({ correct: response.correct, total: response.total || attempt.questions.length, accuracy: response.accuracy, totalTimeSeconds: response.totalTimeSeconds });
+      setResult({ correct: response.correct, total: response.total || availableQuestions.length, accuracy: response.accuracy, totalTimeSeconds: response.totalTimeSeconds });
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
     }
-  }, [attempt.attemptId, attempt.questions.length, flushAllResponses]);
+  }, [attempt.attemptId, availableQuestions.length, flushAllResponses]);
+
+  const leaveTest = useCallback(async () => {
+    if (changingSectionRef.current || submittingRef.current) return;
+    changingSectionRef.current = true;
+    setIsChangingSection(true);
+    setError(null);
+    try {
+      if (!(await flushAllResponses())) return;
+      setConfirmation(null);
+      router.push("/tests");
+    } finally {
+      changingSectionRef.current = false;
+      setIsChangingSection(false);
+    }
+  }, [flushAllResponses, router]);
 
   const handleClockExpiry = useCallback(async () => {
     if (changingSectionRef.current || submittingRef.current) return;
@@ -286,8 +327,20 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
       if (response.error) setError(response.error);
       else if ("finalized" in response && response.finalized && "correct" in response) {
         setResult({ correct: response.correct, total: response.total, accuracy: response.accuracy, totalTimeSeconds: response.totalTimeSeconds });
-      } else if ("sectionId" in response && response.sectionId && response.sectionExpiresAt) {
-        applySectionTransition({ sectionId: response.sectionId, questionId: response.questionId ?? null, sectionExpiresAt: response.sectionExpiresAt });
+      } else if (
+        "sectionId" in response
+        && response.sectionId
+        && response.sectionExpiresAt
+        && "questions" in response
+        && "initialResponses" in response
+      ) {
+        applySectionTransition({
+          sectionId: response.sectionId,
+          questionId: response.questionId ?? null,
+          sectionExpiresAt: response.sectionExpiresAt,
+          questions: response.questions,
+          initialResponses: response.initialResponses,
+        });
       }
     } finally {
       changingSectionRef.current = false;
@@ -300,9 +353,9 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
     debounceTimers.current.clear();
   }, []);
 
-  const answeredCount = attempt.questions.filter((item) => isTestAnswerComplete(item, answers[item.id])).length;
+  const answeredCount = availableQuestions.filter((item) => isTestAnswerComplete(item, answers[item.id])).length;
   const flaggedCount = marked.size;
-  const unansweredCount = attempt.questions.length - answeredCount;
+  const unansweredCount = availableQuestions.length - answeredCount;
   const currentSectionIndex = attempt.sections.findIndex((section) => section.id === currentSectionId);
   const isFinalSection = currentSectionIndex === attempt.sections.length - 1;
   const isLastQuestion = questionIndex === sectionQuestions.length - 1;
@@ -318,17 +371,17 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
 
   if (!question) return null;
 
-  return <main className="mx-auto w-full min-w-0 max-w-7xl px-3 pt-2 sm:px-6 lg:px-8">
+  return <main className="mx-auto h-full w-full min-w-0 max-w-7xl overflow-hidden px-3 pt-2 sm:px-6 lg:px-8">
     <AssessmentShell
       actions={<AssessmentActionZone
         primary={isTrueFinalQuestion ? <Button className="min-h-11 w-full sm:w-auto" disabled={interactionBlocked} onClick={() => setConfirmation("submit")}><Send aria-hidden="true" className="h-4 w-4" />Submit Test</Button> : isLastQuestion ? <Button className="min-h-11 w-full sm:w-auto" disabled={interactionBlocked} onClick={() => setConfirmation("section")}>{isChangingSection ? "Starting next section…" : "End Section & Continue"}<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button> : <Button className="min-h-11 w-full sm:w-auto" disabled={interactionBlocked} onClick={() => moveToQuestion(questionIndex + 1)}>Next<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button>}
         secondary={<Button className="min-h-11 w-full sm:w-auto" disabled={questionIndex === 0 || interactionBlocked} onClick={() => moveToQuestion(questionIndex - 1)} variant="secondary"><ArrowLeft aria-hidden="true" className="h-4 w-4" />Previous</Button>}
-        status={<span aria-live="polite">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "error" ? "Not saved" : `${answeredCount}/${attempt.questions.length} answered`}</span>}
+        status={<span aria-live="polite">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "error" ? "Not saved" : `${answeredCount}/${availableQuestions.length} answered`}</span>}
         tertiary={<Button className="min-h-11 justify-start px-2 sm:justify-center" disabled={interactionBlocked} onClick={() => { const nextMarked = new Set(markedRef.current); if (nextMarked.has(question.id)) nextMarked.delete(question.id); else nextMarked.add(question.id); markedRef.current = nextMarked; setMarked(nextMarked); setError(null); scheduleSave(question.id, false); }} variant={marked.has(question.id) ? "secondary" : "ghost"}><BookmarkCheck aria-hidden="true" className="h-4 w-4" />{marked.has(question.id) ? "Marked for review" : "Mark for review"}</Button>}
       />}
       contentClassName="px-1"
       contentRef={contentRef}
-      header={<div className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-workspace-border bg-surface-lowest p-3 sm:p-4"><div className="min-w-0"><p className="truncate font-semibold text-on-surface">{attempt.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{question.sectionTitle}</p></div><div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3"><span className="text-sm text-on-surface-variant">{answeredCount}/{attempt.questions.length} answered</span><TestTimer expiresAt={sectionExpiresAt} onExpire={handleClockExpiry} serverNow={attempt.serverNow} /><ThemeToggle compact /></div></div>}
+      header={<div className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-workspace-border bg-surface-lowest p-3"><div className="min-w-0"><p className="truncate font-semibold text-on-surface">{attempt.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{question.sectionTitle}</p></div><div className="flex min-w-0 flex-wrap items-center justify-end gap-2"><span className="hidden text-sm text-on-surface-variant sm:inline">{answeredCount}/{availableQuestions.length} answered</span><TestTimer expiresAt={sectionExpiresAt} onExpire={handleClockExpiry} serverNow={attempt.serverNow} /><ThemeToggle compact /><Button aria-label="Exit mock" disabled={interactionBlocked} onClick={() => setConfirmation("exit")} size="sm" variant="ghost"><LogOut aria-hidden="true" className="h-4 w-4" /><span className="hidden sm:inline">Exit</span></Button></div></div>}
     >
 
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,17.5rem)]">
@@ -348,6 +401,7 @@ export function TestRunner({ attempt }: { attempt: TestAttemptPayload }) {
     </div>
     </AssessmentShell>
 
+    <Dialog onOpenChange={(open) => { if (!open && !isChangingSection) setConfirmation(null); }} open={confirmation === "exit"} title="Leave this mock?"><div className="space-y-5"><p className="text-sm leading-6 text-on-surface-variant">Your latest response will be saved before you leave. The timer continues running, and you can resume from Mock Tests.</p><div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button disabled={isChangingSection} onClick={() => setConfirmation(null)} variant="secondary">Keep working</Button><Button disabled={isChangingSection} onClick={() => void leaveTest()}>{isChangingSection ? "Saving…" : "Save and exit"}<LogOut className="h-4 w-4" /></Button></div></div></Dialog>
     <Dialog dismissible={!isSubmitting} onOpenChange={(open) => { if (!open && !isSubmitting) setConfirmation(null); }} open={confirmation === "submit"} title="Submit your mock?"><div className="space-y-5"><div className="grid grid-cols-3 gap-3 text-center"><div className="rounded-md bg-success-container p-3"><p className="text-2xl font-semibold">{answeredCount}</p><p className="text-xs">Answered</p></div><div className="rounded-md bg-surface-container p-3"><p className="text-2xl font-semibold">{unansweredCount}</p><p className="text-xs">Unanswered</p></div><div className="rounded-md bg-warning-container p-3"><p className="text-2xl font-semibold">{flaggedCount}</p><p className="text-xs">Flagged</p></div></div>{unansweredCount ? <p className="text-sm text-on-surface-variant">Unanswered questions will be graded as incorrect. You can return to the test before submitting.</p> : null}<div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button disabled={isSubmitting} onClick={() => setConfirmation(null)} variant="secondary">Return to Test</Button><Button disabled={isSubmitting} onClick={() => void submitTest(false)}><Send className="h-4 w-4" />{isSubmitting ? "Submitting…" : "Submit Mock"}</Button></div></div></Dialog>
     <Dialog onOpenChange={(open) => { if (!open && !isChangingSection) setConfirmation(null); }} open={confirmation === "section"} title="End this section?"><div className="space-y-5"><p className="text-sm leading-6 text-on-surface-variant">Your latest answers will be saved before the next timed section begins. You won&apos;t be able to return to this section.</p><div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button disabled={isChangingSection} onClick={() => setConfirmation(null)} variant="secondary">Return to Section</Button><Button disabled={isChangingSection} onClick={() => void advanceSection()}>{isChangingSection ? "Starting…" : "End Section & Continue"}<ArrowRight className="h-4 w-4" /></Button></div></div></Dialog>
   </main>;

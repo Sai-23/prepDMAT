@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useState } from "react";
 
 import { EquationRenderer } from "../questions/equation-renderer";
@@ -104,5 +105,5 @@ function EquationResponse({ question, symbols, answer, disabled, hideAnswerInput
 
 function ChoiceButtons({ options, answer, correctAnswer, disabled, onChange }: { options: Array<{ id: string; label: string; content: string }>; answer: PracticeAnswer | null; correctAnswer?: unknown; disabled: boolean; onChange(answer: PracticeAnswer): void }) {
   const selected = answer?.kind === "single_choice" ? answer.optionId : null;
-  return <div className="grid gap-3" data-response-interface="generic-single-choice">{options.map((option) => { const correct = correctAnswer === option.id; return <button className={correct ? "rounded-md border border-success bg-success-container p-4 text-left" : selected === option.id ? "rounded-md border-2 border-primary bg-primary-muted p-4 text-left" : "rounded-md border border-workspace-border p-4 text-left"} disabled={disabled} key={option.id} onClick={() => onChange({ kind: "single_choice", optionId: option.id })} type="button"><b className="mr-2">{option.label}.</b>{option.content}</button>; })}</div>;
+  return <div aria-label="Answer options" className="grid gap-3" data-response-interface="generic-single-choice" role="radiogroup">{options.map((option) => { const correct = correctAnswer === option.id; const isSelected = selected === option.id; return <button aria-checked={isSelected} className={correct ? "flex min-h-12 items-center gap-3 rounded-md border-2 border-success bg-success-container p-4 text-left" : isSelected ? "flex min-h-12 items-center gap-3 rounded-md border-2 border-primary bg-primary-muted p-4 text-left ring-2 ring-primary ring-offset-2" : "flex min-h-12 items-center gap-3 rounded-md border-2 border-workspace-border bg-surface-lowest p-4 text-left hover:border-primary hover:bg-primary-muted/40"} disabled={disabled} key={option.id} onClick={() => onChange({ kind: "single_choice", optionId: option.id })} role="radio" type="button"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current font-semibold">{isSelected ? <Check aria-label="Selected" className="h-4 w-4" /> : option.label}</span><span>{option.content}</span></button>; })}</div>;
 }

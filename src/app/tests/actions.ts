@@ -48,6 +48,11 @@ export async function startTestAction(testId: unknown) {
   const user = await requireUser();
   const parsed = testIdSchema.safeParse(testId);
   if (!parsed.success) return { error: "The selected test is invalid." };
+  try {
+    await enforceSecurityRateLimit("assessment:mock-start", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
 
   try {
     const result = await startTestAttempt(user.id, parsed.data);
@@ -61,6 +66,11 @@ export async function saveTestResponseAction(input: unknown) {
   const user = await requireUser();
   const parsed = saveTestResponseSchema.safeParse(input);
   if (!parsed.success) return { error: "Your answer couldn't be saved. Try again." };
+  try {
+    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
 
   try {
     await saveTestResponse(user.id, parsed.data);
@@ -74,6 +84,11 @@ export async function submitTestAction(input: unknown) {
   const user = await requireUser();
   const parsed = submitTestSchema.safeParse(input);
   if (!parsed.success) return { error: "The test submission is invalid." };
+  try {
+    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
 
   try {
     const result = await gradeAndSubmitTest(
@@ -91,6 +106,11 @@ export async function advanceTestSectionAction(input: unknown) {
   const user = await requireUser();
   const parsed = advanceTestSectionSchema.safeParse(input);
   if (!parsed.success) return { error: "The section transition is invalid." };
+  try {
+    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
 
   try {
     return {
@@ -110,6 +130,11 @@ export async function processTestClockAction(input: unknown) {
   const user = await requireUser();
   const parsed = submitTestSchema.pick({ attemptId: true }).safeParse(input);
   if (!parsed.success) return { error: "The test attempt is invalid." };
+  try {
+    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
   try {
     return { error: null, ...(await processTestClock(user.id, parsed.data.attemptId)) };
   } catch (error) {

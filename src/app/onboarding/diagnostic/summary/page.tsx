@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 
 import { PageShell } from "@/components/layout/page-shell";
@@ -18,6 +19,9 @@ export default async function OnboardingDiagnosticSummaryPage() {
   }
 
   const { profile } = completed;
+  const rankedModules = [...profile.modules].sort((left, right) => right.correct - left.correct);
+  const strongest = rankedModules[0];
+  const needsWork = rankedModules[rankedModules.length - 1];
 
   return (
     <PageShell
@@ -31,14 +35,9 @@ export default async function OnboardingDiagnosticSummaryPage() {
             <CardTitle>{profile.totalCorrect} of {profile.totalQuestions} correct</CardTitle>
             <CardDescription>{profile.confidenceLabel} · {profile.confidenceDescription}</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
-            {profile.modules.map((module) => (
-              <div className="rounded-lg bg-surface-low p-4" key={module.module}>
-                <p className="text-sm font-semibold">{module.label}</p>
-                <p className="mt-1 text-2xl font-semibold">{module.correct}/{module.total}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{module.confidence}</p>
-              </div>
-            ))}
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div><p className="text-sm text-muted-foreground">Strongest starting area</p><p className="mt-1 text-xl font-semibold">{strongest.label}</p></div>
+            <div><p className="text-sm text-muted-foreground">Area to build first</p><p className="mt-1 text-xl font-semibold">{needsWork.label}</p></div>
           </CardContent>
         </Card>
 
@@ -47,13 +46,19 @@ export default async function OnboardingDiagnosticSummaryPage() {
             <CardTitle>{profile.recommendation.title}</CardTitle>
             <CardDescription>{profile.recommendation.reason}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-2 text-sm">
-              {profile.observations.map((observation) => <li key={observation}>{observation}</li>)}
-            </ul>
-            <Button asChild><Link href="/practice">Continue to Practice</Link></Button>
+          <CardContent>
+            <Button asChild><Link href={profile.recommendation.href as Route}>Start recommended practice</Link></Button>
           </CardContent>
         </Card>
+        <details className="rounded-lg border border-workspace-border bg-surface-lowest">
+          <summary className="cursor-pointer list-none px-5 py-4 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset">View diagnostic detail</summary>
+          <div className="space-y-5 border-t border-workspace-border p-5">
+            <div className="grid gap-3 md:grid-cols-3">
+              {profile.modules.map((module) => <div className="rounded-lg bg-surface-low p-4" key={module.module}><p className="text-sm font-semibold">{module.label}</p><p className="mt-1 text-2xl font-semibold">{module.correct}/{module.total}</p><p className="mt-1 text-xs text-muted-foreground">{module.confidence}</p></div>)}
+            </div>
+            <ul className="space-y-2 text-sm">{profile.observations.map((observation) => <li key={observation}>{observation}</li>)}</ul>
+          </div>
+        </details>
       </div>
     </PageShell>
   );

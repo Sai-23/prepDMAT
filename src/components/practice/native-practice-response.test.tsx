@@ -36,14 +36,14 @@ describe("native response rendering", () => {
     expect(html).not.toContain('data-response-interface="generic-single-choice"');
     expect(html).toContain("Select the target letter");
     expect(html).toContain('aria-label="C, selected"');
-    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });
 
   it("replaces C with D as the sole controlled selection", () => {
     const html = renderLatin("D");
     expect(html).toContain('aria-label="D, selected"');
     expect(html).not.toContain('aria-label="C, selected"');
-    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });
 
   it("reveals correctness only when practice feedback is supplied", () => {

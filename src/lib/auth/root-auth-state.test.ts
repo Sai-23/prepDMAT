@@ -42,6 +42,7 @@ describe("root server auth state", () => {
 
     await expect(resolveRootAuthState()).resolves.toEqual({
       account: null,
+      diagnosticStatus: null,
       theme: "system",
     });
     expect(mocks.createServerClient).not.toHaveBeenCalled();
@@ -68,6 +69,7 @@ describe("root server auth state", () => {
         displayName: "Sai",
         workspace: "admin",
       },
+      diagnosticStatus: null,
       theme: "dark",
     });
   });
@@ -86,6 +88,7 @@ describe("root server auth state", () => {
         displayName: "Sai",
         workspace: null,
       },
+      diagnosticStatus: null,
       theme: "system",
     });
   });

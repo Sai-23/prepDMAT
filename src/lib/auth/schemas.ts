@@ -3,17 +3,22 @@ import { z } from "zod";
 export const emailSchema = z
   .string()
   .trim()
+  .max(254, "Enter a valid email address.")
   .email("Enter a valid email address.");
 
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters.")
+  .max(128, "Password must be 128 characters or fewer.")
   .regex(/[A-Za-z]/, "Password must include a letter.")
   .regex(/[0-9]/, "Password must include a number.");
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, "Enter your password."),
+  password: z
+    .string()
+    .min(1, "Enter your password.")
+    .max(128, "Password must be 128 characters or fewer."),
 });
 
 export const registerSchema = z
@@ -25,7 +30,7 @@ export const registerSchema = z
       .max(100, "Name must be 100 characters or fewer."),
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().max(128),
     marketingEmailOptIn: z.boolean().default(false),
   })
   .refine((values) => values.password === values.confirmPassword, {
@@ -40,7 +45,7 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     password: passwordSchema,
-    confirmPassword: z.string(),
+    confirmPassword: z.string().max(128),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Passwords do not match.",

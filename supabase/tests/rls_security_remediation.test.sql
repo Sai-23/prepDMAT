@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(47);
 
 -- Deterministic adversarial identities. Inserting Auth users exercises the
 -- production signup trigger, which creates profiles and student roles.
@@ -103,12 +103,75 @@ select ok(
   'active clients cannot read structured solution data'
 );
 select ok(
+  not has_column_privilege('anon', 'public.questions', 'question_text', 'SELECT'),
+  'anonymous clients cannot bulk-read published question text'
+);
+select ok(
+  not has_column_privilege('authenticated', 'public.questions', 'question_text', 'SELECT'),
+  'authenticated clients receive question content only through server routes'
+);
+select ok(
+  not has_table_privilege('anon', 'public.question_options', 'SELECT'),
+  'anonymous clients cannot bulk-read the option bank'
+);
+select ok(
+  not has_table_privilege('anon', 'public.tests', 'SELECT'),
+  'anonymous clients cannot enumerate the assessment catalog directly'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.test_questions', 'SELECT'),
+  'authenticated clients cannot scrape complete test mappings directly'
+);
+select ok(
   not has_table_privilege('authenticated', 'public.user_responses', 'SELECT'),
   'active clients cannot query response grading rows'
 );
 select ok(
   not has_table_privilege('authenticated', 'public.practice_session_items', 'SELECT'),
   'active clients cannot query immutable private snapshots'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.mistake_notebook_entries', 'SELECT'),
+  'active clients cannot enumerate notebook entries directly'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.mistake_notebook_entries', 'INSERT'),
+  'active clients cannot insert notebook entries directly'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.mistake_notebook_entries', 'UPDATE'),
+  'active clients cannot update notebook entries directly'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.mistake_notebook_entries', 'DELETE'),
+  'active clients cannot delete notebook entries directly'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.save_test_response_secure(uuid,uuid,uuid,uuid,jsonb,public.response_status,boolean,integer)',
+    'EXECUTE'
+  ),
+  'active clients cannot call the privileged Mock response RPC'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.finalize_test_attempt_secure(uuid,uuid,boolean,jsonb)',
+    'EXECUTE'
+  ),
+  'active clients cannot call the privileged Mock finalization RPC'
+);
+select throws_ok(
+  $$insert into public.test_attempts (
+      id, test_id, user_id, status, started_at, total_time_seconds
+    ) values (
+      '50000000-0000-4000-8000-000000000002',
+      '00000000-0000-4000-8000-000000000001',
+      '10000000-0000-4000-8000-000000000001',
+      'in_progress', now(), 0
+    )$$,
+  'P0001'
 );
 
 select results_eq(
@@ -153,6 +216,23 @@ select throws_ok(
   '42501'
 );
 select throws_ok(
+  $$select public.save_test_response_secure(
+      '10000000-0000-4000-8000-000000000002',
+      '50000000-0000-4000-8000-000000000001',
+      '40000000-0000-4000-8000-000000000001',
+      null, null, 'unanswered', false, 0
+    )$$,
+  '42501'
+);
+select throws_ok(
+  $$select * from public.finalize_test_attempt_secure(
+      '10000000-0000-4000-8000-000000000002',
+      '50000000-0000-4000-8000-000000000001',
+      false, '[]'::jsonb
+    )$$,
+  '42501'
+);
+select throws_ok(
   $$update public.questions set publication_status = 'published' where id = '40000000-0000-4000-8000-000000000001'$$,
   '42501'
 );
@@ -163,20 +243,17 @@ select throws_ok(
   $$insert into public.subscriptions (user_id, plan_code, status) values ('10000000-0000-4000-8000-000000000001', 'forged', 'active')$$,
   '42501'
 );
-select results_eq(
-  $$with changed as (update public.subscriptions set status = 'active' where user_id = '10000000-0000-4000-8000-000000000001' returning 1) select count(*)::integer from changed$$,
-  array[0],
-  'Student A cannot manufacture active premium access'
+select throws_ok(
+  $$update public.subscriptions set status = 'active' where user_id = '10000000-0000-4000-8000-000000000001'$$,
+  '42501'
 );
-select results_eq(
-  $$with changed as (update public.subscriptions set external_customer_id = 'forged' where user_id = '10000000-0000-4000-8000-000000000001' returning 1) select count(*)::integer from changed$$,
-  array[0],
-  'Student A cannot alter provider/customer identifiers'
+select throws_ok(
+  $$update public.subscriptions set external_customer_id = 'forged' where user_id = '10000000-0000-4000-8000-000000000001'$$,
+  '42501'
 );
-select results_eq(
-  $$with removed as (delete from public.subscriptions where user_id = '10000000-0000-4000-8000-000000000001' returning 1) select count(*)::integer from removed$$,
-  array[0],
-  'Student A cannot delete subscription history'
+select throws_ok(
+  $$delete from public.subscriptions where user_id = '10000000-0000-4000-8000-000000000001'$$,
+  '42501'
 );
 select throws_ok(
   $$update public.profiles set diagnostic_status = 'completed' where id = '10000000-0000-4000-8000-000000000001'$$,
@@ -229,14 +306,13 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '30000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
-select lives_ok(
+select throws_ok(
   $$insert into public.subscriptions (user_id, plan_code, status, provider) values ('10000000-0000-4000-8000-000000000002', 'admin-issued', 'active', 'manual')$$,
-  'Admin subscription path remains available'
+  '42501'
 );
-select results_eq(
-  $$with removed as (delete from public.question_reviews where id = '70000000-0000-4000-8000-000000000002' returning 1) select count(*)::integer from removed$$,
-  array[1],
-  'Admin can remove reviewer history when required'
+select throws_ok(
+  $$delete from public.question_reviews where id = '70000000-0000-4000-8000-000000000002'$$,
+  '42501'
 );
 
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);

@@ -144,20 +144,20 @@ function dominantDifficulty(loss: MockSkillLoss): GenerationDifficulty {
   return DIFFICULTIES.reduce((best, current) => loss.difficulties[current] > loss.difficulties[best] ? current : best, "easy");
 }
 
-function recommendations(attemptId: string, losses: MockSkillLoss[]): MockRecommendation[] {
+function recommendations(losses: MockSkillLoss[]): MockRecommendation[] {
   return losses.filter((loss) => loss.incorrectQuestions >= 2 && loss.weightedMarkLoss >= 1)
     .slice(0, 3).map((loss) => {
       const difficulty = dominantDifficulty(loss);
       const questionCount = loss.incorrectQuestions >= 4 ? 10 : 5;
-      const params = new URLSearchParams({ module: loss.module, difficulty, count: String(questionCount), focus: loss.skillId });
+      const params = new URLSearchParams({ module: loss.module, difficulty, count: String(questionCount) });
       return {
         skillId: loss.skillId,
-        skill: loss.label,
+        skill: MODULE_LABELS[loss.module],
         module: loss.module,
         difficulty,
         questionCount,
-        reason: `${loss.incorrectQuestions} incorrect questions in this mock included this skill (${loss.weightedMarkLoss.toFixed(1)} weighted marks).`,
-        href: `/practice?${params.toString()}&fromMock=${attemptId}`,
+        reason: `${loss.incorrectQuestions} incorrect questions in this mock point to more practice in ${MODULE_LABELS[loss.module]}.`,
+        href: `/practice?${params.toString()}`,
       };
     });
 }
@@ -236,7 +236,7 @@ export function analyzeMockAttempt(attempt: AttemptResult): MockAnalysis {
       break;
     }
   }
-  const next = recommendations(attempt.id, losses);
+  const next = recommendations(losses);
   return {
     attemptId: attempt.id,
     eligible: true,

@@ -32,9 +32,9 @@ export default async function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground antialiased">
         <ThemeProvider defaultTheme={authState.theme}>
-          <div className="relative flex min-h-screen flex-col bg-background">
-            <SiteHeader initialAccount={authState.account} />
-            <main className="flex-1">{children}</main>
+          <div className="relative flex min-h-screen flex-col bg-background" data-app-frame>
+            <SiteHeader diagnosticStatus={authState.diagnosticStatus} initialAccount={authState.account} />
+            <main className="min-h-0 flex-1" data-site-main>{children}</main>
             <SiteFooter />
           </div>
         </ThemeProvider>

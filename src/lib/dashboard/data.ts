@@ -3,6 +3,7 @@ import "server-only";
 import { getCoreProgress } from "@/lib/progress/data";
 import { MODULE_LABELS } from "@/lib/progress/model";
 import type { PracticeModule } from "@/lib/practice/schemas";
+import type { StudentDiagnosticStatus } from "@/lib/constants/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getEnv } from "@/lib/validators/env";
 
@@ -27,11 +28,13 @@ type ProfileRow = {
   display_name: string | null;
   full_name: string | null;
   target_exam_date: string | null;
+  diagnostic_status: StudentDiagnosticStatus;
 };
 
 type PracticeSessionRow = {
   id: string;
-  module: PracticeModule;
+  module: PracticeModule | null;
+  session_type: "standard_practice" | "targeted_practice" | "exact_review" | "diagnostic";
   difficulty_mode: "easy" | "medium" | "hard" | "mixed";
   question_count: number;
   timing_mode: "timed" | "untimed";
@@ -113,6 +116,7 @@ function safeNumber(value: number | null): number {
 }
 
 function practiceTitle(row: PracticeSessionRow): string {
+  if (!row.module) return "Core diagnostic";
   return row.source_mode === "exact_review"
     ? `${MODULE_LABELS[row.module]} review`
     : `${MODULE_LABELS[row.module]} practice`;
@@ -123,16 +127,17 @@ function buildPracticeResume(row: PracticeSessionRow): DashboardResumeCandidate 
     row.question_count,
     Math.max(0, row.correct_count + row.incorrect_count),
   );
-  return {
-    kind: "practice",
+  const shared = {
     id: row.id,
     title: practiceTitle(row),
     description: `${answeredCount} of ${row.question_count} answered · ${row.timing_mode === "timed" ? "Timed" : "Untimed"}`,
-    href: "/practice",
     startedAt: row.started_at,
     expiresAt: row.expires_at,
-    timingMode: row.timing_mode,
   };
+  if (row.session_type === "diagnostic") {
+    return { ...shared, kind: "diagnostic", href: "/onboarding/diagnostic" };
+  }
+  return { ...shared, kind: "practice", href: "/practice", timingMode: row.timing_mode };
 }
 
 function buildMockResume(row: ActiveMockRow): DashboardResumeCandidate | null {
@@ -210,14 +215,14 @@ async function loadPrimaryDashboardRows(userId: string): Promise<DashboardQueryB
   ] = await Promise.all([
     admin
       .from("profiles")
-      .select("display_name, full_name, target_exam_date")
+      .select("display_name, full_name, target_exam_date, diagnostic_status")
       .eq("id", userId)
       .maybeSingle()
       .overrideTypes<ProfileRow | null, { merge: false }>(),
     admin
       .from("practice_sessions")
       .select(
-        "id, module, difficulty_mode, question_count, timing_mode, source_mode, current_position, correct_count, incorrect_count, started_at, expires_at, completed_at",
+        "id, module, session_type, difficulty_mode, question_count, timing_mode, source_mode, current_position, correct_count, incorrect_count, started_at, expires_at, completed_at",
       )
       .eq("user_id", userId)
       .eq("status", "in_progress")
@@ -227,10 +232,11 @@ async function loadPrimaryDashboardRows(userId: string): Promise<DashboardQueryB
     admin
       .from("practice_sessions")
       .select(
-        "id, module, difficulty_mode, question_count, timing_mode, source_mode, current_position, correct_count, incorrect_count, started_at, expires_at, completed_at",
+        "id, module, session_type, difficulty_mode, question_count, timing_mode, source_mode, current_position, correct_count, incorrect_count, started_at, expires_at, completed_at",
       )
       .eq("user_id", userId)
       .eq("status", "completed")
+      .neq("session_type", "diagnostic")
       .order("completed_at", { ascending: false })
       .limit(6)
       .overrideTypes<PracticeSessionRow[], { merge: false }>(),
@@ -386,7 +392,7 @@ export async function loadStudentDashboardData(
   const recentActivity = [...practiceActivity, ...mockActivity];
   const latestPracticeRow = primary.practiceHistory[0] ?? null;
   const latestPractice: DashboardLatestPractice | null =
-    latestPracticeRow?.completed_at
+    latestPracticeRow?.completed_at && latestPracticeRow.module
       ? {
           sessionId: latestPracticeRow.id,
           title: practiceTitle(latestPracticeRow),
@@ -425,6 +431,7 @@ export async function loadStudentDashboardData(
     data: assembleStudentDashboard({
       displayName:
         primary.profile?.display_name ?? primary.profile?.full_name ?? "Student",
+      diagnosticStatus: primary.profile?.diagnostic_status ?? "not_started",
       targetExamDate: primary.profile?.target_exam_date ?? null,
       onDemandMocksEnabled,
       mockAvailable,

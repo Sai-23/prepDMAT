@@ -62,15 +62,10 @@ export function MockAnalysisView({
               <p className="mt-2 text-sm opacity-90">{percent(analysis.overall.scoreAccuracy)} mock accuracy</p>
               <p className="mt-1 text-xs opacity-75">Practice result — not an official dMAT score</p>
             </div>
-            <div className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 p-6 sm:grid-cols-2">
               <Metric dark label="Incorrect" value={analysis.overall.incorrect} icon="incorrect" />
               <Metric dark label="Unanswered" value={analysis.overall.unanswered} icon="unanswered" />
-              <Metric dark label="Recorded study time" value={formatStudyTime(result.totalTimeSeconds)} icon="time" />
-              <div className="rounded-md border border-primary-foreground/20 bg-primary-muted p-4">
-                <p className="text-xs opacity-80">Mock type</p>
-                <p className="mt-2 font-semibold">{analysis.origin === "generated" ? "Full Core" : "Custom"}</p>
-                {analysis.autoSubmitted ? <Badge className="mt-3" variant="warning">Auto-submitted</Badge> : null}
-              </div>
+              {analysis.autoSubmitted ? <Badge className="sm:col-span-2 sm:justify-self-start" variant="warning">Auto-submitted</Badge> : null}
             </div>
           </div>
         </Card>
@@ -99,6 +94,9 @@ export function MockAnalysisView({
         <Button asChild className="mt-5 w-full shrink-0 sm:mt-0 sm:w-auto"><Link href={(recommended?.href ?? "#question-review") as Route}>{recommended ? `Start ${recommended.questionCount} questions` : "Review mistakes"}</Link></Button>
       </section>
 
+      <details className="group rounded-xl border border-workspace-border bg-surface-lowest">
+        <summary className="cursor-pointer list-none px-6 py-5 text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset">View detailed analysis</summary>
+        <div className="space-y-10 border-t border-workspace-border p-6">
       <section aria-labelledby="key-insights" className="space-y-4">
         <SectionHeading id="key-insights" title="What this result suggests" description="Patterns from this completed mock." />
         <Card>
@@ -161,10 +159,12 @@ export function MockAnalysisView({
           ))}
         </div>
       </section>
+        </div>
+      </details>
 
       <section aria-labelledby="question-review" className="space-y-4" id="question-review-section">
         <SectionHeading id="question-review" title="Question review" description="Review your answers and explanations from this completed mock." />
-        <ResultReview analysis={analysis.questionAnalysis} attemptId={analysis.attemptId} questions={result.questions} />
+        <ResultReview analysis={analysis.questionAnalysis} questions={result.questions} />
       </section>
     </div>
   );

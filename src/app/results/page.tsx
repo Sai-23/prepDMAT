@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/guards";
-import { formatStudyTime } from "@/lib/dashboard/recommendations";
 import { getResultHistory } from "@/lib/results/data";
 import { getMockAnalysis } from "@/lib/results/mock-analysis-data";
 import { resultAttemptIdSchema } from "@/lib/results/schemas";
@@ -84,7 +83,7 @@ export default async function ResultsPage({
         <div className="space-y-4">
           {history.map((attempt) => (
             <Card key={attempt.id}>
-              <CardContent className="grid gap-5 p-6 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
+              <CardContent className="grid gap-5 p-6 md:grid-cols-[1fr_auto_auto] md:items-center">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-slate-950">{attempt.testTitle}</p>
@@ -94,8 +93,7 @@ export default async function ResultsPage({
                   <p className="mt-2 text-sm text-slate-500">{dateFormatter.format(new Date(attempt.submittedAt ?? attempt.startedAt))}</p>
                 </div>
                 <div><p className="text-xs text-slate-500">Score</p><p className="mt-1 font-semibold">{Math.round(attempt.accuracy)}%</p></div>
-                <div><p className="text-xs text-slate-500">Recorded time</p><p className="mt-1 font-semibold">{formatStudyTime(attempt.totalTimeSeconds)}</p></div>
-                <Button asChild size="sm" variant="secondary"><Link href={`/results?attempt=${attempt.id}` as Route}>Review<ArrowRight className="h-4 w-4" /></Link></Button>
+                <Button asChild size="sm" variant="secondary"><Link href={`/results?attempt=${attempt.id}` as Route}>View Result<ArrowRight className="h-4 w-4" /></Link></Button>
               </CardContent>
             </Card>
           ))}

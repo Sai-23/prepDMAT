@@ -6,6 +6,10 @@ import { requireUser } from "@/lib/auth/guards";
 import { saveMistakeEntry, setBookmark } from "@/lib/learning/data";
 import { safeActionFailure } from "@/lib/security/public-errors";
 import {
+  enforceSecurityRateLimit,
+  rateLimitActionError,
+} from "@/lib/security/rate-limit";
+import {
   bookmarkMutationSchema,
   mistakeEntrySchema,
 } from "@/lib/learning/schemas";
@@ -14,6 +18,11 @@ export async function toggleBookmarkAction(input: unknown) {
   const user = await requireUser();
   const parsed = bookmarkMutationSchema.safeParse(input);
   if (!parsed.success) return { error: "The bookmark request is invalid." };
+  try {
+    await enforceSecurityRateLimit("learning:mutation", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
 
   try {
     await setBookmark(
@@ -38,6 +47,11 @@ export async function saveMistakeEntryAction(input: unknown) {
         parsed.error.flatten().fieldErrors.note?.[0] ??
         "The notebook entry is invalid.",
     };
+  }
+  try {
+    await enforceSecurityRateLimit("learning:mutation", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
   }
 
   try {

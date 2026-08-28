@@ -25,4 +25,11 @@ describe("SiteHeaderNavigation", () => {
     expect(html).not.toContain(">Pricing</a>");
     expect(html).toContain('aria-current="page"');
   });
+
+  it("shows the completed diagnostic state on desktop and mobile", () => {
+    const html = renderToStaticMarkup(<SiteHeaderNavigation diagnosticStatus="completed" />);
+    expect(html.match(/>Diagnostic Complete ✓<\/a>/g)).toHaveLength(2);
+    expect(html.match(/href="\/onboarding\/diagnostic\/summary"/g)).toHaveLength(2);
+    expect(html).not.toContain(">Free Diagnostic</a>");
+  });
 });

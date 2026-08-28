@@ -1,30 +1,14 @@
-import type { PracticeAnswer, PracticeQuestion } from "@/lib/practice/schemas";
+import {
+  answerMatchesQuestion,
+  type PracticeAnswer,
+  type PracticeQuestion,
+} from "@/lib/practice/schemas";
 
 export function isTestAnswerComplete(
-  question: Pick<PracticeQuestion, "options" | "response">,
+  question: PracticeQuestion,
   answer: PracticeAnswer | null | undefined,
 ): boolean {
-  if (!answer) return false;
-
-  const response = question.response ?? {
-    kind: "single_choice" as const,
-    options: question.options,
-  };
-  if (response.kind !== answer.kind) return false;
-
-  if (answer.kind === "single_choice") {
-    return response.kind === "single_choice" &&
-      response.options.some((option) => option.id === answer.optionId);
-  }
-  if (answer.kind === "two_stage_single_choice") {
-    return answer.optionIds.every((optionId) => optionId.length > 0);
-  }
-
-  return response.kind === "symbol_assignment" &&
-    response.symbols.every((symbol) => {
-      const value = answer.values[symbol];
-      return Number.isInteger(value) && value >= 1 && value <= 20;
-    });
+  return Boolean(answer && answerMatchesQuestion(answer, question));
 }
 
 export type SaveState = "idle" | "saving" | "saved" | "error";

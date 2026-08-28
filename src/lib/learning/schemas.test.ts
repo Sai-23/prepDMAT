@@ -14,7 +14,8 @@ describe("learning review validation", () => {
   it("limits mistake notes", () => {
     expect(
       mistakeEntrySchema.safeParse({
-        questionId,
+        sourceKind: "practice_session_item",
+        sourceId: questionId,
         note: "x".repeat(2001),
         isUnderstood: false,
       }).success,

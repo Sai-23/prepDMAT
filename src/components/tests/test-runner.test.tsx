@@ -10,6 +10,10 @@ vi.mock("@/app/tests/actions", () => ({
   submitTestAction: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 import { TestRunner } from "./test-runner";
 
 function mockQuestion(sectionId: string, sectionTitle: string, index: number): TestQuestion {

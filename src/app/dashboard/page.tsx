@@ -2,6 +2,7 @@ import {
   ArrowRight,
   BookOpenCheck,
   ClipboardCheck,
+  CheckCircle2,
   Play,
   RotateCcw,
   Sparkles,
@@ -161,6 +162,14 @@ export default async function DashboardPage() {
       <section aria-label={hasResume ? "Continue active work" : "Recommended next action"}>
         <ActionCard action={data.primaryAction} />
       </section>
+
+      {data.diagnosticStatus === "completed" ? (
+        <Link className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-success/40 bg-success-container px-4 py-2 text-sm font-semibold text-success-container-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" href="/onboarding/diagnostic/summary"><span className="flex items-center gap-2"><CheckCircle2 aria-hidden="true" className="h-4 w-4" />Diagnostic Complete</span><span>View results →</span></Link>
+      ) : data.diagnosticStatus === "in_progress" && data.primaryAction.href !== "/onboarding/diagnostic" ? (
+        <Link className="flex min-h-11 items-center justify-between rounded-lg border border-workspace-border px-4 py-2 text-sm font-semibold hover:bg-surface-low" href="/onboarding/diagnostic"><span>Diagnostic in progress</span><span className="text-primary">Resume →</span></Link>
+      ) : (data.diagnosticStatus === "not_started" || data.diagnosticStatus === "skipped") && data.primaryAction.kind !== "take_diagnostic" ? (
+        <Link className="flex min-h-11 items-center justify-between rounded-lg border border-workspace-border px-4 py-2 text-sm font-semibold hover:bg-surface-low" href="/onboarding"><span>Core diagnostic not started</span><span className="text-primary">Take Diagnostic →</span></Link>
+      ) : null}
 
       {data.supportingAction ? (
         <section aria-labelledby="recommended-next" className="space-y-3">

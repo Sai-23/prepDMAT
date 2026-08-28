@@ -62,6 +62,15 @@ export async function continueDiagnosticAction(input: unknown) {
   const parsed = answerSubmissionSchema.safeParse(input);
   if (!parsed.success) return { error: "The diagnostic answer is invalid." };
   try {
+    await enforceSecurityRateLimit("assessment:answer", { userId: user.id });
+  } catch (error) {
+    return {
+      ...rateLimitActionError(error),
+      status: "error" as const,
+      answerSaved: false,
+    };
+  }
+  try {
     return { error: null, ...(await continueInitialDiagnostic(user.id, parsed.data)) };
   } catch (error) {
     return {

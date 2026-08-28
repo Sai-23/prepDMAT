@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizePhoneNumber, registerSchema } from "./schemas";
+import { loginSchema, normalizePhoneNumber, registerSchema } from "./schemas";
 
 describe("auth schemas", () => {
   it("requires matching, reasonably strong passwords", () => {
@@ -25,6 +25,24 @@ describe("auth schemas", () => {
         marketingEmailOptIn: false,
       }).success,
     ).toBe(true);
+  });
+
+  it("rejects oversized credential fields before provider work", () => {
+    expect(loginSchema.safeParse({
+      email: `${"a".repeat(245)}@example.com`,
+      password: "password1",
+    }).success).toBe(false);
+    expect(loginSchema.safeParse({
+      email: "ada@example.com",
+      password: `a1${"x".repeat(127)}`,
+    }).success).toBe(false);
+    expect(registerSchema.safeParse({
+      fullName: "Ada Lovelace",
+      email: "ada@example.com",
+      password: `a1${"x".repeat(127)}`,
+      confirmPassword: `a1${"x".repeat(127)}`,
+      marketingEmailOptIn: false,
+    }).success).toBe(false);
   });
 
   it("normalizes supported phone input to E.164 and rejects malformed input", () => {

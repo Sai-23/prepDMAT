@@ -13,6 +13,12 @@ const limiterFixMigration = source(
 const limiterBatchMigration = source(
   "supabase/migrations/202608270024_batch_security_rate_limits.sql",
 );
+const mockStateMigration = source(
+  "supabase/migrations/202608280026_mock_state_security.sql",
+);
+const scrapingMigration = source(
+  "supabase/migrations/202608280027_close_question_bank_scraping.sql",
+);
 
 describe("database security remediation contract", () => {
   it("removes legacy broad grants and makes browser privileges explicit", () => {
@@ -24,12 +30,15 @@ describe("database security remediation contract", () => {
     expect(migration).not.toMatch(/grant all privileges on all tables/i);
   });
 
-  it("denies student subscription mutations while preserving Admin/service paths", () => {
+  it("denies student subscription mutations and closes later direct browser writes", () => {
     expect(migration).toContain("drop policy if exists subscriptions_access");
     expect(migration).toMatch(/create policy subscriptions_insert[\s\S]*current_user_has_role\('admin'\)/);
     expect(migration).toMatch(/create policy subscriptions_update[\s\S]*current_user_has_role\('admin'\)/);
     expect(migration).toMatch(/create policy subscriptions_delete[\s\S]*current_user_has_role\('admin'\)/);
     expect(migration).toContain("grant select, insert, update, delete on public.subscriptions to authenticated");
+    expect(scrapingMigration).toContain(
+      "revoke insert, update, delete on public.subscriptions from authenticated",
+    );
   });
 
   it("makes profile workflow fields server-owned", () => {
@@ -90,6 +99,88 @@ describe("database security remediation contract", () => {
     expect(limiter).toContain('admin.rpc("consume_security_rate_limits"');
     expect(limiter).not.toContain('admin.rpc("consume_security_rate_limit"');
   });
+
+  it("serializes Mock start, response persistence, and final grading", () => {
+    expect(mockStateMigration).toContain(
+      "create trigger enforce_one_active_curated_mock",
+    );
+    expect(mockStateMigration).toContain("pg_advisory_xact_lock");
+    expect(mockStateMigration).toContain(
+      "create or replace function public.save_test_response_secure",
+    );
+    expect(mockStateMigration).toContain(
+      "create or replace function public.finalize_test_attempt_secure",
+    );
+    expect(mockStateMigration).toContain(
+      "response.response_payload is distinct from grade.response_payload",
+    );
+    expect(mockStateMigration).toContain("for update");
+    expect(mockStateMigration).toMatch(
+      /revoke all on function public\.save_test_response_secure[\s\S]*from public, anon, authenticated/,
+    );
+    expect(mockStateMigration).toMatch(
+      /revoke all on function public\.finalize_test_attempt_secure[\s\S]*from public, anon, authenticated/,
+    );
+
+    const testData = source("src/lib/tests/data.ts");
+    expect(testData).toContain('admin.rpc("save_test_response_secure"');
+    expect(testData).toContain('"finalize_test_attempt_secure"');
+    expect(testData).not.toContain('from("user_responses")\n        .update({');
+  });
+
+  it("withholds future timed-section questions until the server advances the attempt", () => {
+    const testData = source("src/lib/tests/data.ts");
+    expect(testData).toMatch(
+      /async function loadActiveSectionPayload[\s\S]*\.eq\("section_key", section\.id\)/,
+    );
+    expect(testData).toMatch(
+      /export async function getTestAttempt[\s\S]*loadActiveSectionPayload\([\s\S]*active\.section[\s\S]*questions: sectionPayload\.questions/,
+    );
+    expect(testData).toContain(
+      'if (cursorError) throw new Error("Unable to restore the active timed section.")',
+    );
+    expect(testData).toMatch(
+      /export async function advanceTestSection[\s\S]*loadActiveSectionPayload\([\s\S]*nextSection[\s\S]*\.\.\.sectionPayload/,
+    );
+    expect(testData).toMatch(
+      /export async function processTestClock[\s\S]*loadActiveSectionPayload\([\s\S]*active\.section[\s\S]*\.\.\.sectionPayload/,
+    );
+
+    const runner = source("src/components/tests/test-runner.tsx");
+    expect(runner).toContain(
+      "const [availableQuestions, setAvailableQuestions] = useState(attempt.questions)",
+    );
+    expect(runner).toContain("setAvailableQuestions((current) => [");
+    expect(runner).toContain("applySectionTransition(response)");
+  });
+
+  it("removes direct browser access to the published question bank", () => {
+    for (const table of [
+      "public.question_options",
+      "public.tests",
+      "public.test_sections",
+      "public.test_questions",
+    ]) {
+      expect(scrapingMigration).toContain(
+        `revoke select on ${table} from anon, authenticated`,
+      );
+    }
+    expect(scrapingMigration).toMatch(
+      /revoke select \([\s\S]*question_text[\s\S]*\) on public\.questions from anon, authenticated/,
+    );
+    expect(scrapingMigration).toContain(
+      "revoke insert, update, delete on public.question_reviews from authenticated",
+    );
+    expect(scrapingMigration).toContain(
+      "revoke insert, update, delete on public.subscriptions from authenticated",
+    );
+
+    const clientUsages = [
+      "src/components/auth/auth-form.tsx",
+      "src/components/layout/site-header-account.tsx",
+    ].map(source).join("\n");
+    expect(clientUsages).not.toMatch(/\.from\(["'](?:questions|question_options|tests|test_sections|test_questions)["']\)/);
+  });
 });
 
 describe("application security boundary", () => {
@@ -124,7 +215,8 @@ describe("application security boundary", () => {
     const practice = source("src/app/practice/actions.ts");
     const onboarding = source("src/app/onboarding/actions.ts");
     const tests = source("src/app/tests/actions.ts");
-    const combined = [auth, google, practice, onboarding, tests].join("\n");
+    const learning = source("src/app/learning/actions.ts");
+    const combined = [auth, google, practice, onboarding, tests, learning].join("\n");
 
     for (const operation of [
       "auth:login",
@@ -137,12 +229,23 @@ describe("application security boundary", () => {
       "generation:practice",
       "generation:diagnostic",
       "generation:mock",
+      "assessment:answer",
+      "assessment:mock-start",
+      "assessment:mock-write",
+      "learning:mutation",
+      "learning:report",
     ]) {
       expect(combined).toContain(`enforceSecurityRateLimit(\"${operation}\"`);
     }
     expect(tests.indexOf("ENABLE_ON_DEMAND_CORE_MOCKS")).toBeLessThan(
       tests.indexOf('enforceSecurityRateLimit("generation:mock"'),
     );
+  });
+
+  it("bounds framework request buffering and Server Action payloads", () => {
+    const config = source("next.config.ts");
+    expect(config).toContain('proxyClientMaxBodySize: "1mb"');
+    expect(config).toContain('bodySizeLimit: "256kb"');
   });
 
   it("does not forward arbitrary action exception messages", () => {

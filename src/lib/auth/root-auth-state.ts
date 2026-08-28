@@ -5,14 +5,17 @@ import { getCurrentUser } from "@/lib/auth/guards";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isThemePreference, type ThemePreference } from "@/lib/theme";
 import type { HeaderAccountState, UserRole } from "@/types/auth";
+import type { StudentDiagnosticStatus } from "@/lib/constants/navigation";
 
 export type RootAuthState = {
   account: HeaderAccountState | null;
+  diagnosticStatus: StudentDiagnosticStatus | null;
   theme: ThemePreference;
 };
 
 const anonymousRootState: RootAuthState = {
   account: null,
+  diagnosticStatus: null,
   theme: "system",
 };
 
@@ -30,6 +33,7 @@ export async function resolveRootAuthState(): Promise<RootAuthState> {
     display_name: string | null;
     full_name: string | null;
     theme_preference: string | null;
+    diagnostic_status: StudentDiagnosticStatus;
   } | null = null;
   let roles: UserRole[] = [];
 
@@ -38,7 +42,7 @@ export async function resolveRootAuthState(): Promise<RootAuthState> {
     const [profileResult, rolesResult] = await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, full_name, theme_preference")
+        .select("display_name, full_name, theme_preference, diagnostic_status")
         .eq("id", user.id)
         .maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", user.id),
@@ -66,6 +70,7 @@ export async function resolveRootAuthState(): Promise<RootAuthState> {
           ? "reviewer"
           : null,
     },
+    diagnosticStatus: profile?.diagnostic_status ?? null,
     theme: isThemePreference(profile?.theme_preference)
       ? profile.theme_preference
       : "system",

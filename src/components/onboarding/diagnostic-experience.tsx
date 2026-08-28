@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight, LockKeyhole } from "lucide-react";
+import { ArrowRight, LockKeyhole, LogOut } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent } from "react";
 
@@ -115,7 +116,7 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
 
   return (
     <form
-      className="mx-auto max-w-5xl"
+      className="mx-auto h-full max-w-5xl"
       onKeyDown={handleKeyboardSubmit}
       onSubmit={(event) => {
         event.preventDefault();
@@ -134,10 +135,7 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Initial Core diagnostic
           </p>
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <LockKeyhole aria-hidden="true" className="h-4 w-4" />
-            Results shown after completion
-          </p>
+           <div className="flex items-center gap-2"><p className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex"><LockKeyhole aria-hidden="true" className="h-4 w-4" />Results shown after completion</p><Button asChild size="sm" variant="ghost"><Link href="/dashboard"><LogOut aria-hidden="true" className="h-4 w-4" />Exit</Link></Button></div>
         </div>
       </header>}
       >

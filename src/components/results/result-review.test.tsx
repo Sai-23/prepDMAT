@@ -97,7 +97,6 @@ describe("completed Mathematical Equation result review", () => {
         timing: "fast_incorrect",
         paceRatio: 0.5,
       }]}
-      attemptId="10000000-0000-4000-8000-000000000001"
       questions={[question]}
     />);
 
@@ -106,7 +105,7 @@ describe("completed Mathematical Equation result review", () => {
     expect(html).toContain("Fast incorrect (1)");
     expect(html).toContain("Question 21");
     expect(html).toContain("Scale relationships");
-    expect(html).toContain("Practice this skill");
+    expect(html).toContain("Practice this module");
     expect(html).toContain("42s recorded");
   });
 

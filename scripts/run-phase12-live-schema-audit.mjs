@@ -38,14 +38,21 @@ const schemaChecks = [
   ["practice_session_items", "id,session_id,question_key,position,question_type,difficulty,public_snapshot,private_snapshot,response_status,response_payload,is_correct,fingerprint,structural_profile"],
   ["practice_events", "id,user_id,session_id,question_key,event_type,metadata,created_at"],
   ["question_reports", "id,question_id,practice_session_item_id,reporter_id"],
+  ["mistake_notebook_entries", "id,user_id,question_id,practice_session_item_id,practice_attempt_item_id,note,is_understood"],
 ];
 
 const restrictedTables = [
+  "questions",
+  "question_options",
+  "tests",
+  "test_sections",
+  "test_questions",
   "generated_core_mocks",
   "core_mock_generation_events",
   "practice_sessions",
   "practice_session_items",
   "practice_events",
+  "mistake_notebook_entries",
 ];
 
 const rpcChecks = [
@@ -99,6 +106,22 @@ const rpcChecks = [
     p_section_expires_at: new Date().toISOString(),
     p_current_question_id: crypto.randomUUID(),
   }, "mock seed"],
+  ["save_test_response_secure", {
+    p_user_id: crypto.randomUUID(),
+    p_attempt_id: crypto.randomUUID(),
+    p_question_key: crypto.randomUUID(),
+    p_selected_option_id: null,
+    p_response_payload: null,
+    p_response_status: "unanswered",
+    p_is_marked_for_review: false,
+    p_time_spent_seconds: 0,
+  }, "test_attempt_unavailable"],
+  ["finalize_test_attempt_secure", {
+    p_user_id: crypto.randomUUID(),
+    p_attempt_id: crypto.randomUUID(),
+    p_auto_submitted: false,
+    p_grades: [],
+  }, "test_attempt_unavailable"],
 ];
 
 const report = {

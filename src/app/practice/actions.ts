@@ -61,6 +61,11 @@ export async function submitPracticeAnswerAction(input: unknown) {
   const parsed = answerSubmissionSchema.safeParse(input);
   if (!parsed.success) return { error: "The answer submission was invalid." };
   try {
+    await enforceSecurityRateLimit("assessment:answer", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
+  try {
     return { error: null, ...(await recordPracticeAnswer(user.id, parsed.data)) };
   } catch (error) {
     return safeActionFailure(error, "Unable to save this answer.");
@@ -123,6 +128,11 @@ export async function reportPracticeQuestionAction(input: unknown) {
   const user = await requireUser();
   const parsed = practiceReportSchema.safeParse(input);
   if (!parsed.success) return { error: "The question report is invalid." };
+  try {
+    await enforceSecurityRateLimit("learning:report", { userId: user.id });
+  } catch (error) {
+    return rateLimitActionError(error);
+  }
   try {
     await reportPracticeQuestion(user.id, parsed.data);
     return { error: null, success: true };

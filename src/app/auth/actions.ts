@@ -207,23 +207,45 @@ export async function resendVerificationAction(
     return rateLimitActionState(error);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email: result.data.email,
-    options: { emailRedirectTo: getAuthCallbackUrl("email_verification") },
-  });
+  let error: { status?: number; code?: string } | null = null;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const resendResult = await supabase.auth.resend({
+      type: "signup",
+      email: result.data.email,
+      options: { emailRedirectTo: getAuthCallbackUrl("email_verification") },
+    });
+    error = resendResult.error;
+  } catch {
+    return {
+      status: "error",
+      code: "TEMPORARILY_UNAVAILABLE",
+      message: "The authentication service is temporarily unavailable. Try again shortly.",
+    };
+  }
 
-  return error
-    ? {
-        status: "error",
-        message: providerErrorMessage(error, "We could not resend the email. Try again shortly."),
-      }
-    : {
-        status: "success",
-        retryAfterSeconds: 60,
-        message: "Verification email sent. Check your inbox and spam folder.",
-      };
+  if (error?.status === 429 || error?.code === "over_request_rate_limit") {
+    return {
+      status: "error",
+      code: "RATE_LIMITED",
+      message: "Too many attempts. Wait a little before trying again.",
+    };
+  }
+  if (error?.status && error.status >= 500) {
+    return {
+      status: "error",
+      code: "TEMPORARILY_UNAVAILABLE",
+      message: "The authentication service is temporarily unavailable. Try again shortly.",
+    };
+  }
+
+  // Account-specific 4xx responses are deliberately indistinguishable from a
+  // successful provider request so this endpoint cannot enumerate signups.
+  return {
+    status: "success",
+    retryAfterSeconds: 60,
+    message: "If this address has a pending account, a verification email is on its way.",
+  };
 }
 
 export async function googleSignInAction(

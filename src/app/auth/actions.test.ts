@@ -247,7 +247,26 @@ describe("email signup verification", () => {
     expect(result).toEqual({
       status: "success",
       retryAfterSeconds: 60,
-      message: "Verification email sent. Check your inbox and spam folder.",
+      message: "If this address has a pending account, a verification email is on its way.",
     });
+  });
+
+  it("does not reveal whether a resend address has a pending account", async () => {
+    const resend = vi.fn().mockResolvedValue({
+      data: {},
+      error: { status: 400, code: "user_not_found", message: "raw provider detail" },
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { resend } });
+    const formData = new FormData();
+    formData.set("email", "unknown@example.test");
+
+    const result = await resendVerificationAction(idle, formData);
+
+    expect(result).toEqual({
+      status: "success",
+      retryAfterSeconds: 60,
+      message: "If this address has a pending account, a verification email is on its way.",
+    });
+    expect(JSON.stringify(result)).not.toMatch(/user.not.found|raw provider/i);
   });
 });

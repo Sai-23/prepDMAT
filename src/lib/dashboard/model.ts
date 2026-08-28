@@ -5,6 +5,7 @@ import type {
   Trend,
 } from "@/lib/progress/model";
 import type { PracticeModule } from "@/lib/practice/schemas";
+import type { StudentDiagnosticStatus } from "@/lib/constants/navigation";
 
 export type DashboardActionKind =
   | "resume_mock"
@@ -14,7 +15,8 @@ export type DashboardActionKind =
   | "start_practice"
   | "build_baseline"
   | "take_mock"
-  | "continue_practice";
+  | "continue_practice"
+  | "take_diagnostic";
 
 export interface DashboardAction {
   kind: DashboardActionKind;
@@ -43,9 +45,14 @@ export interface PracticeResumeCandidate extends ResumeCandidateBase {
   timingMode: "timed" | "untimed";
 }
 
+export interface DiagnosticResumeCandidate extends ResumeCandidateBase {
+  kind: "diagnostic";
+}
+
 export type DashboardResumeCandidate =
   | MockResumeCandidate
-  | PracticeResumeCandidate;
+  | PracticeResumeCandidate
+  | DiagnosticResumeCandidate;
 
 export type DashboardActivityType = "practice" | "mock";
 
@@ -106,6 +113,7 @@ export interface DashboardQuickAction {
 
 export interface StudentDashboardViewModel {
   displayName: string;
+  diagnosticStatus: StudentDiagnosticStatus;
   targetExamDate: string | null;
   onDemandMocksEnabled: boolean;
   mockAvailable: boolean;
@@ -121,6 +129,7 @@ export interface StudentDashboardViewModel {
 
 export interface AssembleStudentDashboardInput {
   displayName: string;
+  diagnosticStatus?: StudentDiagnosticStatus;
   targetExamDate: string | null;
   onDemandMocksEnabled: boolean;
   mockAvailable: boolean;
@@ -156,6 +165,7 @@ function selectResumeCandidate(
 
   return (
     resumable.find((candidate) => candidate.kind === "mock") ??
+    resumable.find((candidate) => candidate.kind === "diagnostic") ??
     resumable.find(
       (candidate) =>
         candidate.kind === "practice" && candidate.timingMode === "timed",
@@ -166,6 +176,16 @@ function selectResumeCandidate(
 }
 
 function buildResumeAction(candidate: DashboardResumeCandidate): DashboardAction {
+  if (candidate.kind === "diagnostic") {
+    return {
+      kind: "resume_practice",
+      eyebrow: "Continue where you left off",
+      title: candidate.title,
+      description: candidate.description,
+      label: "Resume Diagnostic",
+      href: candidate.href,
+    };
+  }
   return {
     kind: candidate.kind === "mock" ? "resume_mock" : "resume_practice",
     eyebrow: "Continue where you left off",
@@ -285,7 +305,18 @@ function selectNextAction(
   activity: DashboardActivity[],
   latestMock: DashboardLatestMock | null,
   mockAvailable: boolean,
+  diagnosticStatus: StudentDiagnosticStatus,
 ): DashboardAction {
+  if ((diagnosticStatus === "not_started" || diagnosticStatus === "skipped") && (progress?.totalQuestions ?? 0) === 0) {
+    return {
+      kind: "take_diagnostic",
+      eyebrow: "Recommended starting point",
+      title: "Take your Core diagnostic",
+      description: "Answer 15 untimed questions to get a simple starting direction across the three Core modules.",
+      label: "Take Diagnostic",
+      href: "/onboarding",
+    };
+  }
   if (newestActivityIsLatestMock(activity, latestMock)) {
     return buildLatestMockAction(latestMock!);
   }
@@ -365,6 +396,9 @@ function buildQuickActions(mockAvailable: boolean): DashboardQuickAction[] {
 export function assembleStudentDashboard(
   input: AssembleStudentDashboardInput,
 ): StudentDashboardViewModel {
+  // Callers without an authoritative status keep the established dashboard
+  // policy. Production data always supplies the profile-backed value.
+  const diagnosticStatus = input.diagnosticStatus ?? "completed";
   const resumeCandidate = selectResumeCandidate(input.resumeCandidates, input.now);
   const recentActivity = [...input.recentActivity]
     .sort(
@@ -377,10 +411,12 @@ export function assembleStudentDashboard(
     recentActivity,
     input.latestMock,
     input.mockAvailable,
+    diagnosticStatus,
   );
 
   return {
     displayName: input.displayName,
+    diagnosticStatus,
     targetExamDate: input.targetExamDate,
     onDemandMocksEnabled: input.onDemandMocksEnabled,
     mockAvailable: input.mockAvailable,

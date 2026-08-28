@@ -73,6 +73,10 @@ export async function GET(request: NextRequest) {
   const flow = parseCallbackFlow(searchParams.get("flow"));
   const providerError = searchParams.has("error");
 
+  if ((code && code.length > 4096) || (tokenHash && tokenHash.length > 4096)) {
+    return NextResponse.redirect(loginOutcomeUrl("expired"));
+  }
+
   let supabase: CallbackClient;
   try {
     supabase = await createSupabaseServerClient();

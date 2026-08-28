@@ -10,13 +10,25 @@ export type NavigationItem = {
   roles?: UserRole[];
 };
 
+export type StudentDiagnosticStatus = "not_started" | "in_progress" | "completed" | "skipped";
+
+export function diagnosticNavigationItem(status: StudentDiagnosticStatus | null): NavigationItem {
+  if (status === "completed") {
+    return { href: "/onboarding/diagnostic/summary", label: "Diagnostic Complete ✓", requiresAuth: true };
+  }
+  if (status === "in_progress") {
+    return { href: "/onboarding/diagnostic", label: "Resume Diagnostic", requiresAuth: true };
+  }
+  return { href: "/onboarding", label: "Free Diagnostic", requiresAuth: true };
+}
+
 export const primaryNavigation: NavigationItem[] = [
   { href: "/dashboard", label: "Dashboard", requiresAuth: true },
   { href: "/practice", label: "Practice", requiresAuth: true },
   { href: "/tests", label: "Mock Tests", requiresAuth: true },
   { href: "/progress" as Route, label: "Progress", requiresAuth: true },
   { href: "/exam-format", label: "Exam Format" },
-  { href: "/onboarding", label: "Free Diagnostic", requiresAuth: true },
+  diagnosticNavigationItem(null),
 ];
 
 export const studentNavigation: NavigationItem[] = [

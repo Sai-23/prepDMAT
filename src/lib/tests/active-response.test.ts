@@ -29,7 +29,14 @@ function question(response: PracticeQuestion["response"]): PracticeQuestion {
     tableData: null,
     imageUrl: null,
     estimatedTimeSeconds: 60,
-    structuredData: null,
+    structuredData: response?.kind === "two_stage_single_choice"
+      ? {
+          missingMatrices: [
+            { candidates: [{ id: "A" }, { id: "B" }] },
+            { candidates: [{ id: "C" }, { id: "D" }] },
+          ],
+        }
+      : null,
     response,
     options: response?.kind === "single_choice" ? response.options : [],
   };
@@ -60,6 +67,8 @@ describe("active Mock response completeness", () => {
     expect(isTestAnswerComplete(figure, { kind: "two_stage_single_choice", optionIds: ["A", "C"] })).toBe(true);
     expect(isTestAnswerComplete(equation, { kind: "symbol_assignment", values: { A: 11 } })).toBe(false);
     expect(isTestAnswerComplete(equation, { kind: "symbol_assignment", values: { A: 11, B: 2, C: 7, D: 14 } })).toBe(true);
+    expect(isTestAnswerComplete(figure, { kind: "two_stage_single_choice", optionIds: ["forged", "C"] })).toBe(false);
+    expect(isTestAnswerComplete(equation, { kind: "symbol_assignment", values: { A: 11, B: 2, C: 7, D: 14, E: 1 } })).toBe(false);
   });
 
   it("preserves the 1–20 equation editing domain without leading zeroes", () => {
@@ -112,8 +121,9 @@ describe("active Mock server persistence contract", () => {
 
   it("persists partial Equation values without marking them answered", () => {
     expect(data).toContain("const isComplete = isTestAnswerComplete(publicQuestion, input.answer)");
-    expect(data).toContain('response_status: isComplete ? "answered" : "unanswered"');
-    expect(data).toContain("response_payload: input.answer");
+    expect(data).toContain('p_response_status: isComplete ? "answered" : "unanswered"');
+    expect(data).toContain("p_response_payload: input.answer");
+    expect(data).toContain('admin.rpc("save_test_response_secure"');
   });
 
   it("flushes dirty responses before section changes and final grading", () => {
@@ -126,5 +136,7 @@ describe("active Mock server persistence contract", () => {
   it("makes completed submission retries idempotent", () => {
     expect(data).toContain('attempt.status === "submitted" || attempt.status === "auto_submitted"');
     expect(data).toContain("totalTimeSeconds: Number(attempt.total_time_seconds ?? 0)");
+    expect(data).toContain('"finalize_test_attempt_secure"');
+    expect(data).toContain("response_payload: response.response_payload");
   });
 });

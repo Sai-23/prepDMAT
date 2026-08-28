@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   typedRoutes: true,
   reactStrictMode: true,
+  experimental: {
+    proxyClientMaxBodySize: "1mb",
+    serverActions: {
+      bodySizeLimit: "256kb",
+    },
+  },
   async redirects() {
     return [
       {

@@ -39,11 +39,9 @@ type ReviewFilter = "all" | "correct" | "incorrect" | "unanswered" | "slow" | "f
 export function ResultReview({
   questions,
   analysis = [],
-  attemptId,
 }: {
   questions: ResultQuestion[];
   analysis?: MockQuestionAnalysis[];
-  attemptId?: string;
 }) {
   const [filter, setFilter] = useState<ReviewFilter>("all");
   const [skillFilter, setSkillFilter] = useState<CoreSkillId | "all">("all");
@@ -259,10 +257,10 @@ export function ResultReview({
                     const skill = coreSkill(skillId);
                     return skill ? <Badge key={skillId} variant="subtle">{skill.label}</Badge> : null;
                   }) : <span className="text-xs text-slate-500">Skill attribution unavailable</span>}
-                  {!question.isCorrect && attemptId && question.skillIds?.[0] ? (
+                  {!question.isCorrect ? (
                     <Button asChild size="sm" variant="secondary">
-                      <Link href={`/practice?module=${question.questionType}&difficulty=${question.difficulty}&count=5&focus=${question.skillIds[0]}&fromMock=${attemptId}` as Route}>
-                        Practice this skill
+                      <Link href={`/practice?module=${question.questionType}&difficulty=${question.difficulty}&count=5` as Route}>
+                        Practice this module
                       </Link>
                     </Button>
                   ) : null}

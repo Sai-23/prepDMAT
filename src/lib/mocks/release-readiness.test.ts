@@ -42,7 +42,8 @@ describe("Core mock release-readiness invariants", () => {
     expect(testData).toContain("section_expires_at");
     expect(testData).toContain("expectedSectionId");
     expect(testData).toContain("Only the current timed section can be changed.");
-    expect(testData).toContain("gradePracticeAnswer(response.response_payload");
+    expect(testData).toContain("gradePracticeAnswer(");
+    expect(testData).toContain("response.response_payload as PracticeAnswer");
     expect(testData).toContain("private_snapshot");
   });
 });

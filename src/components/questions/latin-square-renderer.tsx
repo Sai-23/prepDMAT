@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -92,7 +93,7 @@ export function LatinSquareRenderer({
             aria-label="Latin-square answer options"
             className="mx-auto grid max-w-[390px] grid-cols-5 gap-2"
             data-response-interface="latin-square"
-            role="group"
+            role="radiogroup"
           >
             {data.symbols.map((symbol) => {
               const isSelected = selected === symbol;
@@ -101,7 +102,7 @@ export function LatinSquareRenderer({
               return (
               <button
                 aria-label={`${symbol}${isCorrect ? ", correct answer" : isIncorrect ? ", your answer, incorrect" : isSelected ? ", selected" : ""}`}
-                aria-pressed={isSelected}
+                aria-checked={isSelected}
                 className={cn(
                   "flex min-h-12 items-center justify-center rounded-md border text-lg font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                   isCorrect
@@ -115,9 +116,10 @@ export function LatinSquareRenderer({
                 disabled={disabled}
                 key={symbol}
                 onClick={() => select(symbol)}
+                role="radio"
                 type="button"
               >
-                {symbol}
+                {isSelected && !revealCorrectness ? <Check aria-hidden="true" className="mr-1 h-4 w-4" /> : null}{symbol}
                 {isCorrect ? <span className="sr-only"> Correct answer</span> : null}
                 {isIncorrect ? <span className="sr-only"> Your answer is incorrect</span> : null}
               </button>

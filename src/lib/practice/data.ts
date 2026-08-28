@@ -5,15 +5,16 @@ import { PublicActionError } from "@/lib/security/public-errors";
 
 import { generatePracticeManifest, practiceDurationSeconds, type PracticeItemManifest } from "./generation";
 import { createPracticeSnapshots, gradePracticeAnswer, type PrivatePracticeSnapshot } from "./native";
-import type {
-  PracticeAnswer,
-  PracticeConfig,
-  PracticeFeedback,
-  PracticeModulePerformance,
-  PracticeQuestion,
-  PracticeReview,
-  PracticeSessionState,
-  PracticeSummary,
+import {
+  answerMatchesQuestion,
+  type PracticeAnswer,
+  type PracticeConfig,
+  type PracticeFeedback,
+  type PracticeModulePerformance,
+  type PracticeQuestion,
+  type PracticeReview,
+  type PracticeSessionState,
+  type PracticeSummary,
 } from "./schemas";
 import { practiceTargetPaceSeconds } from "./timing";
 import { coreSkill, mapQuestionToSkills } from "@/lib/progress/skills";
@@ -122,25 +123,6 @@ function feedback(item: ItemRow, question: PracticeQuestion): PracticeFeedback |
     ...(mathematicalExplanationTrace ? { mathematicalExplanationTrace } : {}),
     ...(privateSnapshot.educationalExplanation === undefined ? {} : { educationalExplanation: privateSnapshot.educationalExplanation }),
   };
-}
-
-function answerMatchesQuestion(answer: PracticeAnswer, question: PracticeQuestion): boolean {
-  const response = question.response ?? { kind: "single_choice" as const, options: question.options };
-  if (response.kind !== answer.kind) return false;
-  if (answer.kind === "single_choice" && response.kind === "single_choice") {
-    return response.options.some((option) => option.id === answer.optionId);
-  }
-  if (answer.kind === "symbol_assignment" && response.kind === "symbol_assignment") {
-    const supplied = Object.keys(answer.values).sort();
-    return supplied.length === response.symbols.length
-      && supplied.every((symbol, index) => symbol === [...response.symbols].sort()[index]);
-  }
-  if (answer.kind === "two_stage_single_choice") {
-    const matrices = (question.structuredData as { missingMatrices?: Array<{ candidates?: Array<{ id?: string }> }> })?.missingMatrices ?? [];
-    return matrices.length === 2 && answer.optionIds.every((optionId, index) =>
-      matrices[index]?.candidates?.some((candidate) => candidate.id === optionId));
-  }
-  return false;
 }
 
 function state(session: SessionRow, item: ItemRow): PracticeSessionState {

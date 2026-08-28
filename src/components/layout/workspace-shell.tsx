@@ -56,7 +56,7 @@ export function WorkspaceShell({
       data-workspace-shell
     >
       {!zenMode ? (
-        <div className="hidden shrink-0 lg:block">
+        <div className="hidden shrink-0 lg:block" data-workspace-sidebar>
           <AppSidebar
             admin={admin}
             roles={roles}
@@ -66,7 +66,7 @@ export function WorkspaceShell({
           />
         </div>
       ) : null}
-      <div className="min-w-0 flex-1 space-y-5">
+      <div className="min-w-0 flex-1 space-y-5" data-workspace-content>
         <div className="flex items-start justify-between gap-4" data-workspace-heading>
           <div className="min-w-0 flex-1">{heading}</div>
           <div className="flex shrink-0 items-center gap-2">

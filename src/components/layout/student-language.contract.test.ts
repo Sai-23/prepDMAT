@@ -11,6 +11,7 @@ const studentFiles = [
   "src/app/results/page.tsx",
   "src/app/progress/page.tsx",
   "src/components/practice/practice-experience.tsx",
+  "src/components/practice/practice-review.tsx",
   "src/components/results/mock-analysis-view.tsx",
   "src/components/onboarding/onboarding-experience.tsx",
 ].map((file) => readFileSync(resolve(process.cwd(), file), "utf8")).join("\n");
@@ -21,6 +22,7 @@ describe("student-facing language contract", () => {
       "SVG-driven", "deterministic", "validated questions", "constraint logic", "permutation logic",
       "structured objects", "canonical trace", "fingerprint", "protocol version", "production enabled",
       "Phase 1", "Phase 8", "immutable submitted-attempt snapshot",
+      "Practice incorrect families", "Practise incorrect skills", "Family:",
     ];
     forbidden.forEach((term) => expect(studentFiles.toLowerCase()).not.toContain(term.toLowerCase()));
   });
