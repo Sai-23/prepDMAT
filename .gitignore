@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -23,6 +25,19 @@
 # misc
 .DS_Store
 *.pem
+*.tmp
+*.cache
+
+# Regenerable audit intermediates (retain summaries, contact sheets, and final evidence)
+/reports/core-mocks/shards/
+/reports/core-mocks/cross-session/shards/
+/reports/generator-production-gate/visual-*.svg
+/reports/figure-sequences/visual-*.svg
+/reports/figure-sequences/visual-samples.html
+/reports/latin-squares/visual-*.svg
+/reports/latin-squares/visual-samples.html
+/reports/mathematical-equations/visual-*.svg
+/reports/mathematical-equations/visual-samples.html
 
 # debug
 npm-debug.log*

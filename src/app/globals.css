@@ -354,21 +354,6 @@ pre {
   color: var(--syntax-operator);
 }
 
-.recharts-cartesian-grid line,
-.recharts-polar-grid line,
-.recharts-polar-grid polygon {
-  stroke: var(--chart-grid);
-}
-
-.recharts-text,
-.recharts-polar-angle-axis-tick-value {
-  fill: var(--on-surface-variant);
-}
-
-.recharts-tooltip-wrapper {
-  color: var(--on-surface);
-}
-
 .chart-tooltip {
   border: 1px solid var(--workspace-border);
   background: var(--surface-container-highest);

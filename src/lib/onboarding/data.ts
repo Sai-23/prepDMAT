@@ -219,26 +219,6 @@ export async function showDiagnosticQuestion(userId: string, sessionId: string, 
   await markPracticeQuestionShown(userId, sessionId, questionId);
 }
 
-export async function saveDiagnosticAnswer(
-  userId: string,
-  input: { sessionId: string; questionId: string; answer: PracticeAnswer },
-) {
-  const state = await getOnboardingState(userId);
-  if (state.diagnosticSessionId !== input.sessionId || state.diagnosticStatus !== "in_progress") {
-    throw new Error("This diagnostic is unavailable.");
-  }
-  await recordDiagnosticAnswer(userId, input);
-  return { saved: true as const };
-}
-
-export async function advanceDiagnosticQuestion(userId: string, sessionId: string) {
-  const state = await getOnboardingState(userId);
-  if (state.diagnosticSessionId !== sessionId || state.diagnosticStatus !== "in_progress") {
-    throw new Error("This diagnostic is unavailable.");
-  }
-  return advanceVerifiedDiagnosticQuestion(userId, sessionId);
-}
-
 async function advanceVerifiedDiagnosticQuestion(userId: string, sessionId: string) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.rpc("advance_practice_question", {
@@ -334,14 +314,6 @@ export async function continueInitialDiagnostic(
       answerSaved,
     };
   }
-}
-
-export async function completeInitialDiagnostic(userId: string, sessionId: string) {
-  const state = await getOnboardingState(userId);
-  if (state.diagnosticSessionId !== sessionId || state.diagnosticStatus !== "in_progress") {
-    throw new Error("This diagnostic is unavailable.");
-  }
-  await completeVerifiedDiagnostic(userId, sessionId);
 }
 
 async function completeVerifiedDiagnostic(userId: string, sessionId: string) {

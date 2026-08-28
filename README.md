@@ -1,47 +1,24 @@
-# dMAT Prep
+# PrepDMAT
 
-dMAT Prep is an independent preparation platform for the Digital Master Test Core Module: Figure Sequences, Mathematical Equations, and Latin Squares.
+PrepDMAT is an independent preparation platform for the Digital Master Test Core Module: Figure Sequences, Mathematical Equations, and Latin Squares. It is not affiliated with or endorsed by the official dMAT examination authorities.
 
-> dMAT Prep is an independent preparation platform and is not affiliated with or endorsed by the official dMAT examination authorities.
+## Current product
 
-## Phase 1 Scope
+- Free launch-stage student experience with onboarding and a 15-question diagnostic
+- Generated Core practice with secure persistence, answer locking, feedback, and worked explanations
+- Curated and on-demand Core mock tests with restorable timers and autosave
+- Dashboard, results, mistake review, bookmarks, and deterministic progress analytics
+- Role-protected Admin authoring, review, validated generator, and publishing workflows
+- Supabase authentication, Row Level Security, server-only privileged operations, and database-backed rate limiting
+- Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, and Vitest
 
-This repository currently includes the Phase 1 foundation:
+Future subscription and entitlement data structures are retained, but no pricing or paywall is exposed in the current student product. Direct visits to `/pricing` redirect to the landing page.
 
-- Next.js 16 App Router with TypeScript strict mode
-- Tailwind CSS v4 and shadcn-style UI primitives
-- Shared layout, navigation, and route placeholders
-- Supabase browser, server, and proxy clients
-- Environment-variable validation with Zod
-- Typed question, auth, test, and analytics models
-- Supabase SQL migrations for schema, indexes, grants, and RLS
-- Initial protected-route and role-check architecture
+## Environment
 
-## Phase 2 Progress
+Copy `.env.example` to `.env.local` and provide the deployment-specific values. The schema in `src/lib/validators/env-schema.ts` is the source of truth for supported variables.
 
-The authentication foundation is now connected to Supabase:
-
-- Email/password registration and sign-in with server-side Zod validation
-- Email confirmation callback and safe post-auth redirects
-- Password reset request and secure password update flows
-- Protected-route session refresh and role-aware redirects
-- Authenticated profile summary and sign-out
-
-## Phase 3 Progress
-
-The authenticated student dashboard now reads live Supabase data:
-
-- Completed-attempt, accuracy, study-time, and bookmark metrics
-- Recent test attempts with status and accuracy
-- Weak-topic analysis from aggregated topic performance
-- Active study-plan tasks
-- Rule-based next-step recommendations for new and returning students
-- Target-exam countdown when a profile date is configured
-- Accessible empty, loading, and error states
-
-## Required Environment Variables
-
-Copy `.env.example` to `.env.local` and provide the following values:
+Required base configuration:
 
 ```bash
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -50,135 +27,30 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` must never be exposed to the browser.
+`SUPABASE_SERVICE_ROLE_KEY`, `SECURITY_RATE_LIMIT_SECRET`, and all local environment files are server-only secrets and must never be committed or exposed to browser code.
 
 ## Development
 
-Install dependencies:
-
 ```bash
-npm install
-```
-
-Run the development server:
-
-```bash
+npm ci
 npm run dev
 ```
 
-Run the full verification suite:
+Run the complete local verification gate:
 
 ```bash
 npm run check
+npm run build
+npm audit --audit-level=high
+git diff --check
 ```
 
-## Database
+Focused generator audits and report-rendering commands are available under `scripts/`. Audit summaries and human-review evidence are retained under `reports/`; regenerable per-item render inputs and shard intermediates are intentionally ignored.
 
-Supabase configuration lives in `supabase/config.toml`, and the initial schema is split across:
+## Database and deployment
 
-- `supabase/migrations/202608040001_foundation.sql`
-- `supabase/migrations/202608040002_question_schema.sql`
-- `supabase/migrations/202608040003_testing_schema.sql`
-- `supabase/migrations/202608040004_learning_schema.sql`
-- `supabase/migrations/202608040005_rls_policies.sql`
-- `supabase/migrations/202608040006_practice_security.sql`
-- `supabase/migrations/202608040007_mistake_notebook.sql`
-- `supabase/migrations/202608050008_theme_preference.sql`
+Supabase configuration is in `supabase/config.toml`, with ordered, immutable history in `supabase/migrations/`. Never edit an applied migration; add a new migration for future schema changes.
 
-## Phase 4 Progress
+The application targets Vercel. Configure the same validated environment variables in each deployment environment and follow `docs/AUTH-DEPLOYMENT.md` plus `docs/ON-DEMAND-CORE-MOCK-STAGING.md` for provider and staging checks.
 
-Focused practice is implemented with a server-authorized data flow:
-
-- Configurable Core question type, topic, difficulty, source, quantity, and timing
-- Randomized selection from approved, published questions
-- Persisted practice attempts and per-question responses
-- Immediate correctness feedback and explanations after submission
-- Timed and untimed session modes
-- Completion scoring and topic-performance aggregation
-- Answer-key column restrictions for browser clients
-
-## Phase 5 Progress
-
-The mock-test catalog and timed test engine are implemented:
-
-- Published free and premium test catalog
-- Section, duration, and question-count summaries
-- Test instruction and start/resume flow
-- Premium subscription access checks
-- Deterministic question and option randomization per attempt
-- Restorable timed attempts with autosaved responses
-- Question navigator with answered and review states
-- Manual submission and automatic submission when time expires
-- Delayed server-side grading and dashboard performance updates
-
-## Phase 6 Progress
-
-Completed attempts now have secure, detailed result views:
-
-- Result history for submitted practice sessions and mock tests
-- Overall score, accuracy, timing, and response-status metrics
-- Topic and difficulty performance breakdowns
-- Rule-based next-step recommendation
-- Filterable correct, incorrect, unanswered, and marked-question review
-- Correct-answer and explanation display only after ownership and submission checks
-- Direct result-review links after practice and mock-test completion
-
-## Phase 7 Progress
-
-Bookmarks and mistake-driven revision are implemented:
-
-- Bookmark toggles from completed result reviews and mistake entries
-- Searchable bookmark library with difficulty filters
-- Automatically derived mistake notebook from submitted incorrect responses
-- Repeated-mistake counts and latest incorrect-answer context
-- Personal notes and understood/needs-review state
-- Correct-answer and explanation review for owned mistakes
-- Exact-question one-item reattempt sessions
-- User-owned notebook state protected by Row Level Security
-
-## Phase 8 Progress
-
-The role-protected question content pipeline is implemented:
-
-- Admin question authoring for all supported question types
-- Draft saving, editing, version snapshots, and review submission
-- Reviewer approval, rejection, and change-request decisions with comments
-- Admin-only publication and retirement controls
-- Live content and review metrics on the admin dashboard
-- Server-side role checks on every privileged mutation
-- Audit records for question creation, editing, review, and lifecycle changes
-- Published questions automatically available to the existing practice engine
-
-## Phase 9 Progress
-
-The role-protected assessment builder is implemented:
-
-- Draft and direct-publication workflows for diagnostics, sectional tests, mini mocks, and full mocks
-- Multi-section configuration with per-section Core question types and timing
-- Searchable approved-question bank with question-type and difficulty filtering
-- Unique question assignment and explicit section/question ordering
-- Free or premium access controls and question/option randomization settings
-- Draft editing before attempts exist
-- Publication readiness checks and safe unpublishing when no attempt is active
-- Test-management metrics for sections, questions, and attempts
-- Audit records for test creation, editing, publishing, and unpublishing
-- Published assessments automatically available in the existing student test engine
-
-## Appearance System
-
-The application uses one semantic Technical Academic IDE theme system:
-
-- Light, Dark, and operating-system-following modes
-- Hydration-safe persistence through `next-themes`
-- Cross-tab synchronization and live system-theme updates
-- Warm technical-paper light surfaces and high-focus dark workspace surfaces
-- Inter and JetBrains Mono typography
-- Shared gold, teal, warning, and error state tokens
-- Theme-aware study controls, code blocks, formulas, answer states, and chart defaults
-- Profile preference synchronization through `profiles.theme_preference`
-- Retractable and resizable workspace sidebar
-- Theme-independent Zen Mode
-
-## Deployment
-
-The application is structured for Vercel deployment. Ensure the same environment variables are configured in the Vercel project before deploying.
+Architecture and product policy live in `docs/`. Historical audits and removal reports are retained as dated evidence and should not be treated as current implementation inventories.

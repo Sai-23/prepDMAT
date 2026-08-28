@@ -4,8 +4,8 @@ import type { StructuralProfile } from "@/lib/generation/novelty";
 import type { PracticeQuestion } from "@/lib/practice/schemas";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-import { buildCoreProgress, getModuleFromProgress, getSkillFromProgress, type CoreProgress, type ProgressObservation } from "./model";
-import { coreSkill, mapQuestionToSkills, type CoreSkillId } from "./skills";
+import { buildCoreProgress, type CoreProgress, type ProgressObservation } from "./model";
+import { mapQuestionToSkills } from "./skills";
 
 type PracticeSessionRow = {
   id: string;
@@ -164,21 +164,4 @@ export async function loadCoreProgressObservations(userId: string): Promise<Prog
 
 export async function getCoreProgress(userId: string): Promise<CoreProgress> {
   return buildCoreProgress(await loadCoreProgressObservations(userId));
-}
-
-export async function getModuleProgress(userId: string, module: ProgressObservation["module"]) {
-  return getModuleFromProgress(await getCoreProgress(userId), module);
-}
-
-export async function getSkillPerformance(userId: string, skillId: CoreSkillId) {
-  if (!coreSkill(skillId)) return null;
-  return getSkillFromProgress(await getCoreProgress(userId), skillId);
-}
-
-export async function getWeakAreas(userId: string) {
-  return (await getCoreProgress(userId)).weakAreas;
-}
-
-export async function getRecommendations(userId: string) {
-  return (await getCoreProgress(userId)).recommendations;
 }

@@ -120,7 +120,7 @@ describe("single-mock deterministic analysis", () => {
   it("uses correctness-aware timing labels without alleging carelessness", () => {
     const result = mockResult({
       correctByModule: { figure_sequence: 14, mathematical_equation: 20, latin_square: 20 },
-      times: (module, index, correct) => module === "figure_sequence" && !correct ? 20 : 60,
+      times: (module, _index, correct) => module === "figure_sequence" && !correct ? 20 : 60,
     });
     const analysis = analyzeMockAttempt(result);
     expect(analysis.questionAnalysis.filter((question) => question.timing === "fast_incorrect")).toHaveLength(6);

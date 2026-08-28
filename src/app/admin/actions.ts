@@ -13,7 +13,6 @@ import {
   getGeneratedQuestionByFingerprint,
   reviewQuestion,
   softDeleteQuestion,
-  updateQuestionLifecycle,
   updateQuestion,
 } from "@/lib/admin/data";
 import {
@@ -58,7 +57,6 @@ import {
   questionAuthoringSchema,
   questionDeleteSchema,
   questionEditIdSchema,
-  questionLifecycleSchema,
   questionReviewSchema,
 } from "@/lib/admin/schemas";
 import {
@@ -522,26 +520,6 @@ export async function reviewQuestionAction(input: unknown) {
     return { error: null, success: true };
   } catch (error) {
     return safeActionFailure(error, "Unable to save this review.");
-  }
-}
-
-export async function questionLifecycleAction(input: unknown) {
-  const { user } = await requireRole(["admin"]);
-  const parsed = questionLifecycleSchema.safeParse(input);
-  if (!parsed.success) return { error: "The lifecycle request is invalid." };
-
-  try {
-    await updateQuestionLifecycle(
-      user.id,
-      parsed.data.questionId,
-      parsed.data.action,
-    );
-    revalidatePath("/admin");
-    revalidatePath("/admin/review");
-    revalidatePath("/practice");
-    return { error: null, success: true };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to update the question lifecycle.");
   }
 }
 

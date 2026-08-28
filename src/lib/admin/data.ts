@@ -38,28 +38,6 @@ async function writeAudit(
   if (error) throw new Error("The change was saved, but its audit record failed.");
 }
 
-async function getGeneratedFingerprints(
-  questionType: "mathematical_equation" | "latin_square" | "figure_sequence",
-): Promise<Set<string>> {
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("questions")
-    .select("metadata")
-    .eq("source_type", "generated")
-    .eq("question_type", questionType);
-  if (error) throw new Error("Unable to load existing generated fingerprints.");
-
-  return new Set(
-    (data ?? []).flatMap((row) => {
-      const metadata = row.metadata as
-        | { generation?: { fingerprint?: unknown } }
-        | null;
-      const fingerprint = metadata?.generation?.fingerprint;
-      return typeof fingerprint === "string" ? [fingerprint] : [];
-    }),
-  );
-}
-
 export type GeneratedNoveltyHistory = {
   fingerprints: Set<string>;
   structuralProfiles: StructuralProfile[];
@@ -105,18 +83,6 @@ export function getGeneratedLatinNoveltyHistory(): Promise<GeneratedNoveltyHisto
 
 export function getGeneratedFigureNoveltyHistory(): Promise<GeneratedNoveltyHistory> {
   return getGeneratedNoveltyHistory("figure_sequence");
-}
-
-export function getGeneratedEquationFingerprints(): Promise<Set<string>> {
-  return getGeneratedFingerprints("mathematical_equation");
-}
-
-export function getGeneratedLatinFingerprints(): Promise<Set<string>> {
-  return getGeneratedFingerprints("latin_square");
-}
-
-export function getGeneratedFigureFingerprints(): Promise<Set<string>> {
-  return getGeneratedFingerprints("figure_sequence");
 }
 
 export type ExistingGeneratedQuestion = {
@@ -886,73 +852,6 @@ export async function reviewQuestion(
   await writeAudit(actorId, `question.review.${input.decision}`, input.questionId, {
     comments: input.comments,
   });
-}
-
-export async function updateQuestionLifecycle(
-  actorId: string,
-  questionId: string,
-  action: "submit_review" | "publish" | "retire",
-) {
-  const admin = createSupabaseAdminClient();
-  const { data: question } = await admin
-    .from("questions")
-    .select("id, verification_status, publication_status, correct_option_id, question_type, source_type, structured_data, metadata")
-    .eq("id", questionId)
-    .eq("module", "core")
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (!question) throw new Error("Question not found.");
-
-  if (action === "submit_review") {
-    if (!["draft", "rejected"].includes(question.verification_status)) {
-      throw new Error("Only draft or rejected questions can be submitted.");
-    }
-    const { error } = await admin
-      .from("questions")
-      .update({ verification_status: "under_review", updated_by: actorId })
-      .eq("id", questionId);
-    if (error) throw new Error("Unable to submit this question for review.");
-  } else if (action === "publish") {
-    const { count } = await admin
-      .from("question_options")
-      .select("id", { count: "exact", head: true })
-      .eq("question_id", questionId);
-    const decision = evaluatePublication({
-      verificationStatus: question.verification_status,
-      questionType: question.question_type,
-      sourceType: question.source_type,
-      optionCount: count ?? 0,
-      correctOptionId: question.correct_option_id,
-      structuredData: question.structured_data,
-      metadata: question.metadata,
-    });
-    if (!decision.allowed) throw new Error(decision.reason);
-    const { error } = await admin
-      .from("questions")
-      .update({
-        publication_status: "published",
-        published_at: new Date().toISOString(),
-        retired_at: null,
-        updated_by: actorId,
-      })
-      .eq("id", questionId);
-    if (error) throw new Error("Unable to publish this question.");
-  } else {
-    if (question.publication_status !== "published") {
-      throw new Error("Only published questions can be retired.");
-    }
-    const { error } = await admin
-      .from("questions")
-      .update({
-        publication_status: "retired",
-        retired_at: new Date().toISOString(),
-        updated_by: actorId,
-      })
-      .eq("id", questionId);
-    if (error) throw new Error("Unable to retire this question.");
-  }
-
-  await writeAudit(actorId, `question.lifecycle.${action}`, questionId);
 }
 
 export async function softDeleteQuestion(

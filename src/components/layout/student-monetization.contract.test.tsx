@@ -12,7 +12,6 @@ const studentFacingFiles = [
   "src/components/tests/start-test-button.tsx",
   "src/components/layout/site-footer.tsx",
   "src/components/layout/site-header-navigation.tsx",
-  "src/components/marketing/hero-section.tsx",
 ].map((file) => readFileSync(resolve(process.cwd(), file), "utf8")).join("\n");
 
 const nextConfig = readFileSync(

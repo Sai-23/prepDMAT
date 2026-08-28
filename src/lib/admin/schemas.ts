@@ -68,11 +68,6 @@ export const questionReviewSchema = z.object({
   comments: z.string().trim().max(2000).optional().transform((value) => value || null),
 });
 
-export const questionLifecycleSchema = z.object({
-  questionId: z.string().uuid(),
-  action: z.enum(["submit_review", "publish", "retire"]),
-});
-
 export const questionDeleteSchema = z.object({
   questionId: z.string().uuid(),
 });
