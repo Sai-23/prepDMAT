@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/", "/exam-format", "/diagnostic"],
+      allow: ["/", "/favicon.ico", "/exam-format", "/diagnostic"],
       disallow: [
         "/admin/",
         "/api/",
@@ -32,4 +32,3 @@ export default function robots(): MetadataRoute.Robots {
     host: siteConfig.url,
   };
 }
-

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { PageShell } from "@/components/layout/page-shell";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { PublicDiagnosticStart } from "@/components/onboarding/public-diagnostic-start";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth/guards";
@@ -42,28 +43,31 @@ export default async function PublicDiagnosticPage() {
   if (status === "completed") redirect("/diagnostic/result");
 
   return (
-    <PageShell
-      eyebrow="Free diagnostic"
-      title="Find your Core starting point"
-      description="Answer 15 real Core-style questions across Figure Sequences, Mathematical Equations and Latin Squares. No account is required to see your result."
-    >
-      <Card className="mx-auto max-w-3xl">
-        <CardHeader>
-          <CardTitle>Three modules. Fifteen untimed questions.</CardTitle>
-          <CardDescription>
-            Your answers are graded securely after each save, while correctness and explanations stay hidden until the diagnostic is complete.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-3 text-sm sm:grid-cols-3">
-            <p className="rounded-lg bg-surface-low p-3"><span className="block font-semibold">Figure Sequences</span>5 questions</p>
-            <p className="rounded-lg bg-surface-low p-3"><span className="block font-semibold">Mathematical Equations</span>5 questions</p>
-            <p className="rounded-lg bg-surface-low p-3"><span className="block font-semibold">Latin Squares</span>5 questions</p>
-          </div>
-          <PublicDiagnosticStart />
-          <p className="text-xs text-muted-foreground">Your temporary diagnostic expires after two hours. Create an account after completion to keep the result.</p>
-        </CardContent>
-      </Card>
-    </PageShell>
+    <>
+      <PageShell
+        eyebrow="Free diagnostic"
+        title="Find your Core starting point"
+        description="Answer 15 real Core-style questions across Figure Sequences, Mathematical Equations and Latin Squares. No account is required to see your result."
+      >
+        <Card className="mx-auto max-w-3xl">
+          <CardHeader>
+            <CardTitle>Three modules. Fifteen untimed questions.</CardTitle>
+            <CardDescription>
+              Your answers are graded securely after each save, while correctness and explanations stay hidden until the diagnostic is complete.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 text-sm sm:grid-cols-3">
+              <p className="rounded-lg bg-surface-low p-3"><span className="block font-semibold">Figure Sequences</span>5 questions</p>
+              <p className="rounded-lg bg-surface-low p-3"><span className="block font-semibold">Mathematical Equations</span>5 questions</p>
+              <p className="rounded-lg bg-surface-low p-3"><span className="block font-semibold">Latin Squares</span>5 questions</p>
+            </div>
+            <PublicDiagnosticStart />
+            <p className="text-xs text-muted-foreground">Your temporary diagnostic expires after two hours. Create an account after completion to keep the result.</p>
+          </CardContent>
+        </Card>
+      </PageShell>
+      <SiteFooter />
+    </>
   );
 }

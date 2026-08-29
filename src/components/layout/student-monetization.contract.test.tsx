@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { SiteFooter } from "./site-footer";
+import { Footer } from "./footer";
 
 const studentFacingFiles = [
   "src/app/page.tsx",
@@ -38,7 +38,7 @@ describe("launch-stage student monetization visibility", () => {
   });
 
   it("keeps the footer focused on exam format and the diagnostic", () => {
-    const html = renderToStaticMarkup(<SiteFooter />);
+    const html = renderToStaticMarkup(<Footer currentYear={2026} />);
     expect(html).toContain('href="/exam-format"');
     expect(html).toContain('href="/diagnostic"');
     expect(html).toContain("Free Diagnostic");

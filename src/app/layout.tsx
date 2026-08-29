@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 
-import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { resolveRootAuthState } from "@/lib/auth/root-auth-state";
@@ -57,7 +56,6 @@ export default async function RootLayout({
           <div className="relative flex min-h-screen flex-col bg-background" data-app-frame>
             <SiteHeader diagnosticStatus={authState.diagnosticStatus} initialAccount={authState.account} />
             <main className="min-h-0 flex-1" data-site-main>{children}</main>
-            <SiteFooter />
           </div>
         </ThemeProvider>
       </body>

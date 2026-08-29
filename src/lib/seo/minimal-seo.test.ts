@@ -30,7 +30,7 @@ describe("minimal production SEO", () => {
   it("defines unique indexable metadata for the three public acquisition pages", () => {
     expect(homeMetadata.title).toEqual({ absolute: siteConfig.defaultTitle });
     expect(homeMetadata.description).toBe(siteConfig.description);
-    expect(homeMetadata.alternates).toEqual({ canonical: "/" });
+    expect(homeMetadata.alternates).toEqual({ canonical: "https://prepdmat.in/" });
 
     expect(examFormatMetadata.title).toBe("dMAT Exam Format & Core Module");
     expect(examFormatMetadata.description).not.toBe(siteConfig.description);
@@ -78,6 +78,7 @@ describe("minimal production SEO", () => {
     expect(result.sitemap).toBe("https://prepdmat.in/sitemap.xml");
     expect(result.host).toBe(siteConfig.url);
     expect(result.rules).toMatchObject({ userAgent: "*" });
+    expect(JSON.stringify(result.rules)).toContain("/favicon.ico");
     expect(JSON.stringify(result.rules)).toContain("/admin/");
   });
 

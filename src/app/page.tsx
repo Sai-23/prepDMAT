@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DisclaimerBanner } from "@/components/marketing/disclaimer-banner";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { indexRobots, siteConfig, siteUrl, websiteStructuredData } from "@/lib/site-config";
@@ -10,7 +11,7 @@ import { indexRobots, siteConfig, siteUrl, websiteStructuredData } from "@/lib/s
 export const metadata: Metadata = {
   title: { absolute: siteConfig.defaultTitle },
   description: siteConfig.description,
-  alternates: { canonical: "/" },
+  alternates: { canonical: siteUrl("/") },
   robots: indexRobots,
   openGraph: {
     type: "website",
@@ -34,7 +35,8 @@ const benefits = [
 
 export default function Home() {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+    <>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
       <script
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteStructuredData) }}
         type="application/ld+json"
@@ -77,6 +79,8 @@ export default function Home() {
           <Button asChild size="lg" variant="secondary"><Link href="/diagnostic">Take the free diagnostic <ArrowRight className="h-4 w-4" /></Link></Button>
         </div>
       </section>
-    </div>
+      </div>
+      <SiteFooter />
+    </>
   );
 }

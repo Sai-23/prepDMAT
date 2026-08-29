@@ -2,6 +2,7 @@ import { Clock3, FileCheck2, Layers3 } from "lucide-react";
 import type { Metadata } from "next";
 
 import { CoreFormatSamples } from "@/components/exam-format/core-format-samples";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { DMAT_CURRENT_CORE_PROTOCOL } from "@/lib/protocol";
 import { indexRobots, siteConfig, siteUrl } from "@/lib/site-config";
@@ -32,7 +33,8 @@ export default function ExamFormatPage() {
   const totalQuestions = core.reduce((total, section) => total + section.questionCount, 0);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+    <>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       <header className="max-w-3xl space-y-4">
         <p className="text-sm font-semibold text-primary">Exam format</p>
         <div className="space-y-3">
@@ -90,6 +92,8 @@ export default function ExamFormatPage() {
           </CardContent>
         </Card>
       </section>
-    </div>
+      </div>
+      <SiteFooter />
+    </>
   );
 }
