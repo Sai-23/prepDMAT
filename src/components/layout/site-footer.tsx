@@ -19,7 +19,7 @@ export function SiteFooter() {
             <Link href="/exam-format" className="hover:text-primary">
               Exam Format
             </Link>
-            <Link href="/onboarding" className="hover:text-primary">
+            <Link href="/diagnostic" className="hover:text-primary">
               Free Diagnostic
             </Link>
           </div>

@@ -19,7 +19,7 @@ describe("SiteHeaderNavigation", () => {
     expect(html).toContain('href="/progress"');
     expect(html).toContain('href="/results"');
     expect(html).toContain('href="/exam-format"');
-    expect(html).toContain('href="/onboarding"');
+    expect(html).toContain('href="/diagnostic"');
     expect(html.match(/>Free Diagnostic<\/a>/g)).toHaveLength(2);
     expect(html).not.toContain('href="/pricing"');
     expect(html).not.toContain(">Pricing</a>");

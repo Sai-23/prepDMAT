@@ -1,38 +1,31 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  createBrowserClient: vi.fn(),
-  replace: vi.fn(),
-  refresh: vi.fn(),
-}));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }),
-}));
-vi.mock("@/lib/supabase/client", () => ({
-  createSupabaseBrowserClient: mocks.createBrowserClient,
-}));
 vi.mock("@/app/auth/actions", () => ({
   resendVerificationAction: vi.fn(),
+  verifyRegistrationEmailOtpAction: vi.fn(),
 }));
 
-import { CheckEmail } from "./auth-form";
+import { EmailVerificationOtp } from "./auth-form";
 
-describe("pending verification server prerender", () => {
-  it("renders safely without constructing a browser-only Supabase client", () => {
+describe("email verification OTP server prerender", () => {
+  it("renders a masked, accessible six-digit OTP form without polling", () => {
     const html = renderToStaticMarkup(
-      <CheckEmail
+      <EmailVerificationOtp
         email="sachin36@gmail.com"
-        message="Confirm your email to finish creating your account."
+        message="Enter the 6-digit code sent to your email."
       />,
     );
     const visibleHtml = html.replace(/<input[^>]+type="hidden"[^>]*>/g, "");
 
-    expect(html).toContain("Check your email");
-    expect(html).toContain("If you open the link in this browser");
+    expect(html).toContain("Verify your email");
+    expect(html).toContain('autoComplete="one-time-code"');
+    expect(html).toContain('inputMode="numeric"');
+    expect(html).toContain('maxLength="6"');
+    expect(html).toContain('pattern="[0-9]{6}"');
+    expect(html).toContain("Verify email");
+    expect(html).toContain("disabled");
     expect(html).toContain("sa***36@gmail.com");
     expect(visibleHtml).not.toContain("sachin36@gmail.com");
-    expect(mocks.createBrowserClient).not.toHaveBeenCalled();
   });
 });

@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   getAuthCallbackUrl: vi.fn(),
   providerAvailability: { google: false, phone: false },
+  claimPublicDiagnostic: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -23,6 +24,9 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/supabase/admin", () => ({
   createSupabaseAdminClient: vi.fn(),
 }));
+vi.mock("@/lib/onboarding/public-diagnostic", () => ({
+  claimPublicDiagnosticForUser: mocks.claimPublicDiagnostic,
+}));
 vi.mock("@/lib/security/rate-limit", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/security/rate-limit")>();
   return { ...actual, enforceSecurityRateLimit: mocks.enforceRateLimit };
@@ -34,6 +38,7 @@ import {
   registerAction,
   requestPhoneOtpAction,
   resendVerificationAction,
+  verifyRegistrationEmailOtpAction,
   verifyPhoneOtpAction,
   type AuthActionState,
 } from "./actions";
@@ -66,6 +71,7 @@ describe("loginAction security regression", () => {
     mocks.providerAvailability.phone = false;
     mocks.enforceRateLimit.mockResolvedValue(undefined);
     mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
+    mocks.claimPublicDiagnostic.mockResolvedValue(false);
   });
 
   it("rate-limits before authenticating, then redirects a successful login", async () => {
@@ -88,6 +94,7 @@ describe("loginAction security regression", () => {
       password: "correct-password",
     });
     expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("student-id");
+    expect(mocks.claimPublicDiagnostic).toHaveBeenCalledWith("student-id");
     expect(mocks.redirect).toHaveBeenCalledWith("/dashboard");
   });
 
@@ -121,7 +128,9 @@ describe("loginAction security regression", () => {
     expect(result).toEqual({
       status: "error",
       code: "EMAIL_NOT_VERIFIED",
-      message: "Confirm your email before signing in.",
+      view: "verify_email",
+      email: "student@example.test",
+      message: "Your email still needs verification.",
     });
     expect(JSON.stringify(result)).not.toContain("internal detail");
   });
@@ -201,6 +210,8 @@ describe("email signup verification", () => {
     mocks.getAuthCallbackUrl.mockImplementation(
       (flow: string) => `https://prep-dmat.vercel.app/auth/callback?flow=${flow}`,
     );
+    mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
+    mocks.claimPublicDiagnostic.mockResolvedValue(false);
   });
 
   it("creates a pending signup with the dedicated production verification callback", async () => {
@@ -210,7 +221,6 @@ describe("email signup verification", () => {
     });
     mocks.createServerClient.mockResolvedValue({ auth: { signUp } });
     const formData = new FormData();
-    formData.set("fullName", "Student Name");
     formData.set("email", "student@example.test");
     formData.set("password", "password1");
     formData.set("confirmPassword", "password1");
@@ -223,15 +233,100 @@ describe("email signup verification", () => {
     expect(mocks.getAuthCallbackUrl).toHaveBeenCalledWith("email_verification");
     expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
       options: expect.objectContaining({
+        data: {
+          marketing_email_opt_in: false,
+        },
         emailRedirectTo:
           "https://prep-dmat.vercel.app/auth/callback?flow=email_verification",
       }),
     }));
     expect(result).toEqual(expect.objectContaining({
       status: "success",
-      view: "check_email",
+      view: "verify_email",
       email: "student@example.test",
     }));
+  });
+
+  it("forwards marketing consent only when the student opts in", async () => {
+    const signUp = vi.fn().mockResolvedValue({
+      data: { user: { id: "pending-user" }, session: null },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { signUp } });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("password", "password1");
+    formData.set("confirmPassword", "password1");
+    formData.set("marketingEmailOptIn", "on");
+
+    await registerAction(idle, formData);
+
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({
+        data: { marketing_email_opt_in: true },
+      }),
+    }));
+  });
+
+  it("routes a confirmed existing account only after valid credentials prove ownership", async () => {
+    const signUp = vi.fn().mockResolvedValue({
+      data: { user: { id: "ambiguous-user" }, session: null },
+      error: null,
+    });
+    const signInWithPassword = vi.fn().mockResolvedValue({
+      data: { user: { id: "existing-user" }, session: { access_token: "not-exposed" } },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { signUp, signInWithPassword } });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("password", "password1");
+    formData.set("confirmPassword", "password1");
+
+    await registerAction(idle, formData);
+
+    expect(mocks.enforceRateLimit).toHaveBeenNthCalledWith(1, "auth:signup", {
+      account: "student@example.test",
+    });
+    expect(mocks.enforceRateLimit).toHaveBeenNthCalledWith(2, "auth:login", {
+      account: "student@example.test",
+    });
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      email: "student@example.test",
+      password: "password1",
+    });
+    expect(mocks.claimPublicDiagnostic).toHaveBeenCalledWith("existing-user");
+    expect(mocks.redirect).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("keeps invalid and unconfirmed duplicate signups on the same generic OTP view", async () => {
+    for (const code of ["invalid_credentials", "email_not_confirmed"]) {
+      vi.clearAllMocks();
+      mocks.enforceRateLimit.mockResolvedValue(undefined);
+      const signUp = vi.fn().mockResolvedValue({
+        data: { user: { id: "ambiguous-user" }, session: null },
+        error: null,
+      });
+      const signInWithPassword = vi.fn().mockResolvedValue({
+        data: { user: null, session: null },
+        error: { status: 400, code, message: "provider detail" },
+      });
+      mocks.createServerClient.mockResolvedValue({ auth: { signUp, signInWithPassword } });
+      const formData = new FormData();
+      formData.set("email", "student@example.test");
+      formData.set("password", "password1");
+      formData.set("confirmPassword", "password1");
+
+      const result = await registerAction(idle, formData);
+
+      expect(result).toEqual(expect.objectContaining({
+        status: "success",
+        view: "verify_email",
+        email: "student@example.test",
+      }));
+      expect(JSON.stringify(result)).not.toContain(code);
+      expect(mocks.redirect).not.toHaveBeenCalled();
+    }
   });
 
   it("resends through the same callback and returns a 60-second client cooldown", async () => {
@@ -255,7 +350,7 @@ describe("email signup verification", () => {
     expect(result).toEqual({
       status: "success",
       retryAfterSeconds: 60,
-      message: "If this address has a pending account, a verification email is on its way.",
+      message: "If this address has a pending account, a verification code is on its way.",
     });
   });
 
@@ -273,9 +368,92 @@ describe("email signup verification", () => {
     expect(result).toEqual({
       status: "success",
       retryAfterSeconds: 60,
-      message: "If this address has a pending account, a verification email is on its way.",
+      message: "If this address has a pending account, a verification code is on its way.",
     });
     expect(JSON.stringify(result)).not.toMatch(/user.not.found|raw provider/i);
+  });
+
+  it("verifies the signup OTP through Supabase, requires a session, and routes the student", async () => {
+    mocks.getPostAuthRoute.mockResolvedValue("/onboarding");
+    mocks.claimPublicDiagnostic.mockResolvedValue(false);
+    const verifyOtp = vi.fn().mockResolvedValue({
+      data: { user: { id: "verified-user" }, session: { access_token: "not-exposed" } },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { verifyOtp } });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("token", "123456");
+
+    await verifyRegistrationEmailOtpAction(idle, formData);
+
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith("auth:email-verify", {
+      account: "student@example.test",
+    });
+    expect(verifyOtp).toHaveBeenCalledWith({
+      email: "student@example.test",
+      token: "123456",
+      type: "signup",
+    });
+    expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("verified-user");
+    expect(mocks.redirect).toHaveBeenCalledWith("/onboarding");
+  });
+
+  it("rejects invalid or expired signup OTPs without exposing provider details", async () => {
+    mocks.createServerClient.mockResolvedValue({
+      auth: {
+        verifyOtp: vi.fn().mockResolvedValue({
+          data: { user: null, session: null },
+          error: { status: 400, code: "otp_expired", message: "raw provider detail" },
+        }),
+      },
+    });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("token", "123456");
+
+    const result = await verifyRegistrationEmailOtpAction(idle, formData);
+
+    expect(result).toEqual({
+      status: "error",
+      message: "The code is invalid or expired. Request a new code and try again.",
+    });
+    expect(JSON.stringify(result)).not.toContain("raw provider detail");
+  });
+
+  it("does not authenticate when OTP verification returns no authoritative session", async () => {
+    mocks.createServerClient.mockResolvedValue({
+      auth: {
+        verifyOtp: vi.fn().mockResolvedValue({
+          data: { user: { id: "unverified-user" }, session: null },
+          error: null,
+        }),
+      },
+    });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("token", "123456");
+
+    const result = await verifyRegistrationEmailOtpAction(idle, formData);
+
+    expect(result.status).toBe("error");
+    expect(mocks.getPostAuthRoute).not.toHaveBeenCalled();
+    expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed or oversized OTPs before the limiter and provider", async () => {
+    for (const token of ["12345", "1234567", "12345x"]) {
+      vi.clearAllMocks();
+      const formData = new FormData();
+      formData.set("email", "student@example.test");
+      formData.set("token", token);
+
+      const result = await verifyRegistrationEmailOtpAction(idle, formData);
+
+      expect(result.status).toBe("error");
+      expect(mocks.enforceRateLimit).not.toHaveBeenCalled();
+      expect(mocks.createServerClient).not.toHaveBeenCalled();
+    }
   });
 });
 

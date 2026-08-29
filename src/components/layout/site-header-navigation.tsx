@@ -24,7 +24,7 @@ export function SiteHeaderNavigation({ diagnosticStatus = null }: { diagnosticSt
       ? "in_progress"
       : diagnosticStatus;
   const navigation = primaryNavigation.map((item) =>
-    item.href === "/onboarding" ? diagnosticNavigationItem(effectiveDiagnosticStatus) : item,
+    item.href === "/diagnostic" ? diagnosticNavigationItem(effectiveDiagnosticStatus) : item,
   );
 
   const mobileNavigation = [

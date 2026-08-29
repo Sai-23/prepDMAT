@@ -36,7 +36,17 @@ export default async function LoginPage({
           ) : null}
           {params.error === "auth_unavailable" ? (
             <p className="mb-5 rounded-md bg-error-container p-3 text-sm text-error-container-foreground" role="alert">
-              Automatic sign-in is temporarily unavailable. Sign in to continue.
+              The authentication service is temporarily unavailable. Please try again.
+            </p>
+          ) : null}
+          {params.error === "google_unavailable" ? (
+            <p className="mb-5 rounded-md bg-error-container p-3 text-sm text-error-container-foreground" role="alert">
+              Google sign-in is temporarily unavailable. Please try again.
+            </p>
+          ) : null}
+          {params.error === "google_expired" ? (
+            <p className="mb-5 rounded-md bg-error-container p-3 text-sm text-error-container-foreground" role="alert">
+              Your Google sign-in attempt expired. Please try again.
             </p>
           ) : null}
           {params.error === "google_start" ? (

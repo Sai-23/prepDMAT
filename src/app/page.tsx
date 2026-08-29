@@ -1,9 +1,30 @@
 import { ArrowRight, ChartNoAxesColumnIncreasing, Shapes, TimerReset } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DisclaimerBanner } from "@/components/marketing/disclaimer-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { indexRobots, siteConfig, siteUrl, websiteStructuredData } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: { absolute: siteConfig.defaultTitle },
+  description: siteConfig.description,
+  alternates: { canonical: "/" },
+  robots: indexRobots,
+  openGraph: {
+    type: "website",
+    url: siteUrl("/"),
+    siteName: siteConfig.name,
+    title: siteConfig.defaultTitle,
+    description: siteConfig.description,
+  },
+  twitter: {
+    card: "summary",
+    title: siteConfig.defaultTitle,
+    description: siteConfig.description,
+  },
+};
 
 const benefits = [
   { title: "Realistic Core questions", description: "Practise Figure Sequences, Mathematical Equations, and Latin Squares in their real response formats.", icon: Shapes },
@@ -13,14 +34,18 @@ const benefits = [
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteStructuredData) }}
+        type="application/ld+json"
+      />
       <section className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
         <div>
           <p className="text-sm font-semibold text-primary">Independent dMAT preparation</p>
-          <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-tight sm:text-6xl">Prepare for the dMAT with clarity</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">Learn the Core formats, practise with immediate explanations, take timed mocks, and turn every result into a useful next step.</p>
+          <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-tight sm:text-6xl">Prepare smarter for the dMAT</h1>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">Build focused dMAT preparation across Figure Sequences, Mathematical Equations and Latin Squares, then use practice and timed mocks to decide what to work on next.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg"><Link href="/onboarding">Get started <ArrowRight className="h-4 w-4" /></Link></Button>
+            <Button asChild size="lg"><Link href="/diagnostic">Take the free diagnostic <ArrowRight className="h-4 w-4" /></Link></Button>
             <Button asChild size="lg" variant="secondary"><Link href="/exam-format">See the exam format</Link></Button>
           </div>
           <DisclaimerBanner className="mt-8 max-w-3xl" />
@@ -48,10 +73,10 @@ export default function Home() {
 
       <section className="rounded-2xl bg-primary p-7 text-primary-foreground sm:p-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div><h2 className="text-3xl font-semibold">Find your starting point</h2><p className="mt-2 max-w-2xl text-sm leading-6 opacity-90">Take a short, untimed Core diagnostic or go straight to Practice. You can change direction at any time.</p></div>
-          <Button asChild size="lg" variant="secondary"><Link href="/onboarding">Get started <ArrowRight className="h-4 w-4" /></Link></Button>
+          <div><h2 className="text-3xl font-semibold">Find your starting point</h2><p className="mt-2 max-w-2xl text-sm leading-6 opacity-90">15 real Core-style questions · No account required. See a meaningful starting profile before you decide whether to register.</p></div>
+          <Button asChild size="lg" variant="secondary"><Link href="/diagnostic">Take the free diagnostic <ArrowRight className="h-4 w-4" /></Link></Button>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

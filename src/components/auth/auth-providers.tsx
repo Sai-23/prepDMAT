@@ -1,7 +1,7 @@
 "use client";
 
 import { Mail, Phone } from "lucide-react";
-import { type ReactNode, useActionState, useEffect, useState } from "react";
+import { type ReactNode, useActionState, useEffect, useRef, useState } from "react";
 
 import {
   googleSignInAction,
@@ -28,7 +28,19 @@ function ActionMessage({ state }: { state: AuthActionState }) {
 }
 
 function GoogleButton() {
-  const [state, action, pending] = useActionState(googleSignInAction, initialAuthState);
+  const inFlight = useRef(false);
+  const [state, action, pending] = useActionState(async (
+    previousState: AuthActionState,
+    formData: FormData,
+  ) => {
+    if (inFlight.current) return previousState;
+    inFlight.current = true;
+    try {
+      return await googleSignInAction(previousState, formData);
+    } finally {
+      inFlight.current = false;
+    }
+  }, initialAuthState);
   return (
     <form action={action} className="space-y-2">
       <Button className="min-h-11 w-full" disabled={pending} type="submit" variant="outline">
@@ -211,13 +223,15 @@ function PhonePanel() {
 export function AuthProviderOptions({
   availability,
   emailForm,
+  compact = false,
 }: {
   availability: AuthProviderAvailability;
   emailForm: ReactNode;
+  compact?: boolean;
 }) {
   const [mode, setMode] = useState<"email" | "phone">("email");
   return (
-    <div className="space-y-5">
+    <div className={compact ? "space-y-3" : "space-y-5"}>
       {availability.google ? <GoogleButton /> : null}
       {availability.google ? <AuthDivider /> : null}
       {availability.phone ? <div className="space-y-4">

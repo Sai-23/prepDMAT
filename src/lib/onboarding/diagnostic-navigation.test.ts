@@ -19,7 +19,9 @@ describe("diagnostic continuation performance contract", () => {
     const component = source("src/components/onboarding/diagnostic-experience.tsx");
     const actions = source("src/app/onboarding/actions.ts");
 
-    expect(component).toContain("await continueDiagnosticAction({");
+    expect(component).toContain("await continueQuestion({");
+    expect(component).toContain("continueDiagnosticAction");
+    expect(component).toContain("continuePublicDiagnosticAction");
     expect(component).not.toContain("submitDiagnosticAnswerAction");
     expect(component).not.toContain("nextDiagnosticQuestionAction");
     expect(component).not.toContain("completeDiagnosticAction");

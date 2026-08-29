@@ -9,6 +9,10 @@ import {
   continueDiagnosticAction,
   showDiagnosticQuestionAction,
 } from "@/app/onboarding/actions";
+import {
+  continuePublicDiagnosticAction,
+  showPublicDiagnosticQuestionAction,
+} from "@/app/diagnostic/actions";
 import { AssessmentActionZone, AssessmentShell } from "@/components/assessment/assessment-shell";
 import { NativePracticeResponse } from "@/components/practice/native-practice-response";
 import { ActionError } from "@/components/shared/action-error";
@@ -37,7 +41,13 @@ function isTypingControl(target: EventTarget | null) {
     || (target instanceof HTMLElement && target.isContentEditable);
 }
 
-export function DiagnosticExperience({ initialSession }: { initialSession: DiagnosticSessionState }) {
+export function DiagnosticExperience({
+  initialSession,
+  publicSession = false,
+}: {
+  initialSession: DiagnosticSessionState;
+  publicSession?: boolean;
+}) {
   const router = useRouter();
   const [session, setSession] = useState(initialSession);
   const [answer, setAnswer] = useState<PracticeAnswer | null>(initialSession.answer);
@@ -55,11 +65,14 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
 
   useEffect(() => {
     if (answered) return;
-    void showDiagnosticQuestionAction({
+    const showQuestion = publicSession
+      ? showPublicDiagnosticQuestionAction
+      : showDiagnosticQuestionAction;
+    void showQuestion({
       sessionId: session.sessionId,
       questionId: session.question.id,
     });
-  }, [answered, session.question.id, session.sessionId]);
+  }, [answered, publicSession, session.question.id, session.sessionId]);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0 });
@@ -76,7 +89,10 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
     setError(null);
     startTransition(async () => {
       try {
-        const result = await continueDiagnosticAction({
+        const continueQuestion = publicSession
+          ? continuePublicDiagnosticAction
+          : continueDiagnosticAction;
+        const result = await continueQuestion({
           sessionId: session.sessionId,
           questionId: session.question.id,
           answer,
@@ -88,7 +104,7 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
           return;
         }
         if (result.status === "completed") {
-          router.replace("/onboarding/diagnostic/summary");
+          router.replace(publicSession ? "/diagnostic/result" : "/onboarding/diagnostic/summary");
           return;
         }
 
@@ -133,9 +149,9 @@ export function DiagnosticExperience({ initialSession }: { initialSession: Diagn
         header={<header className="rounded-xl border border-workspace-border bg-surface-lowest p-3 shadow-sm sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            Initial Core diagnostic
+            {publicSession ? "Free Core diagnostic" : "Initial Core diagnostic"}
           </p>
-           <div className="flex items-center gap-2"><p className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex"><LockKeyhole aria-hidden="true" className="h-4 w-4" />Results shown after completion</p><Button asChild size="sm" variant="ghost"><Link href="/dashboard"><LogOut aria-hidden="true" className="h-4 w-4" />Exit</Link></Button></div>
+           <div className="flex items-center gap-2"><p className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex"><LockKeyhole aria-hidden="true" className="h-4 w-4" />Results shown after completion</p><Button asChild size="sm" variant="ghost"><Link href={publicSession ? "/diagnostic" : "/dashboard"}><LogOut aria-hidden="true" className="h-4 w-4" />Exit</Link></Button></div>
         </div>
       </header>}
       >

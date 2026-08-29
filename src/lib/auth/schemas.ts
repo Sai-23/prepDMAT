@@ -23,11 +23,6 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
-    fullName: z
-      .string()
-      .trim()
-      .min(2, "Enter your full name.")
-      .max(100, "Name must be 100 characters or fewer."),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().max(128),
@@ -53,6 +48,15 @@ export const resetPasswordSchema = z
   });
 
 export const resendVerificationSchema = z.object({ email: emailSchema });
+
+export const emailVerificationOtpSchema = z.object({
+  email: emailSchema,
+  token: z
+    .string()
+    .trim()
+    .max(6, "Enter the 6-digit verification code.")
+    .regex(/^\d{6}$/, "Enter the 6-digit verification code."),
+});
 
 export const phoneOtpRequestSchema = z.object({
   countryCode: z

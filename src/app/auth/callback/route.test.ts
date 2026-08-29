@@ -4,12 +4,16 @@ import { NextRequest } from "next/server";
 const mocks = vi.hoisted(() => ({
   createServerClient: vi.fn(),
   getPostAuthRoute: vi.fn(),
+  claimPublicDiagnostic: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/config", () => ({
   getApplicationUrl: (path: string) => new URL(path, "https://prep-dmat.vercel.app"),
 }));
 vi.mock("@/lib/auth/post-auth", () => ({ getPostAuthRoute: mocks.getPostAuthRoute }));
+vi.mock("@/lib/onboarding/public-diagnostic", () => ({
+  claimPublicDiagnosticForUser: mocks.claimPublicDiagnostic,
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createServerClient,
 }));
@@ -38,6 +42,7 @@ describe("email verification callback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
+    mocks.claimPublicDiagnostic.mockResolvedValue(false);
   });
 
   it("exchanges a valid email-verification PKCE code exactly once and reaches dashboard", async () => {
@@ -51,6 +56,7 @@ describe("email verification callback", () => {
     const response = await GET(request("?flow=email_verification&code=one-time-code"));
 
     expect(destination(response).pathname).toBe("/dashboard");
+    expect(mocks.claimPublicDiagnostic).toHaveBeenCalledWith("verified-user");
     expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledOnce();
     expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith("one-time-code");
     expect(supabase.auth.verifyOtp).not.toHaveBeenCalled();
@@ -135,14 +141,30 @@ describe("email verification callback", () => {
     expect(url.toString()).not.toContain("raw-provider-detail");
   });
 
-  it("maps other OAuth failures without exposing provider details", async () => {
+  it("routes a successful Google exchange through provider-neutral post-auth routing", async () => {
+    const supabase = client();
+    supabase.auth.exchangeCodeForSession.mockResolvedValue({
+      data: { user: { id: "new-google-user" }, session: { access_token: "not-exposed" } },
+      error: null,
+    });
+    mocks.getPostAuthRoute.mockResolvedValue("/onboarding");
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(request("?flow=authentication&code=valid-google-code"));
+
+    expect(destination(response).pathname).toBe("/onboarding");
+    expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledOnce();
+    expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("new-google-user");
+  });
+
+  it("maps temporary OAuth provider failures without exposing provider details", async () => {
     const supabase = client();
     mocks.createServerClient.mockResolvedValue(supabase);
 
     const response = await GET(request("?error=server_error&error_description=raw-provider-detail"));
     const url = destination(response);
 
-    expect(url.searchParams.get("error")).toBe("oauth_failed");
+    expect(url.searchParams.get("error")).toBe("google_unavailable");
     expect(url.toString()).not.toContain("raw-provider-detail");
   });
 
@@ -195,5 +217,37 @@ describe("email verification callback", () => {
     const response = await GET(request("?flow=email_verification&code=forged-or-invalid"));
 
     expect(destination(response).searchParams.get("verification")).toBe("expired");
+  });
+
+  it("turns a stale Google PKCE verifier into an explicit retry outcome", async () => {
+    const supabase = client();
+    supabase.auth.exchangeCodeForSession.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { code: "flow_state_not_found", message: "PKCE verifier missing" },
+    });
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(request("?flow=authentication&code=stale-google-code"));
+    const url = destination(response);
+
+    expect(url.searchParams.get("error")).toBe("google_expired");
+    expect(url.toString()).not.toContain("PKCE");
+    expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledOnce();
+  });
+
+  it("routes a refreshed successful Google callback from its existing session", async () => {
+    const supabase = client();
+    supabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: "returning-google-user" } },
+      error: null,
+    });
+    mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(request("?flow=authentication&code=already-consumed"));
+
+    expect(destination(response).pathname).toBe("/dashboard");
+    expect(supabase.auth.exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("returning-google-user");
   });
 });

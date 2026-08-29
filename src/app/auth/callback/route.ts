@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/config";
 import { parseEmailVerificationOtpType } from "@/lib/auth/email-verification";
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
+import { claimPublicDiagnosticForUser } from "@/lib/onboarding/public-diagnostic";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type CallbackClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -25,9 +26,30 @@ function loginOutcomeUrl(outcome: "expired" | "session_required" | "unavailable"
   return url;
 }
 
-function oauthFailureUrl(cancelled: boolean) {
+function googleFailureUrl(outcome: "expired" | "failed" | "unavailable") {
   const url = getApplicationUrl("/login");
-  url.searchParams.set("error", cancelled ? "oauth_cancelled" : "oauth_failed");
+  url.searchParams.set(
+    "error",
+    outcome === "expired"
+      ? "google_expired"
+      : outcome === "unavailable"
+        ? "google_unavailable"
+        : "oauth_failed",
+  );
+  return url;
+}
+
+function oauthFailureUrl(providerError: string, providerErrorCode: string | null) {
+  const url = getApplicationUrl("/login");
+  const cancelled = providerError === "access_denied" || providerErrorCode === "access_denied";
+  const unavailable = providerError === "server_error"
+    || providerError === "temporarily_unavailable"
+    || providerErrorCode === "server_error"
+    || providerErrorCode === "temporarily_unavailable";
+  url.searchParams.set(
+    "error",
+    cancelled ? "oauth_cancelled" : unavailable ? "google_unavailable" : "oauth_failed",
+  );
   return url;
 }
 
@@ -48,6 +70,21 @@ function codeExchangeFailureOutcome(
   return "expired" as const;
 }
 
+function authenticationCodeExchangeFailure(
+  error: { code?: string; status?: number } | null,
+) {
+  if (
+    error?.code === "pkce_code_verifier_not_found"
+    || error?.code === "bad_code_verifier"
+    || error?.code === "flow_state_not_found"
+    || error?.code === "flow_state_expired"
+  ) {
+    return googleFailureUrl("expired");
+  }
+  if (error?.status && error.status >= 500) return googleFailureUrl("unavailable");
+  return googleFailureUrl("failed");
+}
+
 async function currentUserId(supabase: CallbackClient) {
   try {
     const {
@@ -61,6 +98,13 @@ async function currentUserId(supabase: CallbackClient) {
 
 async function authenticatedDestination(flow: AuthCallbackFlow, userId: string) {
   if (flow === "recovery") return getApplicationUrl("/reset-password");
+  try {
+    await claimPublicDiagnosticForUser(userId);
+  } catch {
+    // Keep the authenticated session usable and retain the public cookie so a
+    // later sign-in can retry the idempotent claim.
+    console.error("[auth.public_diagnostic_claim] failed", { stage: "callback" });
+  }
   if (flow === "email_verification") return getApplicationUrl("/dashboard");
 
   try {
@@ -88,7 +132,9 @@ export async function GET(request: NextRequest) {
   try {
     supabase = await createSupabaseServerClient();
   } catch {
-    return NextResponse.redirect(loginOutcomeUrl("unavailable"));
+    return NextResponse.redirect(
+      flow === "authentication" ? googleFailureUrl("unavailable") : loginOutcomeUrl("unavailable"),
+    );
   }
 
   // An already authenticated callback is complete. Do not consume a one-time
@@ -101,8 +147,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (providerError) {
-    const cancelled = providerError === "access_denied" || providerErrorCode === "access_denied";
-    return NextResponse.redirect(oauthFailureUrl(cancelled));
+    return NextResponse.redirect(oauthFailureUrl(providerError, providerErrorCode));
   }
 
   if (code) {
@@ -118,9 +163,9 @@ export async function GET(request: NextRequest) {
 
     // Supabase can confirm the email before a new browser context discovers
     // that it does not have the original PKCE verifier needed for a session.
-    return NextResponse.redirect(
-      loginOutcomeUrl(codeExchangeFailureOutcome(flow, error)),
-    );
+    return NextResponse.redirect(flow === "authentication"
+      ? authenticationCodeExchangeFailure(error)
+      : loginOutcomeUrl(codeExchangeFailureOutcome(flow, error)));
   }
 
   if (tokenHash && otpType) {

@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { loginSchema, normalizePhoneNumber, registerSchema } from "./schemas";
+import {
+  emailVerificationOtpSchema,
+  loginSchema,
+  normalizePhoneNumber,
+  registerSchema,
+} from "./schemas";
 
 describe("auth schemas", () => {
   it("requires matching, reasonably strong passwords", () => {
     expect(
       registerSchema.safeParse({
-        fullName: "Ada Lovelace",
         email: "ada@example.com",
         password: "numbers123",
         confirmPassword: "different123",
@@ -18,7 +22,6 @@ describe("auth schemas", () => {
   it("accepts a valid registration", () => {
     expect(
       registerSchema.safeParse({
-        fullName: "Ada Lovelace",
         email: "ada@example.com",
         password: "numbers123",
         confirmPassword: "numbers123",
@@ -37,12 +40,24 @@ describe("auth schemas", () => {
       password: `a1${"x".repeat(127)}`,
     }).success).toBe(false);
     expect(registerSchema.safeParse({
-      fullName: "Ada Lovelace",
       email: "ada@example.com",
       password: `a1${"x".repeat(127)}`,
       confirmPassword: `a1${"x".repeat(127)}`,
       marketingEmailOptIn: false,
     }).success).toBe(false);
+  });
+
+  it("accepts exactly six numeric email verification digits", () => {
+    expect(emailVerificationOtpSchema.safeParse({
+      email: "ada@example.com",
+      token: "123456",
+    }).success).toBe(true);
+    for (const token of ["12345", "1234567", "12345a", "１２３４５６"]) {
+      expect(emailVerificationOtpSchema.safeParse({
+        email: "ada@example.com",
+        token,
+      }).success).toBe(false);
+    }
   });
 
   it("normalizes supported phone input to E.164 and rejects malformed input", () => {

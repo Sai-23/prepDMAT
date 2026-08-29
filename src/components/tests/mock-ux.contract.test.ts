@@ -11,8 +11,34 @@ describe("Mock Test student experience contract", () => {
   it("distinguishes official-format full Core work from custom mocks", () => {
     expect(catalog).toContain("Official Core format");
     expect(catalog).toContain("Full Core mock");
-    expect(catalog).toContain("Other mock tests");
+    expect(catalog).toContain("Mock library");
+    expect(catalog).toContain("Figure Sequences");
+    expect(catalog).toContain("Mathematical Equations");
+    expect(catalog).toContain("Latin Squares");
     expect(catalog).toContain("DMAT_CURRENT_CORE_PROTOCOL");
+  });
+
+  it("loads one batched attempt summary and offers clear start, resume, and retake actions", () => {
+    expect(testData).toContain('admin.rpc("get_curated_test_attempt_summaries"');
+    expect(catalog).toContain('"Start mock"');
+    expect(catalog).toContain('"Resume mock"');
+    expect(catalog).toContain('"Try again"');
+    expect(catalog).toContain("summary.bestScore");
+    expect(catalog).toContain("summary.latestScore");
+    expect(catalog).toContain("summary.attemptCount");
+    const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/202608290028_public_diagnostic_and_mock_summaries.sql"), "utf8");
+    expect(migration).toContain("count(attempts.id) filter");
+    expect(migration).toContain("max(attempts.score) filter");
+    expect(migration).toContain("order by attempts.submitted_at desc nulls last");
+  });
+
+  it("keeps completed curated attempts immutable and starts a new retake", () => {
+    const start = testData.indexOf("export async function startTestAttempt");
+    const end = testData.indexOf("export async function getTestAttempt", start);
+    const startAttempt = testData.slice(start, end);
+    expect(startAttempt).toContain('.eq("status", "in_progress")');
+    expect(startAttempt).toContain("const attemptId = crypto.randomUUID()");
+    expect(startAttempt).not.toContain('.update({ status: "in_progress"');
   });
 
   it("keeps feedback hidden during the attempt and preserves saved navigation", () => {

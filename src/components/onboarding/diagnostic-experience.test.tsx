@@ -109,6 +109,6 @@ describe("diagnostic pending-state contract", () => {
 
   it("guards against double submission and redirects directly to the summary", () => {
     expect(component).toContain("submissionGuard.current.acquire()");
-    expect(component).toContain('router.replace("/onboarding/diagnostic/summary")');
+    expect(component).toContain('publicSession ? "/diagnostic/result" : "/onboarding/diagnostic/summary"');
   });
 });

@@ -40,7 +40,7 @@ describe("launch-stage student monetization visibility", () => {
   it("keeps the footer focused on exam format and the diagnostic", () => {
     const html = renderToStaticMarkup(<SiteFooter />);
     expect(html).toContain('href="/exam-format"');
-    expect(html).toContain('href="/onboarding"');
+    expect(html).toContain('href="/diagnostic"');
     expect(html).toContain("Free Diagnostic");
     expect(html).not.toContain("Pricing");
   });

@@ -18,6 +18,11 @@ import type {
   TestOverview,
   TestQuestion,
 } from "@/lib/tests/schemas";
+import {
+  normalizeAttemptSummary,
+  resolveCatalogModuleType,
+  type CuratedAttemptSummaryRow,
+} from "@/lib/tests/catalog";
 
 type PublishedTestRow = {
   id: string;
@@ -45,6 +50,10 @@ type MappingRow = {
   test_section_id: string;
   question_id: string;
   sort_order: number;
+};
+
+type AttemptSummaryRow = CuratedAttemptSummaryRow & {
+  test_id: string;
 };
 
 type SafeQuestionRow = {
@@ -211,15 +220,23 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
   if (!tests.length) return [];
 
   const testIds = tests.map((test) => test.id);
-  const [{ data: sectionData }, premiumAccess] = await Promise.all([
+  const [{ data: sectionData }, premiumAccess, { data: attemptSummaryData, error: attemptSummaryError }] = await Promise.all([
     admin
       .from("test_sections")
       .select("id, test_id, title, section_type, duration_seconds, sort_order")
       .in("test_id", testIds)
       .eq("is_current", true),
     hasPremiumAccess(userId),
+    admin.rpc("get_curated_test_attempt_summaries", {
+      p_user_id: userId,
+      p_test_ids: testIds,
+    }),
   ]);
+  if (attemptSummaryError) throw new Error("Unable to load mock attempt summaries.");
   const sections = (sectionData ?? []) as SectionRow[];
+  const summaries = new Map(
+    ((attemptSummaryData ?? []) as AttemptSummaryRow[]).map((summary) => [summary.test_id, summary]),
+  );
   const sectionIds = sections.map((section) => section.id);
   const { data: mappingData } = sectionIds.length
     ? await admin
@@ -236,12 +253,15 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
     .map((test) => {
     const testSections = sections.filter((section) => section.test_id === test.id);
     const testSectionIds = new Set(testSections.map((section) => section.id));
+    const moduleType = resolveCatalogModuleType(testSections.map((section) => section.section_type));
+    const attempt = summaries.get(test.id);
     return {
       id: test.id,
       title: test.title,
       description: test.description,
       testType: test.test_type,
       module: test.module,
+      moduleType,
       durationSeconds: test.duration_seconds,
       isPremium: test.is_premium,
       sectionCount: testSections.length,
@@ -249,6 +269,7 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
         testSectionIds.has(mapping.test_section_id),
       ).length,
       hasAccess: !test.is_premium || premiumAccess,
+      attemptSummary: normalizeAttemptSummary(attempt),
     };
   });
 }

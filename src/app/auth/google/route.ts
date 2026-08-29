@@ -18,7 +18,7 @@ export async function GET() {
     const errorUrl = getApplicationUrl("/login");
     errorUrl.searchParams.set(
       "error",
-      error instanceof RateLimitExceededError ? "rate_limited" : "auth_unavailable",
+      error instanceof RateLimitExceededError ? "rate_limited" : "google_unavailable",
     );
     return NextResponse.redirect(errorUrl);
   }
@@ -35,7 +35,7 @@ export async function GET() {
     error = result.error;
   } catch {
     const errorUrl = getApplicationUrl("/login");
-    errorUrl.searchParams.set("error", "auth_unavailable");
+    errorUrl.searchParams.set("error", "google_unavailable");
     return NextResponse.redirect(errorUrl);
   }
 

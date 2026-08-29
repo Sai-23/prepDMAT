@@ -32,14 +32,23 @@ export type TestCatalogItem = {
   description: string | null;
   testType: "diagnostic" | "mini_mock" | "full_mock" | "sectional";
   module: "core" | null;
+  moduleType: PracticeQuestion["questionType"] | null;
   durationSeconds: number;
   isPremium: boolean;
   sectionCount: number;
   questionCount: number;
   hasAccess: boolean;
+  attemptSummary: {
+    completed: boolean;
+    attemptCount: number;
+    bestScore: number | null;
+    latestScore: number | null;
+    latestCompletedAt: string | null;
+    hasInProgress: boolean;
+  };
 };
 
-export type TestOverview = TestCatalogItem & {
+export type TestOverview = Omit<TestCatalogItem, "moduleType" | "attemptSummary"> & {
   instructions: string | null;
   sections: Array<{
     id: string;

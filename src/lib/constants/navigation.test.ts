@@ -49,7 +49,7 @@ describe("navigationForRoles", () => {
   });
 
   it("maps every authoritative diagnostic state to an honest destination", () => {
-    expect(diagnosticNavigationItem("not_started")).toMatchObject({ href: "/onboarding", label: "Free Diagnostic" });
+    expect(diagnosticNavigationItem("not_started")).toMatchObject({ href: "/diagnostic", label: "Free Diagnostic" });
     expect(diagnosticNavigationItem("in_progress")).toMatchObject({ href: "/onboarding/diagnostic", label: "Resume Diagnostic" });
     expect(diagnosticNavigationItem("completed")).toMatchObject({ href: "/onboarding/diagnostic/summary", label: "Diagnostic Complete ✓" });
   });

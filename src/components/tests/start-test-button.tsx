@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 
 export function StartTestButton({
   testId,
+  label = "Start or resume test",
 }: {
   testId: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function StartTestButton({
   return (
     <div className="space-y-3">
       <Button className="w-full" disabled={pending} onClick={start}>
-        {pending ? "Preparing test..." : "Start or resume test"}
+        {pending ? "Preparing test..." : label}
       </Button>
       {error ? (
         <p className="text-sm text-red-700" role="alert">

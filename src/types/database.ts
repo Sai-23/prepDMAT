@@ -132,6 +132,46 @@ export type Database = {
         created_at: string;
         updated_at: string;
       }>;
+      public_diagnostic_sessions: DatabaseTable<{
+        id: string;
+        token_hash: string;
+        status: "in_progress" | "completed";
+        master_seed: string;
+        current_position: number;
+        question_count: number;
+        correct_count: number;
+        incorrect_count: number;
+        total_time_seconds: number;
+        started_at: string;
+        completed_at: string | null;
+        expires_at: string;
+        claimed_by: string | null;
+        claimed_at: string | null;
+      }>;
+      public_diagnostic_items: DatabaseTable<{
+        id: string;
+        session_id: string;
+        source_question_id: string | null;
+        question_key: string;
+        position: number;
+        question_type: "figure_sequence" | "mathematical_equation" | "latin_square";
+        difficulty: "easy" | "medium" | "hard";
+        public_snapshot: Json;
+        private_snapshot: Json;
+        generator_version: string | null;
+        validator_version: string | null;
+        seed: string | null;
+        fingerprint: string;
+        structural_profile: Json;
+        reasoning_family: string;
+        reasoning_classification: string;
+        response_status: "unanswered" | "answered" | "skipped";
+        response_payload: Json | null;
+        is_correct: boolean | null;
+        time_spent_seconds: number;
+        shown_at: string | null;
+        answered_at: string | null;
+      }>;
       practice_events: DatabaseTable<{
         id: string;
         user_id: string;

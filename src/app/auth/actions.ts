@@ -7,6 +7,7 @@ import { getAuthCallbackUrl, getAuthProviderAvailability } from "@/lib/auth/conf
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
 import {
   forgotPasswordSchema,
+  emailVerificationOtpSchema,
   loginSchema,
   normalizePhoneNumber,
   phoneOtpRequestSchema,
@@ -20,6 +21,7 @@ import {
   rateLimitActionState,
 } from "@/lib/security/rate-limit";
 import type { PublicActionErrorCode } from "@/lib/security/public-errors";
+import { claimPublicDiagnosticForUser } from "@/lib/onboarding/public-diagnostic";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isThemePreference, type ThemePreference } from "@/lib/theme";
@@ -28,7 +30,7 @@ export type AuthActionState = {
   status: "idle" | "error" | "success";
   message?: string;
   errors?: Record<string, string[] | undefined>;
-  view?: "check_email" | "phone_code";
+  view?: "verify_email" | "phone_code";
   email?: string;
   phone?: string;
   retryAfterSeconds?: number;
@@ -57,12 +59,15 @@ function providerErrorMessage(error: { status?: number; code?: string } | null, 
 
 function loginProviderErrorState(
   error: { status?: number; code?: string } | null,
+  email: string,
 ): AuthActionState {
   if (error?.code === "email_not_confirmed") {
     return {
       status: "error",
       code: "EMAIL_NOT_VERIFIED",
-      message: "Confirm your email before signing in.",
+      view: "verify_email",
+      email,
+      message: "Your email still needs verification.",
     };
   }
   if (error?.status === 429 || error?.code === "over_request_rate_limit") {
@@ -95,6 +100,16 @@ function loginUnavailable(stage: "client" | "provider" | "post_auth_route", reas
   };
 }
 
+async function claimPublicDiagnosticIfPresent(userId: string) {
+  try {
+    await claimPublicDiagnosticForUser(userId);
+  } catch {
+    // Authentication remains usable if the optional acquisition-session claim
+    // is temporarily unavailable. The HttpOnly cookie is retained for retry.
+    console.error("[auth.public_diagnostic_claim] failed", { stage: "post_auth" });
+  }
+}
+
 export async function loginAction(
   _state: AuthActionState,
   formData: FormData,
@@ -121,7 +136,7 @@ export async function loginAction(
   let authenticatedUserId: string;
   try {
     const { data, error } = await supabase.auth.signInWithPassword(result.data);
-    if (error) return loginProviderErrorState(error);
+    if (error) return loginProviderErrorState(error, result.data.email);
     if (!data.user) return loginUnavailable("provider", "invalid_provider_response");
     authenticatedUserId = data.user.id;
   } catch {
@@ -130,6 +145,7 @@ export async function loginAction(
 
   let destination: Awaited<ReturnType<typeof getPostAuthRoute>>;
   try {
+    await claimPublicDiagnosticIfPresent(authenticatedUserId);
     destination = await getPostAuthRoute(authenticatedUserId);
   } catch {
     return loginUnavailable("post_auth_route", "profile_route_unavailable");
@@ -143,7 +159,6 @@ export async function registerAction(
   formData: FormData,
 ): Promise<AuthActionState> {
   const result = registerSchema.safeParse({
-    fullName: formData.get("fullName"),
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
@@ -157,19 +172,30 @@ export async function registerAction(
     return rateLimitActionState(error);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signUp({
-    email: result.data.email,
-    password: result.data.password,
-    options: {
-      data: {
-        full_name: result.data.fullName,
-        display_name: result.data.fullName,
-        marketing_email_opt_in: result.data.marketingEmailOptIn,
+  let data: { user: { id: string } | null; session: unknown | null };
+  let error: { status?: number; code?: string } | null;
+  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  try {
+    supabase = await createSupabaseServerClient();
+    const signupResult = await supabase.auth.signUp({
+      email: result.data.email,
+      password: result.data.password,
+      options: {
+        data: {
+          marketing_email_opt_in: result.data.marketingEmailOptIn,
+        },
+        emailRedirectTo: getAuthCallbackUrl("email_verification"),
       },
-      emailRedirectTo: getAuthCallbackUrl("email_verification"),
-    },
-  });
+    });
+    data = signupResult.data;
+    error = signupResult.error;
+  } catch {
+    return {
+      status: "error",
+      code: "TEMPORARILY_UNAVAILABLE",
+      message: "The authentication service is temporarily unavailable. Try again shortly.",
+    };
+  }
 
   if (error) {
     return {
@@ -182,16 +208,88 @@ export async function registerAction(
   }
 
   if (data.session && data.user) {
+    await claimPublicDiagnosticIfPresent(data.user.id);
     revalidatePath("/", "layout");
     redirect(await getPostAuthRoute(data.user.id));
   }
 
+  // Supabase deliberately makes duplicate signups ambiguous. A password sign-in
+  // under the normal login limiter safely distinguishes only a caller who has
+  // proved valid credentials; all other outcomes keep the same verification UI.
+  let existingUserId: string | null = null;
+  try {
+    await enforceSecurityRateLimit("auth:login", { account: result.data.email });
+    const existing = await supabase.auth.signInWithPassword({
+      email: result.data.email,
+      password: result.data.password,
+    });
+    if (!existing.error && existing.data.user && existing.data.session) {
+      existingUserId = existing.data.user.id;
+    }
+  } catch {
+    // Rate-limit, unconfirmed-account, invalid-credential, and provider failures
+    // remain deliberately indistinguishable at the registration boundary.
+  }
+  if (existingUserId) {
+    await claimPublicDiagnosticIfPresent(existingUserId);
+    revalidatePath("/", "layout");
+    redirect(await getPostAuthRoute(existingUserId));
+  }
+
   return {
     status: "success",
-    view: "check_email",
+    view: "verify_email",
     email: result.data.email,
-    message: "Confirm your email to finish creating your account.",
+    message: "Enter the 6-digit code sent to your email.",
   };
+}
+
+export async function verifyRegistrationEmailOtpAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const result = emailVerificationOtpSchema.safeParse({
+    email: formData.get("email"),
+    token: formData.get("token"),
+  });
+  if (!result.success) return validationError(result.error);
+
+  try {
+    await enforceSecurityRateLimit("auth:email-verify", { account: result.data.email });
+  } catch (error) {
+    return rateLimitActionState(error);
+  }
+
+  let authenticatedUserId: string;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: result.data.email,
+      token: result.data.token,
+      type: "signup",
+    });
+
+    if (error || !data.user || !data.session) {
+      return {
+        status: "error",
+        message: providerErrorMessage(
+          error,
+          "The code is invalid or expired. Request a new code and try again.",
+        ),
+      };
+    }
+    authenticatedUserId = data.user.id;
+  } catch {
+    return {
+      status: "error",
+      code: "TEMPORARILY_UNAVAILABLE",
+      message: "The authentication service is temporarily unavailable. Try again shortly.",
+    };
+  }
+
+  await claimPublicDiagnosticIfPresent(authenticatedUserId);
+  revalidatePath("/", "layout");
+  redirect(await getPostAuthRoute(authenticatedUserId));
 }
 
 export async function resendVerificationAction(
@@ -244,7 +342,7 @@ export async function resendVerificationAction(
   return {
     status: "success",
     retryAfterSeconds: 60,
-    message: "If this address has a pending account, a verification email is on its way.",
+    message: "If this address has a pending account, a verification code is on its way.",
   };
 }
 
@@ -375,6 +473,7 @@ export async function verifyPhoneOtpAction(
     };
   }
 
+  await claimPublicDiagnosticIfPresent(authenticatedUserId);
   revalidatePath("/", "layout");
   redirect(await getPostAuthRoute(authenticatedUserId));
 }

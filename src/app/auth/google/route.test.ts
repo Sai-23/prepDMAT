@@ -86,7 +86,7 @@ describe("Google OAuth entry route", () => {
     const url = destination(response);
 
     expect(url.pathname).toBe("/login");
-    expect(url.searchParams.get("error")).toBe("auth_unavailable");
+    expect(url.searchParams.get("error")).toBe("google_unavailable");
     expect(url.toString()).not.toContain("provider internals");
   });
 });

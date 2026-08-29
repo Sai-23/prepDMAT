@@ -5,6 +5,8 @@ vi.mock("@/app/auth/actions", () => ({
   googleSignInAction: vi.fn(),
   requestPhoneOtpAction: vi.fn(),
   verifyPhoneOtpAction: vi.fn(),
+  verifyRegistrationEmailOtpAction: vi.fn(),
+  resendVerificationAction: vi.fn(),
 }));
 
 import { AuthProviderOptions, maskPhoneNumber } from "./auth-providers";

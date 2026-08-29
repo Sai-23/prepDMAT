@@ -19,7 +19,7 @@ export function diagnosticNavigationItem(status: StudentDiagnosticStatus | null)
   if (status === "in_progress") {
     return { href: "/onboarding/diagnostic", label: "Resume Diagnostic", requiresAuth: true };
   }
-  return { href: "/onboarding", label: "Free Diagnostic", requiresAuth: true };
+  return { href: "/diagnostic", label: "Free Diagnostic" };
 }
 
 export const primaryNavigation: NavigationItem[] = [

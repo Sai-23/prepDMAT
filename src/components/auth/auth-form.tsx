@@ -2,15 +2,16 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { CheckCircle2, Eye, EyeOff, LoaderCircle, MailCheck } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { CheckCircle2, Eye, EyeOff, MailCheck } from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
-import { resendVerificationAction, type AuthActionState } from "@/app/auth/actions";
+import {
+  resendVerificationAction,
+  verifyRegistrationEmailOtpAction,
+  type AuthActionState,
+} from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { maskEmailAddress } from "@/lib/auth/email-verification";
-import { startVerificationMonitor } from "@/lib/auth/verification-monitor";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Field = {
   name: string;
@@ -28,6 +29,7 @@ type AuthFormProps = {
   footer?: { text: string; label: string; href: Route };
   forgotPassword?: boolean;
   marketingConsent?: boolean;
+  compact?: boolean;
 };
 
 const initialAuthState: AuthActionState = { status: "idle" };
@@ -36,10 +38,12 @@ function PasswordInput({
   field,
   describedBy,
   invalid,
+  compact,
 }: {
   field: Field;
   describedBy: string;
   invalid: boolean;
+  compact: boolean;
 }) {
   const [visible, setVisible] = useState(false);
   return (
@@ -48,7 +52,7 @@ function PasswordInput({
         aria-describedby={describedBy}
         aria-invalid={invalid}
         autoComplete={field.autoComplete}
-        className="h-12 w-full rounded-md border border-input-border bg-input-background px-4 pr-12 text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-muted"
+        className={`${compact ? "h-11" : "h-12"} w-full rounded-md border border-input-border bg-input-background px-4 pr-12 text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-muted`}
         id={field.name}
         name={field.name}
         type={visible ? "text" : "password"}
@@ -59,7 +63,9 @@ function PasswordInput({
         onClick={() => setVisible((current) => !current)}
         type="button"
       >
-        {visible ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}
+        {visible
+          ? <EyeOff aria-hidden="true" className="size-5" />
+          : <Eye aria-hidden="true" className="size-5" />}
       </button>
     </div>
   );
@@ -68,20 +74,31 @@ function PasswordInput({
 function ResendVerificationForm({
   email,
   initialCooldown = 0,
+  onSent,
 }: {
   email?: string;
   initialCooldown?: number;
+  onSent?: (email: string) => void;
 }) {
   const [cooldown, setCooldown] = useState(initialCooldown);
+  const inFlight = useRef(false);
   const [state, action, pending] = useActionState(async (
     previousState: AuthActionState,
     formData: FormData,
   ) => {
-    const nextState = await resendVerificationAction(previousState, formData);
-    if (nextState.status === "success") {
-      setCooldown(nextState.retryAfterSeconds ?? 60);
+    if (inFlight.current) return previousState;
+    inFlight.current = true;
+    try {
+      const nextState = await resendVerificationAction(previousState, formData);
+      if (nextState.status === "success") {
+        setCooldown(nextState.retryAfterSeconds ?? 60);
+        const submittedEmail = formData.get("email");
+        if (typeof submittedEmail === "string") onSent?.(submittedEmail);
+      }
+      return nextState;
+    } finally {
+      inFlight.current = false;
     }
-    return nextState;
   }, initialAuthState);
 
   useEffect(() => {
@@ -114,10 +131,10 @@ function ResendVerificationForm({
       )}
       <Button className="min-h-11 w-full" disabled={unavailable} type="submit" variant="outline">
         {pending
-          ? "Sending email..."
+          ? "Sending code..."
           : cooldown > 0
-            ? `Resend available in ${cooldown}s`
-            : "Resend email"}
+            ? `Resend code in 00:${String(cooldown).padStart(2, "0")}`
+            : "Resend code"}
       </Button>
       {state.message ? (
         <p
@@ -134,119 +151,107 @@ function ResendVerificationForm({
   );
 }
 
-export function CheckEmail({ email, message }: { email: string; message: string }) {
-  const router = useRouter();
-  const [verificationState, setVerificationState] = useState<
-    "checking" | "waiting" | "timed_out" | "verified"
-  >("checking");
-
-  useEffect(() => {
-    // Client Components are also prerendered by Next.js. Instantiate the
-    // cookie-backed browser client only after the component reaches a browser.
-    const supabase = createSupabaseBrowserClient();
-    return startVerificationMonitor({
-      checkAuthenticated: async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        return Boolean(user);
-      },
-      subscribeToAuthChanges: (notify) => {
-        const { data } = supabase.auth.onAuthStateChange(() => {
-          // Do not call another Supabase Auth method from inside its callback.
-          window.setTimeout(notify, 0);
-        });
-        return () => data.subscription.unsubscribe();
-      },
-      onCheckingChange: (checking) => {
-        setVerificationState((current) => current === "verified" || current === "timed_out"
-          ? current
-          : checking ? "checking" : "waiting");
-      },
-      onTimeout: () => setVerificationState("timed_out"),
-      onVerified: () => setVerificationState("verified"),
-    });
-  }, []);
-
-  useEffect(() => {
-    if (verificationState !== "verified") return;
-    const timer = window.setTimeout(() => {
-      router.replace("/dashboard");
-    }, 900);
-    return () => window.clearTimeout(timer);
-  }, [router, verificationState]);
+export function EmailVerificationOtp({
+  email,
+  message,
+  onChangeEmail,
+}: {
+  email: string;
+  message?: string;
+  onChangeEmail?: () => void;
+}) {
+  const [token, setToken] = useState("");
+  const inFlight = useRef(false);
+  const [state, action, pending] = useActionState(async (
+    previousState: AuthActionState,
+    formData: FormData,
+  ) => {
+    if (inFlight.current) return previousState;
+    inFlight.current = true;
+    try {
+      return await verifyRegistrationEmailOtpAction(previousState, formData);
+    } finally {
+      inFlight.current = false;
+    }
+  }, initialAuthState);
+  const complete = /^\d{6}$/.test(token);
 
   return (
-    <div className="space-y-6 text-center">
-      {verificationState === "verified" ? (
-        <CheckCircle2 aria-hidden="true" className="mx-auto size-11 text-success" />
-      ) : (
-        <MailCheck aria-hidden="true" className="mx-auto size-11 text-primary" />
-      )}
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-on-surface">
-          {verificationState === "verified"
-            ? "Email verified"
-            : verificationState === "timed_out"
-              ? "Still waiting?"
-              : "Check your email"}
-        </h2>
+    <div className="space-y-5 text-center">
+      <MailCheck aria-hidden="true" className="mx-auto size-10 text-primary" />
+      <div className="space-y-1.5">
+        <h2 className="text-xl font-semibold text-on-surface">Verify your email</h2>
         <p className="text-sm leading-6 text-muted-foreground">
-          {verificationState === "verified"
-            ? "You're all set."
-            : verificationState === "timed_out"
-              ? "Already confirmed on another device? Sign in to continue on this device."
-              : message}
+          {message ?? "Enter the 6-digit code sent to:"}
         </p>
-        {verificationState === "verified" ? null : (
-          <p className="text-sm leading-6 text-muted-foreground">
-            If you open the link in this browser, we&apos;ll continue automatically.
-          </p>
-        )}
         <p className="break-all text-sm font-semibold text-on-surface">
           {maskEmailAddress(email)}
         </p>
-        <p className="flex min-h-6 items-center justify-center gap-2 text-xs text-muted-foreground" role="status">
-          {verificationState === "checking" ? (
-            <>
-              <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-              Checking verification…
-            </>
-          ) : verificationState === "verified" ? (
-            "Taking you to your dashboard…"
-          ) : verificationState === "timed_out" ? (
-            "Automatic checking has stopped"
-          ) : (
-            "Waiting for verification"
-          )}
-        </p>
       </div>
-      {verificationState === "verified" ? null : (
-        <ResendVerificationForm email={email} initialCooldown={60} />
-      )}
-      {verificationState === "timed_out" ? (
-        <Button asChild className="min-h-11 w-full">
-          <Link href="/login">Sign in to continue</Link>
+      <form action={action} className="space-y-4 text-left" noValidate>
+        <input name="email" type="hidden" value={email} />
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-on-surface" htmlFor="email-verification-token">
+            Verification code
+          </label>
+          <input
+            aria-describedby={state.errors?.token ? "email-verification-token-error" : undefined}
+            aria-invalid={Boolean(state.errors?.token)}
+            autoComplete="one-time-code"
+            autoFocus
+            className="h-12 w-full rounded-md border border-input-border bg-input-background px-4 text-center font-mono text-xl tracking-[0.35em] text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-muted"
+            id="email-verification-token"
+            inputMode="numeric"
+            maxLength={6}
+            name="token"
+            onChange={(event) => setToken(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            pattern="[0-9]{6}"
+            type="text"
+            value={token}
+          />
+          {state.errors?.token?.map((error) => (
+            <p className="text-sm text-error" id="email-verification-token-error" key={error} role="alert">
+              {error}
+            </p>
+          ))}
+        </div>
+        {state.message ? (
+          <p className="rounded-md bg-error-container p-3 text-sm text-error-container-foreground" role="alert">
+            {state.message}
+          </p>
+        ) : null}
+        <Button className="min-h-11 w-full" disabled={pending || !complete} type="submit">
+          {pending ? "Verifying..." : "Verify email"}
         </Button>
-      ) : null}
-      {verificationState === "verified" ? null : <a
+      </form>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">Didn&apos;t receive the code?</p>
+        <ResendVerificationForm email={email} initialCooldown={60} />
+      </div>
+      <button
         className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        href="/register"
+        onClick={onChangeEmail}
+        type="button"
       >
-        Change email
-      </a>}
+        Use a different email
+      </button>
     </div>
   );
 }
 
 export function VerificationRecovery() {
+  const [email, setEmail] = useState<string | null>(null);
+  if (email) {
+    return <EmailVerificationOtp email={email} message="Enter the verification code we sent to:" />;
+  }
+
   return (
     <div className="mb-5 space-y-4 rounded-md bg-error-container p-4 text-error-container-foreground">
       <div className="space-y-1">
         <p className="font-semibold">Verification link expired</p>
-        <p className="text-sm">This link may have expired or already been used.</p>
+        <p className="text-sm">Request a new verification code to continue.</p>
       </div>
-      <ResendVerificationForm />
+      <ResendVerificationForm onSent={setEmail} />
       <Link
         className="inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         href="/login"
@@ -257,7 +262,7 @@ export function VerificationRecovery() {
   );
 }
 
-export function AuthForm({
+function AuthFormState({
   action,
   fields,
   submitLabel,
@@ -265,15 +270,29 @@ export function AuthForm({
   footer,
   forgotPassword,
   marketingConsent,
-}: AuthFormProps) {
-  const [state, formAction, pending] = useActionState(action, initialAuthState);
+  compact = false,
+  onReset,
+}: AuthFormProps & { onReset: () => void }) {
+  const inFlight = useRef(false);
+  const [state, formAction, pending] = useActionState(async (
+    previousState: AuthActionState,
+    formData: FormData,
+  ) => {
+    if (inFlight.current) return previousState;
+    inFlight.current = true;
+    try {
+      return await action(previousState, formData);
+    } finally {
+      inFlight.current = false;
+    }
+  }, initialAuthState);
 
-  if (state.status === "success" && state.view === "check_email" && state.email) {
-    return <CheckEmail email={state.email} message={state.message ?? "Confirm your email to finish creating your account."} />;
+  if (state.view === "verify_email" && state.email) {
+    return <EmailVerificationOtp email={state.email} message={state.message} onChangeEmail={onReset} />;
   }
 
   return (
-    <form action={formAction} className="space-y-4" id="email-sign-in" noValidate>
+    <form action={formAction} className={compact ? "space-y-3" : "space-y-4"} id="email-sign-in" noValidate>
       {fields.map((field) => {
         const errorId = `${field.name}-error`;
         const helpId = field.name === "password" && field.autoComplete === "new-password"
@@ -283,7 +302,7 @@ export function AuthForm({
           .filter(Boolean)
           .join(" ");
         return (
-          <div className="space-y-1.5" key={field.name}>
+          <div className={compact ? "space-y-1" : "space-y-1.5"} key={field.name}>
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-semibold text-on-surface" htmlFor={field.name}>
                 {field.label}
@@ -299,6 +318,7 @@ export function AuthForm({
             </div>
             {field.type === "password" ? (
               <PasswordInput
+                compact={compact}
                 describedBy={describedBy}
                 field={field}
                 invalid={Boolean(state.errors?.[field.name])}
@@ -308,7 +328,8 @@ export function AuthForm({
                 aria-describedby={describedBy || undefined}
                 aria-invalid={Boolean(state.errors?.[field.name])}
                 autoComplete={field.autoComplete}
-                className="h-12 w-full rounded-md border border-input-border bg-input-background px-4 text-on-surface outline-none transition placeholder:text-input-placeholder focus:border-primary focus:ring-2 focus:ring-primary-muted"
+                autoFocus={field.name === "email"}
+                className={`${compact ? "h-11" : "h-12"} w-full rounded-md border border-input-border bg-input-background px-4 text-on-surface outline-none transition placeholder:text-input-placeholder focus:border-primary focus:ring-2 focus:ring-primary-muted`}
                 id={field.name}
                 name={field.name}
                 placeholder={field.placeholder}
@@ -317,7 +338,7 @@ export function AuthForm({
             )}
             {helpId ? (
               <p className="text-xs leading-5 text-muted-foreground" id={helpId}>
-                At least 8 characters, including a letter and a number.
+                8+ characters with a letter and number.
               </p>
             ) : null}
             {state.errors?.[field.name]?.map((error) => (
@@ -330,13 +351,13 @@ export function AuthForm({
       })}
 
       {marketingConsent ? (
-        <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-on-surface-variant">
+        <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-on-surface-variant">
           <input
             className="mt-1 size-4 shrink-0 accent-primary"
             name="marketingEmailOptIn"
             type="checkbox"
           />
-          <span>Send me dMAT preparation tips, product updates, and important dMATPrep news.</span>
+          <span>Send me useful PrepDMAT updates.</span>
         </label>
       ) : null}
 
@@ -367,5 +388,16 @@ export function AuthForm({
         </p>
       ) : null}
     </form>
+  );
+}
+
+export function AuthForm(props: AuthFormProps) {
+  const [generation, setGeneration] = useState(0);
+  return (
+    <AuthFormState
+      {...props}
+      key={generation}
+      onReset={() => setGeneration((current) => current + 1)}
+    />
   );
 }

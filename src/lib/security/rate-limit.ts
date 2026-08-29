@@ -10,6 +10,7 @@ import { getEnv } from "@/lib/validators/env";
 export type SecurityRateLimitOperation =
   | "auth:login"
   | "auth:signup"
+  | "auth:email-verify"
   | "auth:resend"
   | "auth:password-reset"
   | "auth:phone-request"
@@ -17,8 +18,11 @@ export type SecurityRateLimitOperation =
   | "auth:google"
   | "generation:practice"
   | "generation:diagnostic"
+  | "generation:public-diagnostic"
   | "generation:mock"
   | "assessment:answer"
+  | "assessment:public-diagnostic"
+  | "assessment:public-diagnostic-claim"
   | "assessment:mock-start"
   | "assessment:mock-write"
   | "learning:mutation"
@@ -42,6 +46,11 @@ const POLICIES: Record<SecurityRateLimitOperation, RateLimitPolicy> = {
     global: { maxAttempts: 100, windowSeconds: 60 },
     account: { maxAttempts: 10, windowSeconds: 3600 },
     ip: { maxAttempts: 10, windowSeconds: 3600 },
+  },
+  "auth:email-verify": {
+    global: { maxAttempts: 300, windowSeconds: 60 },
+    account: { maxAttempts: 10, windowSeconds: 900 },
+    ip: { maxAttempts: 30, windowSeconds: 900 },
   },
   "auth:resend": {
     global: { maxAttempts: 100, windowSeconds: 60 },
@@ -77,6 +86,10 @@ const POLICIES: Record<SecurityRateLimitOperation, RateLimitPolicy> = {
     user: { maxAttempts: 3, windowSeconds: 86400 },
     ip: { maxAttempts: 10, windowSeconds: 3600 },
   },
+  "generation:public-diagnostic": {
+    global: { maxAttempts: 100, windowSeconds: 60 },
+    ip: { maxAttempts: 5, windowSeconds: 3600 },
+  },
   "generation:mock": {
     global: { maxAttempts: 10, windowSeconds: 60 },
     user: { maxAttempts: 2, windowSeconds: 3600 },
@@ -86,6 +99,15 @@ const POLICIES: Record<SecurityRateLimitOperation, RateLimitPolicy> = {
     global: { maxAttempts: 5000, windowSeconds: 60 },
     user: { maxAttempts: 600, windowSeconds: 3600 },
     ip: { maxAttempts: 1200, windowSeconds: 3600 },
+  },
+  "assessment:public-diagnostic": {
+    global: { maxAttempts: 3000, windowSeconds: 60 },
+    ip: { maxAttempts: 120, windowSeconds: 3600 },
+  },
+  "assessment:public-diagnostic-claim": {
+    global: { maxAttempts: 300, windowSeconds: 60 },
+    user: { maxAttempts: 10, windowSeconds: 3600 },
+    ip: { maxAttempts: 30, windowSeconds: 3600 },
   },
   "assessment:mock-start": {
     global: { maxAttempts: 300, windowSeconds: 60 },

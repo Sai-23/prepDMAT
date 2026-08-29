@@ -16,24 +16,17 @@ describe("authentication contracts", () => {
     expect(callback).not.toContain("provider_token");
   });
 
-  it("uses a dedicated verification callback and bounded pending-tab detection", () => {
+  it("uses server-verified registration OTP without polling or auth listeners", () => {
     const actions = source("src/app/auth/actions.ts");
     const form = source("src/components/auth/auth-form.tsx");
-    const monitor = source("src/lib/auth/verification-monitor.ts");
     expect(actions).toContain('getAuthCallbackUrl("email_verification")');
-    expect(actions).toContain("Confirm your email to finish creating your account.");
+    expect(actions).toContain('type: "signup"');
+    expect(actions).toContain('enforceSecurityRateLimit("auth:email-verify"');
     expect(form).toContain("maskEmailAddress(email)");
-    expect(form).toContain("Resend available in ${cooldown}s");
-    expect(form).toContain("Already confirmed on another device?");
-    expect(form).toContain('onTimeout: () => setVerificationState("timed_out")');
-    expect(form).toContain('router.replace("/dashboard")');
-    expect(form).not.toContain("useMemo(() => createSupabaseBrowserClient()");
-    expect(form).not.toContain("router.refresh()");
-    expect(monitor).toContain('addEventListener("focus"');
-    expect(monitor).toContain('addEventListener("visibilitychange"');
-    expect(monitor).toContain("VERIFICATION_POLL_INTERVAL_MS = 8_000");
-    expect(monitor).toContain("VERIFICATION_MAX_POLLS = 15");
-    expect(monitor).toContain("onTimeout()");
+    expect(form).toContain('autoComplete="one-time-code"');
+    expect(form).toContain('inputMode="numeric"');
+    expect(form).toContain("pending || !complete");
+    expect(form).not.toMatch(/createSupabaseBrowserClient|onAuthStateChange|setInterval\([^)]*8_000/);
   });
 
   it("shares one server auth interpretation and reconciles header session changes", () => {
@@ -59,7 +52,7 @@ describe("authentication contracts", () => {
     expect(env).toContain("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED");
     expect(env).toContain("NEXT_PUBLIC_PHONE_AUTH_ENABLED");
     expect(env.match(/\.default\("false"\)/g)?.length).toBeGreaterThanOrEqual(3);
-    expect(pages).toContain("availability.google || availability.phone");
+    expect(pages.match(/availability=\{availability\}/g)?.length).toBe(2);
   });
 
   it("uses Supabase provider APIs without custom token storage or token telemetry", () => {
@@ -69,6 +62,16 @@ describe("authentication contracts", () => {
     expect(actions).toContain("signInWithOtp");
     expect(actions).toContain("verifyOtp");
     expect(`${google}\n${actions}`).not.toMatch(/localStorage|provider_token|access_token|refresh_token/);
+  });
+
+  it("keeps Google outcomes specific and retryable", () => {
+    const callback = source("src/app/auth/callback/route.ts");
+    const login = source("src/app/login/page.tsx");
+    expect(callback).toContain('"google_expired"');
+    expect(callback).toContain('"google_unavailable"');
+    expect(login).toContain("Your Google sign-in attempt expired. Please try again.");
+    expect(login).toContain("Google sign-in is temporarily unavailable. Please try again.");
+    expect(login).not.toContain("Automatic sign-in is temporarily unavailable");
   });
 
   it("keeps every protected learning route behind the existing proxy", () => {
@@ -82,7 +85,7 @@ describe("authentication contracts", () => {
     const form = source("src/components/auth/auth-form.tsx");
     const pages = [source("src/app/login/page.tsx"), source("src/app/register/page.tsx")].join("\n");
 
-    expect(form).toContain('className="space-y-4"');
+    expect(form).toContain('compact ? "space-y-3" : "space-y-4"');
     expect(form).toContain('className="min-h-11 w-full"');
     expect(form).toContain('role="alert"');
     expect(`${form}\n${pages}`).not.toMatch(/\bfixed\b|\bsticky\b/);

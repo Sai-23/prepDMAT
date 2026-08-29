@@ -221,6 +221,7 @@ describe("application security boundary", () => {
     for (const operation of [
       "auth:login",
       "auth:signup",
+      "auth:email-verify",
       "auth:resend",
       "auth:password-reset",
       "auth:phone-request",

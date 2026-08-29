@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { noIndexMetadata } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  ...noIndexMetadata,
+  title: "Page not found",
+};
 
 export default function NotFound() {
   return (
@@ -12,8 +19,7 @@ export default function NotFound() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm leading-6 text-slate-600">
-            This page does not exist or may have moved
-            shell.
+            This page does not exist or may have moved.
           </p>
           <Button asChild>
             <Link href="/">Return home</Link>

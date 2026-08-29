@@ -1,9 +1,31 @@
 import { Clock3, FileCheck2, Layers3 } from "lucide-react";
+import type { Metadata } from "next";
 
 import { CoreFormatSamples } from "@/components/exam-format/core-format-samples";
-import { SectionHeading } from "@/components/shared/section-heading";
 import { Card, CardContent } from "@/components/ui/card";
 import { DMAT_CURRENT_CORE_PROTOCOL } from "@/lib/protocol";
+import { indexRobots, siteConfig, siteUrl } from "@/lib/site-config";
+
+const description = "Understand the dMAT Core Module format, including Figure Sequences, Mathematical Equations and Latin Squares, with timings and preparation guidance.";
+
+export const metadata: Metadata = {
+  title: "dMAT Exam Format & Core Module",
+  description,
+  alternates: { canonical: "/exam-format" },
+  robots: indexRobots,
+  openGraph: {
+    type: "website",
+    url: siteUrl("/exam-format"),
+    siteName: siteConfig.name,
+    title: "dMAT Exam Format & Core Module | PrepDMAT",
+    description,
+  },
+  twitter: {
+    card: "summary",
+    title: "dMAT Exam Format & Core Module | PrepDMAT",
+    description,
+  },
+};
 
 export default function ExamFormatPage() {
   const core = DMAT_CURRENT_CORE_PROTOCOL.core;
@@ -11,11 +33,13 @@ export default function ExamFormatPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-      <SectionHeading
-        eyebrow="Exam format"
-        title="Know what to expect on test day"
-        description="The dMAT is taken digitally and has a Core Module followed by a second 90-minute module. For the current APS route in India, that second part is the General Academic Module."
-      />
+      <header className="max-w-3xl space-y-4">
+        <p className="text-sm font-semibold text-primary">Exam format</p>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">dMAT exam format and Core Module</h1>
+          <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">The dMAT is taken digitally and has a Core Module followed by a second 90-minute module. For the current APS route in India, that second part is the General Academic Module.</p>
+        </div>
+      </header>
 
       <section aria-labelledby="exam-at-a-glance" className="space-y-5">
         <div>
