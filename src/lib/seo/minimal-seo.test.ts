@@ -113,4 +113,10 @@ describe("minimal production SEO", () => {
     expect(fs.existsSync(path.join(root, "src/app/icon.png"))).toBe(true);
     expect(fs.existsSync(path.join(root, "src/app/apple-icon.png"))).toBe(true);
   });
+
+  it("declares the stable favicon URL explicitly in root metadata", () => {
+    const layout = read("src/app/layout.tsx");
+    expect(layout).toContain('{ url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" }');
+    expect(layout).toContain('{ url: "/icon.png", sizes: "512x512", type: "image/png" }');
+  });
 });
