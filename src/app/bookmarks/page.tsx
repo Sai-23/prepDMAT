@@ -1,7 +1,10 @@
+import Link from "next/link";
+
 import { BookmarksLibrary } from "@/components/learning/bookmarks-library";
 import { PageShell } from "@/components/layout/page-shell";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
+import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/guards";
 import { getBookmarks } from "@/lib/learning/data";
 
@@ -29,6 +32,7 @@ export default async function BookmarksPage() {
         />
       ) : bookmarks.length === 0 ? (
         <EmptyState
+          action={<Button asChild><Link href="/tests">Start a mock</Link></Button>}
           title="No bookmarks yet"
           description="Save questions from a completed result or your mistake notebook and they will appear here."
         />

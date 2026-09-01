@@ -15,7 +15,13 @@ import {
 } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 
-export function SiteHeaderNavigation({ diagnosticStatus = null }: { diagnosticStatus?: StudentDiagnosticStatus | null }) {
+export function SiteHeaderNavigation({
+  diagnosticStatus = null,
+  isAuthenticated = false,
+}: {
+  diagnosticStatus?: StudentDiagnosticStatus | null;
+  isAuthenticated?: boolean;
+}) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const effectiveDiagnosticStatus = pathname.startsWith("/onboarding/diagnostic/summary")
@@ -99,6 +105,24 @@ export function SiteHeaderNavigation({ diagnosticStatus = null }: { diagnosticSt
                 </Link>
               );
             })}
+            {!isAuthenticated ? (
+              <>
+                <Link
+                  className="min-h-11 rounded-md px-3 py-3 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:hidden"
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  className="min-h-11 rounded-md px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:hidden"
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Create account
+                </Link>
+              </>
+            ) : null}
           </nav>
         </Dialog>
       </div>

@@ -78,7 +78,11 @@ export default async function ResultsPage({
       {loadError || !history ? (
         <ErrorState title="Results unavailable" description={loadError ?? "Unable to load your result history."} />
       ) : history.length === 0 ? (
-        <EmptyState title="No completed attempts yet" description="Complete a practice session or mock test and its detailed result will appear here." />
+        <EmptyState
+          action={<Button asChild><Link href="/tests">Browse mock tests <ArrowRight className="h-4 w-4" /></Link></Button>}
+          title="No completed mocks yet"
+          description="Complete a focused or Full Core mock and its detailed result will appear here. Recent Practice reviews are available from your Dashboard."
+        />
       ) : (
         <div className="space-y-4">
           {history.map((attempt) => (

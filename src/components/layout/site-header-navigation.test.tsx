@@ -20,6 +20,9 @@ describe("SiteHeaderNavigation", () => {
     expect(html).toContain('href="/results"');
     expect(html).toContain('href="/exam-format"');
     expect(html).toContain('href="/diagnostic"');
+    expect(html).toContain('href="/login"');
+    expect(html).toContain('href="/register"');
+    expect(html).toContain("Create account");
     expect(html.match(/>Free Diagnostic<\/a>/g)).toHaveLength(2);
     expect(html).not.toContain('href="/pricing"');
     expect(html).not.toContain(">Pricing</a>");
@@ -31,5 +34,12 @@ describe("SiteHeaderNavigation", () => {
     expect(html.match(/>Diagnostic Complete ✓<\/a>/g)).toHaveLength(2);
     expect(html.match(/href="\/onboarding\/diagnostic\/summary"/g)).toHaveLength(2);
     expect(html).not.toContain(">Free Diagnostic</a>");
+  });
+
+  it("does not show anonymous account links to an authenticated student", () => {
+    const html = renderToStaticMarkup(<SiteHeaderNavigation isAuthenticated />);
+
+    expect(html).not.toContain('href="/login"');
+    expect(html).not.toContain('href="/register"');
   });
 });

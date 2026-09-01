@@ -1,4 +1,5 @@
 import { MistakeNotebook } from "@/components/learning/mistake-notebook";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/page-shell";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -46,6 +47,7 @@ export default async function MistakesPage({ searchParams }: { searchParams: Pro
         />
       ) : mistakes.historyTotal === 0 ? (
         <EmptyState
+          action={<Button asChild><Link href="/practice">Start practice</Link></Button>}
           title="No mistakes recorded"
           description="Incorrect answers from completed practice sessions and mock tests are added automatically."
         />

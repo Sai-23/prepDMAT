@@ -34,6 +34,19 @@ export function MockAnalysisView({
         <div className="rounded-md border border-warning bg-warning-container p-4 text-sm text-warning-container-foreground" role="status">
           {analysis.limitation}
         </div>
+        <section aria-labelledby="focused-result-next-step" className="rounded-xl border border-primary bg-primary-muted p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div>
+            <p className="text-sm font-semibold text-primary">What next?</p>
+            <h2 className="mt-2 text-xl font-semibold" id="focused-result-next-step">Choose your next Core activity</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Review this attempt below, start a learning-focused practice set, or choose another timed mock.
+            </p>
+          </div>
+          <div className="mt-5 flex w-full flex-col gap-2 sm:mt-0 sm:w-auto sm:flex-row">
+            <Button asChild><Link href="/practice">Start practice</Link></Button>
+            <Button asChild variant="secondary"><Link href="/tests">Choose another mock</Link></Button>
+          </div>
+        </section>
         <section aria-labelledby="question-review" className="space-y-4">
           <SectionHeading id="question-review" title="Question review" description="The saved questions and explanations remain available for review." />
           <ResultReview questions={result.questions} />
