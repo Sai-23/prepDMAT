@@ -26,7 +26,7 @@ export default async function AdminTestEditPage({
   try {
     [test, questionBank] = await Promise.all([
       getEditableAdminTest(parsed.data),
-      getAdminQuestionBank(),
+      getAdminQuestionBank(parsed.data),
     ]);
   } catch {
     loadError = "Unable to load this test.";

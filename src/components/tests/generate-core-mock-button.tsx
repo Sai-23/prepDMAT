@@ -52,11 +52,11 @@ export function GenerateCoreMockButton() {
               : "Start a new full Core mock"}
       </Button>
       {state === "generating" ? (
-        <p className="text-sm text-slate-600" role="status">
+        <p className="text-sm text-on-surface-variant" role="status">
           This normally takes several seconds. Keep this page open while your mock is prepared.
         </p>
       ) : null}
-      {error ? <p className="text-sm text-red-700" role="alert">{error}</p> : null}
+      {error ? <p className="text-sm text-error" role="alert">{error}</p> : null}
     </div>
   );
 }

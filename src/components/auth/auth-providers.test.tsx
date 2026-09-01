@@ -3,16 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/auth/actions", () => ({
   googleSignInAction: vi.fn(),
-  requestPhoneOtpAction: vi.fn(),
-  verifyPhoneOtpAction: vi.fn(),
-  verifyRegistrationEmailOtpAction: vi.fn(),
-  resendVerificationAction: vi.fn(),
 }));
 
-import { AuthProviderOptions, maskPhoneNumber } from "./auth-providers";
+import { AuthProviderOptions } from "./auth-providers";
 
 describe("auth provider selector", () => {
-  it("shows Google and one compact Email/Phone mode selector", () => {
+  it("shows Google and email without rendering phone authentication UI", () => {
     const html = renderToStaticMarkup(
       <AuthProviderOptions
         availability={{ google: true, phone: true }}
@@ -21,12 +17,12 @@ describe("auth provider selector", () => {
     );
 
     expect(html).toContain("Continue with Google");
-    expect(html).toContain('role="tablist"');
-    expect(html).toContain('aria-selected="true"');
-    expect(html).toContain('id="auth-email-panel"');
-    expect(html).toContain('id="auth-phone-panel"');
-    expect(html).toMatch(/<div[^>]*hidden=""[^>]*id="auth-phone-panel"[^>]*role="tabpanel"/);
     expect(html).toContain("Email credentials");
+    expect(html).not.toContain("Phone");
+    expect(html).not.toContain("phone-number");
+    expect(html).not.toContain("auth-phone-panel");
+    expect(html).not.toContain("Send code");
+    expect(html).not.toContain('role="tablist"');
   });
 
   it("keeps the email form and hides disabled providers", () => {
@@ -40,10 +36,5 @@ describe("auth provider selector", () => {
     expect(html).toContain("Email only");
     expect(html).not.toContain("Continue with Google");
     expect(html).not.toContain('role="tablist"');
-  });
-
-  it("masks the canonical number shown after OTP send", () => {
-    expect(maskPhoneNumber("+919876543210")).toBe("+91 ••••••3210");
-    expect(maskPhoneNumber("+447700900123")).toBe("+44 ••••••0123");
   });
 });

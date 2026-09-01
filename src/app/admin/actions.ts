@@ -47,6 +47,7 @@ import {
 } from "@/lib/generation/figure-sequences";
 import {
   saveAdminTest,
+  selectAdminSmartFillQuestions,
   updateAdminTestPublication,
 } from "@/lib/admin/test-data";
 import {
@@ -63,6 +64,7 @@ import {
   adminTestBuilderSchema,
   adminTestIdSchema,
   adminTestLifecycleSchema,
+  adminSmartFillRequestSchema,
 } from "@/lib/admin/test-schemas";
 import { requireRole } from "@/lib/auth/guards";
 import {
@@ -615,8 +617,31 @@ export async function saveAdminTestAction(
   } catch (error) {
     return {
       status: "error",
-      message: "Unable to save this mock.",
+      message: error instanceof MockSaveError
+        ? error.publicMessage
+        : "Unable to save this mock.",
       diagnostic: error instanceof MockSaveError ? error.diagnostic : undefined,
+    };
+  }
+}
+
+export async function smartFillAdminQuestionsAction(input: unknown) {
+  await requireRole(["admin"]);
+  const parsed = adminSmartFillRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: "error" as const,
+      message:
+        parsed.error.issues[0]?.message ??
+        "Check the Smart Fill settings and try again.",
+    };
+  }
+  try {
+    return await selectAdminSmartFillQuestions(parsed.data);
+  } catch {
+    return {
+      status: "error" as const,
+      message: "Unable to select eligible questions. Refresh the builder and try again.",
     };
   }
 }

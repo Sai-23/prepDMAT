@@ -17,6 +17,8 @@ describe("public footer", () => {
     expect(html).toContain('href="/progress"');
     expect(html).toContain('href="/exam-format"');
     expect(html).toContain('href="/diagnostic"');
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain("Privacy Policy");
     expect(html).toContain('href="mailto:info@prepdmat.in"');
     expect(html).toContain("© 2026 PrepDMAT. All rights reserved.");
     expect(html).toContain("not affiliated with or endorsed by the official dMAT examination authorities or participating universities");
@@ -25,7 +27,7 @@ describe("public footer", () => {
     expect(html).toContain("min-h-11");
     expect(html).toContain("prepdmat-logo-light");
     expect(html).toContain("prepdmat-logo-dark");
-    expect(html).not.toMatch(/Privacy Policy|Terms of Service|About|FAQ/);
+    expect(html).not.toMatch(/Terms of Service|About|FAQ/);
   });
 
   it("renders a secure external Instagram link only when a real profile URL is configured", () => {
@@ -49,12 +51,13 @@ describe("public footer", () => {
     expect(resolveInstagramUrl("https://instagram.com/prepdmat")).toBe("https://instagram.com/prepdmat");
   });
 
-  it("is mounted only by the three public landing pages, outside the root layout", () => {
+  it("is mounted by public pages, including privacy, outside the root layout", () => {
     const read = (file: string) => readFileSync(resolve(process.cwd(), file), "utf8");
 
     expect(read("src/app/page.tsx")).toContain("<SiteFooter />");
     expect(read("src/app/exam-format/page.tsx")).toContain("<SiteFooter />");
     expect(read("src/app/diagnostic/page.tsx")).toContain("<SiteFooter />");
+    expect(read("src/app/privacy/page.tsx")).toContain("<SiteFooter />");
     expect(read("src/app/layout.tsx")).not.toContain("SiteFooter");
     expect(read("src/components/layout/site-footer.tsx")).toContain("new Date().getUTCFullYear()");
   });

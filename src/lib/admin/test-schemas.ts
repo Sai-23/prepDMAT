@@ -18,6 +18,10 @@ const testSectionSchema = z.object({
   module: nullableModule,
   sectionType: z.enum(["figure_sequence", "mathematical_equation", "latin_square", "mixed"]),
   durationSeconds: z.coerce.number().int().min(60).max(14_400),
+  focusDifficulty: z
+    .union([z.enum(["easy", "medium", "hard"]), z.literal(""), z.null()])
+    .optional()
+    .transform((value) => value || null),
   questionIds: z.array(z.string().uuid()).min(1).max(100),
 });
 
@@ -61,6 +65,17 @@ export const adminTestBuilderSchema = z
       });
     }
     value.sections.forEach((section, index) => {
+      if (
+        value.testType === "sectional" &&
+        section.sectionType !== "mixed" &&
+        !section.focusDifficulty
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["sections", index, "focusDifficulty"],
+          message: "Choose a difficulty for each focused sectional mock.",
+        });
+      }
       if (value.module && section.module && section.module !== value.module) {
         context.addIssue({
           code: "custom",
@@ -73,12 +88,70 @@ export const adminTestBuilderSchema = z
 
 export const adminTestIdSchema = z.string().uuid();
 
+export const SMART_FILL_MAX_QUESTION_COUNT = 100;
+
+export const smartFillTargetCountSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string" && value.trim() !== "") {
+      return Number(value);
+    }
+    return Number.NaN;
+  },
+  z.number()
+    .finite("Enter a valid question count.")
+    .int("Enter a whole-number question count.")
+    .min(1, "Question count must be at least 1.")
+    .max(
+      SMART_FILL_MAX_QUESTION_COUNT,
+      `Question count cannot exceed ${SMART_FILL_MAX_QUESTION_COUNT}.`,
+    ),
+);
+
+export const adminSmartFillRequestSchema = z
+  .object({
+    testId: adminTestIdSchema.optional(),
+    questionType: z.enum([
+      "figure_sequence",
+      "mathematical_equation",
+      "latin_square",
+    ]),
+    difficulty: z.enum(["easy", "medium", "hard"]),
+    targetCount: smartFillTargetCountSchema,
+    existingQuestionIds: z.array(z.string().uuid()).max(SMART_FILL_MAX_QUESTION_COUNT),
+    otherQuestionIds: z.array(z.string().uuid()).max(200),
+    allowPublishedFocusedReuse: z.boolean(),
+    mode: z.enum(["fill", "regenerate"]),
+    seed: z.string().trim().min(1).max(200),
+  })
+  .superRefine((value, context) => {
+    if (new Set(value.existingQuestionIds).size !== value.existingQuestionIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["existingQuestionIds"],
+        message: "The current section contains duplicate questions.",
+      });
+    }
+    const otherIds = new Set(value.otherQuestionIds);
+    if (
+      new Set(value.otherQuestionIds).size !== value.otherQuestionIds.length ||
+      value.existingQuestionIds.some((questionId) => otherIds.has(questionId))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["otherQuestionIds"],
+        message: "Questions must be unique across the mock.",
+      });
+    }
+  });
+
 export const adminTestLifecycleSchema = z.object({
   testId: adminTestIdSchema,
   action: z.enum(["publish", "unpublish"]),
 });
 
 export type AdminTestBuilderInput = z.infer<typeof adminTestBuilderSchema>;
+export type AdminSmartFillRequest = z.infer<typeof adminSmartFillRequestSchema>;
 
 export type AdminQuestionBankItem = {
   id: string;
@@ -92,6 +165,8 @@ export type AdminQuestionBankItem = {
   difficulty: "easy" | "medium" | "hard";
   questionText: string;
   estimatedTimeSeconds: number;
+  selectionFamily?: string | null;
+  usedInPublishedFocusedMock?: boolean;
 };
 
 export type EditableAdminTest = {
@@ -110,6 +185,7 @@ export type EditableAdminTest = {
     sectionType: "figure_sequence" | "mathematical_equation" | "latin_square" | "mixed";
     module: "core" | null;
     durationSeconds: number;
+    focusDifficulty: "easy" | "medium" | "hard" | null;
     questionIds: string[];
   }>;
 };

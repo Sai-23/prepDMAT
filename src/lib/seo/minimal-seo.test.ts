@@ -7,6 +7,7 @@ import nextConfig from "../../../next.config";
 import { metadata as diagnosticMetadata } from "@/app/diagnostic/page";
 import { metadata as examFormatMetadata } from "@/app/exam-format/page";
 import { metadata as homeMetadata } from "@/app/page";
+import { metadata as privacyMetadata } from "@/app/privacy/page";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import {
@@ -27,7 +28,7 @@ describe("minimal production SEO", () => {
     expect(read("src/lib/site-config.ts")).not.toContain("NEXT_PUBLIC_APP_URL");
   });
 
-  it("defines unique indexable metadata for the three public acquisition pages", () => {
+  it("defines unique indexable metadata for the public pages", () => {
     expect(homeMetadata.title).toEqual({ absolute: siteConfig.defaultTitle });
     expect(homeMetadata.description).toBe(siteConfig.description);
     expect(homeMetadata.alternates).toEqual({ canonical: "https://prepdmat.in/" });
@@ -40,7 +41,10 @@ describe("minimal production SEO", () => {
     expect(diagnosticMetadata.description).not.toBe(siteConfig.description);
     expect(diagnosticMetadata.alternates).toEqual({ canonical: "/diagnostic" });
 
-    for (const metadata of [homeMetadata, examFormatMetadata, diagnosticMetadata]) {
+    expect(privacyMetadata.title).toEqual({ absolute: "Privacy Policy | PrepDMAT" });
+    expect(privacyMetadata.alternates).toEqual({ canonical: "/privacy" });
+
+    for (const metadata of [homeMetadata, examFormatMetadata, diagnosticMetadata, privacyMetadata]) {
       expect(metadata.robots).toMatchObject({ index: true, follow: true });
     }
   });
@@ -69,6 +73,7 @@ describe("minimal production SEO", () => {
       { url: "https://prepdmat.in/" },
       { url: "https://prepdmat.in/exam-format" },
       { url: "https://prepdmat.in/diagnostic" },
+      { url: "https://prepdmat.in/privacy" },
     ]);
     expect(JSON.stringify(sitemap())).not.toMatch(/admin|auth|attempt|result|login/);
   });

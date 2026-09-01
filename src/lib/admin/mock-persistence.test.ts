@@ -19,12 +19,14 @@ function section(
   count: number,
   offset: number,
   durationSeconds = 1_500,
+  focusDifficulty: "easy" | "medium" | "hard" | null = null,
 ) {
   return {
     title: sectionType,
     module: "core" as const,
     sectionType,
     durationSeconds,
+    focusDifficulty,
     questionIds: Array.from({ length: count }, (_, index) => questionId(offset + index)),
   };
 }
@@ -68,6 +70,7 @@ describe("Mock template persistence contract", () => {
     ]);
     expect(rows.map((row) => row.sort_order)).toEqual([1, 2, 3]);
     expect(rows.map((row) => row.duration_seconds)).toEqual([60, 60, 60]);
+    expect(rows.map((row) => row.focus_difficulty)).toEqual([null, null, null]);
     expect(mappings.map((row) => row.sort_order)).toEqual([1, 1, 1]);
     expect(new Set(mappings.map((row) => `${row.test_section_id}:${row.question_id}`)).size).toBe(3);
   });
@@ -99,6 +102,13 @@ describe("Mock template persistence contract", () => {
       section("latin_square", 4, 13, 480),
     ]).sections.map((item) => item.questionIds.length)).toEqual([5, 7, 4]);
     expect(input([section("mathematical_equation", 10, 1, 1_200)]).sections).toHaveLength(1);
+  });
+
+  it("persists the declared difficulty for a focused sectional mock", () => {
+    const focused = input([
+      section("mathematical_equation", 10, 1, 1_200, "hard"),
+    ], "sectional");
+    expect(buildMockSectionRows(questionId(900), focused)[0].focus_difficulty).toBe("hard");
   });
 
   it("rejects a duplicate question before persistence", () => {

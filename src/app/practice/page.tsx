@@ -67,8 +67,7 @@ export default async function PracticePage({
   return (
     <PageShell
       eyebrow="Practice"
-      title="What do you want to practise?"
-      description="Choose a Core module, answer at your own pace or against the clock, and learn from feedback after each question."
+      title="Practice"
     >
       {loadError || !performance ? (
         <ErrorState title="Practice is not ready" description={loadError ?? "Unable to load practice."} />

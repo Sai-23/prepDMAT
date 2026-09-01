@@ -32,8 +32,8 @@ describe("Student Experience 2.0 Core format fidelity", () => {
   });
 
   it("keeps Practice module-first and reveals setup only after selection", () => {
-    expect(practice).toContain("What do you want to practise?");
-    expect(practice).toContain("{selectedModule ? <Card>");
+    expect(practice).toContain("Choose a Core module");
+    expect(practice).toContain("{selectedModule ? (");
     expect(practice).not.toContain("No completed sessions yet");
     expect(practice).not.toContain("Generating validated questions");
   });

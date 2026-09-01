@@ -18,6 +18,7 @@ import {
 } from "@/app/practice/actions";
 import { AssessmentActionZone, AssessmentShell } from "@/components/assessment/assessment-shell";
 import { ActionError } from "@/components/shared/action-error";
+import { CoreModuleMotif } from "@/components/tests/mock-category-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -51,10 +52,10 @@ const MathematicalEquationPracticeFeedback = dynamic(
   { loading: () => <p className="text-sm text-muted-foreground">Preparing worked explanation…</p> },
 );
 
-const MODULES: Array<{ value: PracticeModule; title: string; description: string; motif: string }> = [
-  { value: "figure_sequence", title: "Figure Sequences", description: "Continue visual patterns", motif: "◇ →" },
-  { value: "mathematical_equation", title: "Mathematical Equations", description: "Solve for each letter", motif: "A =" },
-  { value: "latin_square", title: "Latin Squares", description: "Complete the 5 × 5 grid", motif: "A–E" },
+const MODULES: Array<{ value: PracticeModule; title: string; description: string }> = [
+  { value: "figure_sequence", title: "Figure Sequences", description: "Continue visual patterns" },
+  { value: "mathematical_equation", title: "Mathematical Equations", description: "Solve for each letter" },
+  { value: "latin_square", title: "Latin Squares", description: "Complete the 5 × 5 grid" },
 ];
 
 function moduleTitle(module: PracticeModule) {
@@ -231,53 +232,97 @@ export function PracticeExperience({
     );
   }
 
+  const recentAccuracy = selectedModule
+    ? performance.find((entry) => entry.module === selectedModule)?.accuracy
+    : null;
+  const timingLabel = PRACTICE_TIMING_MODES.find(
+    (mode) => mode.value === timingMode,
+  )?.title ?? timingMode;
+  const difficultyLabel = `${difficulty.charAt(0).toUpperCase()}${difficulty.slice(1)}`;
+  const selectionSummary = selectedModule
+    ? `${moduleTitle(selectedModule)} · ${difficultyLabel} · ${questionCount} questions · ${timingLabel}`
+    : null;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <section aria-labelledby="choose-module">
-        <div className="mb-5">
-          <h2 className="text-2xl font-semibold" id="choose-module">What do you want to practise?</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Choose one Core module to begin.</p>
+        <div className="mb-3">
+          <h2 className="text-xl font-semibold text-on-surface" id="choose-module">Choose a Core module</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">Select what you want to practise.</p>
         </div>
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((item) => {
             const selected = selectedModule === item.value;
             return (
-              <button aria-pressed={selected} className={`group min-h-40 rounded-xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${selected ? "border-primary bg-primary-muted ring-2 ring-primary" : "border-workspace-border bg-surface-lowest hover:border-primary hover:bg-surface-low"}`} key={item.value} onClick={() => setSelectedModule(item.value)} type="button">
-                <span className="flex items-start justify-between gap-4">
-                  <span className="text-lg font-semibold">{item.title}</span>
-                  <span aria-hidden="true" className="font-mono text-xl font-semibold text-primary">{item.motif}</span>
+              <button aria-pressed={selected} className={`group relative min-h-28 overflow-hidden rounded-xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none ${selected ? "border-primary bg-primary-muted ring-2 ring-primary" : "border-workspace-border bg-surface-lowest hover:border-primary hover:bg-surface-low"}`} key={item.value} onClick={() => setSelectedModule(item.value)} type="button">
+                <span aria-hidden="true" className="absolute -bottom-2 right-1 h-20 w-24 rounded-lg bg-surface-high text-primary opacity-45">
+                  <CoreModuleMotif moduleType={item.value} />
                 </span>
-                <span className="mt-8 block text-sm text-muted-foreground">{item.description}</span>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary">Choose module <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
+                <span className="relative z-10 flex max-w-[75%] flex-col">
+                  <span className="text-base font-semibold text-on-surface">{item.title}</span>
+                  <span className="mt-1 text-sm text-on-surface-variant">{item.description}</span>
+                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                    {selected ? <><CheckCircle2 aria-hidden="true" className="size-4" />Selected</> : <>Select module<ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" /></>}
+                  </span>
+                </span>
               </button>
             );
           })}
         </div>
       </section>
 
-      {selectedModule ? <Card>
-        <CardHeader><CardTitle>Configure your session</CardTitle><CardDescription>Practice is for learning: answers lock after checking and a worked explanation is available immediately. Mock tests remain assessment-only and are stored separately.</CardDescription></CardHeader>
-        <CardContent className="space-y-6">
-          <>
-              {performance.find((entry) => entry.module === selectedModule)?.accuracy != null ? <p className="text-sm text-muted-foreground">Recent accuracy: {Math.round(performance.find((entry) => entry.module === selectedModule)!.accuracy!)}%</p> : null}
-              {initialConfig?.questionId ? (
-                <p className="rounded-md border border-primary bg-primary-muted p-4 text-sm"><strong>Exact-question review:</strong> this approved question will open as a one-question, untimed learning session.</p>
-              ) : <>
+      {selectedModule ? (
+        <Card>
+          <CardHeader className="p-4 pb-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <CardTitle>Configure your session</CardTitle>
+                <CardDescription className="mt-1">Answers lock after checking and worked explanations appear immediately.</CardDescription>
+              </div>
+              {recentAccuracy != null ? (
+                <p className="rounded-md bg-surface-low px-3 py-2 text-sm text-on-surface-variant">
+                  Recent accuracy: <strong className="text-on-surface">{Math.round(recentAccuracy)}%</strong>
+                </p>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 p-4 pt-0">
+            {initialConfig?.questionId ? (
+              <p className="rounded-md border border-primary bg-primary-muted p-3 text-sm"><strong>Exact-question review:</strong> this approved question will open as a one-question, untimed learning session.</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_1.4fr]">
                 <ChoiceGroup label="Difficulty" options={["easy", "medium", "hard", "mixed"]} selected={difficulty} onSelect={(value) => setDifficulty(value as PracticeConfig["difficulty"])} />
                 <ChoiceGroup label="Questions" options={["5", "10", "20"]} selected={String(questionCount)} onSelect={(value) => setQuestionCount(Number(value) as 5 | 10 | 20)} />
-                <div><p className="mb-2 text-sm font-semibold">Timing</p><div className="grid gap-3 sm:grid-cols-2">{PRACTICE_TIMING_MODES.map((mode) => <button aria-pressed={timingMode === mode.value} className={`rounded-md border p-4 text-left ${timingMode === mode.value ? "border-primary bg-primary-muted" : "border-workspace-border"}`} key={mode.value} onClick={() => setTimingMode(mode.value)} type="button"><span className="font-semibold">{mode.title}</span><span className="mt-1 block text-sm text-muted-foreground">{mode.description}{mode.value === "timed" && questionCount === 20 ? " Uses the official 25-minute module pace." : ""}</span></button>)}</div></div>
-              </>}
-              {error ? <ActionError action={{ label: "Retry", onClick: startPractice, disabled: isPending }} description={`${error} Your practice wasn't created.`} title="Couldn't start this practice" /> : null}
-              {!error ? <Button className="min-h-11" disabled={isPending} onClick={startPractice} size="lg">{isPending ? "Preparing questions…" : "Start practice"}<ArrowRight className="h-4 w-4" /></Button> : null}
-            </>
-        </CardContent>
-      </Card> : null}
+                <fieldset className="min-w-0 rounded-lg border border-workspace-border bg-surface-low p-3 md:col-span-2 lg:col-span-1">
+                  <legend className="px-1 text-sm font-semibold text-on-surface">Timing</legend>
+                  <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                    {PRACTICE_TIMING_MODES.map((mode) => (
+                      <button aria-pressed={timingMode === mode.value} className={`min-h-11 rounded-md border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${timingMode === mode.value ? "border-primary bg-primary-muted" : "border-workspace-border bg-surface-lowest hover:border-primary"}`} key={mode.value} onClick={() => setTimingMode(mode.value)} type="button">
+                        <span className="block text-sm font-semibold text-on-surface">{mode.title}</span>
+                        <span className="mt-0.5 block text-xs leading-5 text-on-surface-variant">{mode.value === "untimed" ? "No countdown" : questionCount === 20 ? "Official 25-minute pace" : "Timed target pace"}</span>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+            )}
+            {error ? <ActionError action={{ label: "Retry", onClick: startPractice, disabled: isPending }} description={`${error} Your practice wasn't created.`} title="Couldn't start this practice" /> : null}
+            <div className="flex flex-col gap-3 border-t border-workspace-separator pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p aria-live="polite" className="text-sm font-medium text-on-surface-variant">
+                {initialConfig?.questionId ? `${moduleTitle(selectedModule)} · Exact-question review · Untimed learning` : selectionSummary}
+              </p>
+              {!error ? <Button className="min-h-11 w-full sm:w-auto" disabled={isPending} onClick={startPractice} size="lg">{isPending ? "Preparing questions…" : "Start practice"}<ArrowRight aria-hidden="true" className="h-4 w-4" /></Button> : null}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
 
 function ChoiceGroup({ label, options, selected, onSelect }: { label: string; options: string[]; selected: string; onSelect(value: string): void }) {
-  return <div><p className="mb-2 text-sm font-semibold">{label}</p><div className="flex flex-wrap gap-2">{options.map((option) => <button aria-pressed={selected === option} className={`min-w-20 rounded-md border px-4 py-2 text-sm font-semibold capitalize ${selected === option ? "border-primary bg-primary text-primary-foreground" : "border-workspace-border"}`} key={option} onClick={() => onSelect(option)} type="button">{option}</button>)}</div></div>;
+  const columns = options.length === 4 ? "grid-cols-2" : "grid-cols-3";
+  return <fieldset className="min-w-0 rounded-lg border border-workspace-border bg-surface-low p-3"><legend className="px-1 text-sm font-semibold text-on-surface">{label}</legend><div className={`mt-1 grid gap-2 ${columns}`}>{options.map((option) => <button aria-pressed={selected === option} className={`min-h-11 min-w-0 rounded-md border px-3 py-2 text-sm font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected === option ? "border-primary bg-primary text-primary-foreground" : "border-workspace-border bg-surface-lowest text-on-surface hover:border-primary"}`} key={option} onClick={() => onSelect(option)} type="button">{option}</button>)}</div></fieldset>;
 }
 
 function PracticeSession({ session, answer, feedback, canSubmit, expired, error, isPending, onAnswer, onSubmit, onAdvance, onExplanation, onExit, onExpire }: {

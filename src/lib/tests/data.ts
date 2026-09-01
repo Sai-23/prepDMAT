@@ -44,6 +44,7 @@ type SectionRow = {
   duration_seconds: number;
   sort_order: number;
   section_type: string;
+  focus_difficulty: PracticeQuestion["difficulty"] | null;
 };
 
 type MappingRow = {
@@ -223,7 +224,7 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
   const [{ data: sectionData }, premiumAccess, { data: attemptSummaryData, error: attemptSummaryError }] = await Promise.all([
     admin
       .from("test_sections")
-      .select("id, test_id, title, section_type, duration_seconds, sort_order")
+      .select("id, test_id, title, section_type, focus_difficulty, duration_seconds, sort_order")
       .in("test_id", testIds)
       .eq("is_current", true),
     hasPremiumAccess(userId),
@@ -254,6 +255,9 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
     const testSections = sections.filter((section) => section.test_id === test.id);
     const testSectionIds = new Set(testSections.map((section) => section.id));
     const moduleType = resolveCatalogModuleType(testSections.map((section) => section.section_type));
+    const focusDifficulty = testSections.length === 1
+      ? testSections[0].focus_difficulty
+      : null;
     const attempt = summaries.get(test.id);
     return {
       id: test.id,
@@ -262,6 +266,7 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
       testType: test.test_type,
       module: test.module,
       moduleType,
+      focusDifficulty,
       durationSeconds: test.duration_seconds,
       isPremium: test.is_premium,
       sectionCount: testSections.length,

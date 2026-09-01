@@ -3,32 +3,57 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const catalog = readFileSync(resolve(process.cwd(), "src/app/tests/page.tsx"), "utf8");
+const mockLibrary = readFileSync(resolve(process.cwd(), "src/components/tests/mock-library.tsx"), "utf8");
+const categoryCard = readFileSync(resolve(process.cwd(), "src/components/tests/mock-category-card.tsx"), "utf8");
+const generationButton = readFileSync(resolve(process.cwd(), "src/components/tests/generate-core-mock-button.tsx"), "utf8");
 const overview = readFileSync(resolve(process.cwd(), "src/app/tests/[testId]/page.tsx"), "utf8");
 const runner = readFileSync(resolve(process.cwd(), "src/components/tests/test-runner.tsx"), "utf8");
 const testData = readFileSync(resolve(process.cwd(), "src/lib/tests/data.ts"), "utf8");
 
 describe("Mock Test student experience contract", () => {
   it("distinguishes official-format full Core work from custom mocks", () => {
+    expect(catalog).toContain("Practise under test conditions");
     expect(catalog).toContain("Official Core format");
     expect(catalog).toContain("Full Core mock");
-    expect(catalog).toContain("Mock library");
-    expect(catalog).toContain("Figure Sequences");
-    expect(catalog).toContain("Mathematical Equations");
-    expect(catalog).toContain("Latin Squares");
+    expect(catalog).toContain("<GenerateCoreMockButton />");
+    expect(generationButton).toContain("generateCoreMockForCurrentUser");
+    expect(catalog).toContain('title={selectedCategory?.title ?? "Mock Tests"}');
+    expect(catalog).toContain("MockCategoryGrid");
+    expect(mockLibrary).toContain("summarizeMockCategories");
+    expect(categoryCard).toContain("progress.totalCount");
+    expect(categoryCard).toContain("progress.percentage");
     expect(catalog).toContain("DMAT_CURRENT_CORE_PROTOCOL");
   });
 
-  it("loads one batched attempt summary and offers clear start, resume, and retake actions", () => {
+  it("keeps Mixed Core available as a legacy detail route but out of the focused landing grid", () => {
+    expect(catalog).toContain('selectedCategory.key === "mixed-core"');
+    expect(mockLibrary).toContain("category.moduleType !== null");
+    expect(mockLibrary).toContain("lg:grid-cols-3");
+    expect(mockLibrary).not.toContain("onDemandMixedAvailable");
+  });
+
+  it("renders only published database-backed catalog entries without hardcoded focused mocks", () => {
+    expect(catalog).toContain("getTestCatalog");
+    expect(catalog).toContain("getMockCategory");
+    expect(mockLibrary).toContain("getMocksForCategory");
+    expect(testData).toContain('.eq("is_published", true)');
+    expect(catalog).not.toContain("Focused Mock 1");
+    expect(catalog).not.toContain("Focused Mock 2");
+  });
+
+  it("loads one batched completed-attempt summary and offers clear start, resume, and retake actions", () => {
     expect(testData).toContain('admin.rpc("get_curated_test_attempt_summaries"');
-    expect(catalog).toContain('"Start mock"');
-    expect(catalog).toContain('"Resume mock"');
-    expect(catalog).toContain('"Try again"');
-    expect(catalog).toContain("summary.bestScore");
-    expect(catalog).toContain("summary.latestScore");
-    expect(catalog).toContain("summary.attemptCount");
+    expect(mockLibrary).toContain('"Start mock"');
+    expect(mockLibrary).toContain('"Resume mock"');
+    expect(mockLibrary).toContain('"Try again"');
+    expect(mockLibrary).toContain("test.attemptSummary.bestScore");
+    expect(mockLibrary).toContain("bestScorePercentage");
+    expect(mockLibrary).toContain("Your best score:");
+    expect(mockLibrary).toContain("Not attempted yet");
     const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/202608290028_public_diagnostic_and_mock_summaries.sql"), "utf8");
     expect(migration).toContain("count(attempts.id) filter");
     expect(migration).toContain("max(attempts.score) filter");
+    expect(migration).toContain("attempts.status in ('submitted', 'auto_submitted')");
     expect(migration).toContain("order by attempts.submitted_at desc nulls last");
   });
 

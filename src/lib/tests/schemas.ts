@@ -33,6 +33,7 @@ export type TestCatalogItem = {
   testType: "diagnostic" | "mini_mock" | "full_mock" | "sectional";
   module: "core" | null;
   moduleType: PracticeQuestion["questionType"] | null;
+  focusDifficulty: PracticeQuestion["difficulty"] | null;
   durationSeconds: number;
   isPremium: boolean;
   sectionCount: number;
@@ -48,7 +49,10 @@ export type TestCatalogItem = {
   };
 };
 
-export type TestOverview = Omit<TestCatalogItem, "moduleType" | "attemptSummary"> & {
+export type TestOverview = Omit<
+  TestCatalogItem,
+  "moduleType" | "focusDifficulty" | "attemptSummary"
+> & {
   instructions: string | null;
   sections: Array<{
     id: string;

@@ -9,7 +9,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type MarketingProfile = {
   marketing_email_opt_in: boolean;
-  marketing_sms_opt_in: boolean;
 };
 
 export default async function ProfilePage() {
@@ -17,7 +16,7 @@ export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("marketing_email_opt_in, marketing_sms_opt_in")
+    .select("marketing_email_opt_in")
     .eq("id", user.id)
     .single()
     .overrideTypes<MarketingProfile, { merge: false }>();
@@ -43,12 +42,6 @@ export default async function ProfilePage() {
                 {user.email ?? "No email linked"}
               </p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Phone</p>
-              <p className="mt-1 font-semibold text-on-surface">
-                {user.phone ?? "No phone linked"}
-              </p>
-            </div>
             <form action={logoutAction}>
               <Button type="submit" variant="outline">Sign out</Button>
             </form>
@@ -72,8 +65,6 @@ export default async function ProfilePage() {
             <MarketingPreferencesForm
               emailOptIn={profile?.marketing_email_opt_in ?? false}
               hasEmail={Boolean(user.email)}
-              hasPhone={Boolean(user.phone)}
-              smsOptIn={profile?.marketing_sms_opt_in ?? false}
             />
           </CardContent>
         </Card>

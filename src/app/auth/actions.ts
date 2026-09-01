@@ -576,7 +576,6 @@ export async function saveMarketingPreferencesAction(
   if (!user) return { status: "error", message: "Sign in to update preferences." };
 
   const emailOptIn = formData.get("marketingEmailOptIn") === "on";
-  const smsOptIn = formData.get("marketingSmsOptIn") === "on";
   const now = new Date().toISOString();
   const admin = createSupabaseAdminClient();
   const { error } = await admin
@@ -584,9 +583,7 @@ export async function saveMarketingPreferencesAction(
     .update({
       marketing_email_opt_in: emailOptIn,
       marketing_email_opt_in_at: emailOptIn ? now : null,
-      marketing_sms_opt_in: smsOptIn,
-      marketing_sms_opt_in_at: smsOptIn ? now : null,
-      marketing_consent_version: emailOptIn || smsOptIn ? "auth-consent-v1" : null,
+      ...(emailOptIn ? { marketing_consent_version: "auth-consent-v1" } : {}),
     })
     .eq("id", user.id);
 

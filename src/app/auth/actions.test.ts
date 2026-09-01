@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   enforceRateLimit: vi.fn(),
   createServerClient: vi.fn(),
+  createAdminClient: vi.fn(),
   getPostAuthRoute: vi.fn(),
   redirect: vi.fn(),
   revalidatePath: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: mocks.createServerClient,
 }));
 vi.mock("@/lib/supabase/admin", () => ({
-  createSupabaseAdminClient: vi.fn(),
+  createSupabaseAdminClient: mocks.createAdminClient,
 }));
 vi.mock("@/lib/onboarding/public-diagnostic", () => ({
   claimPublicDiagnosticForUser: mocks.claimPublicDiagnostic,
@@ -38,6 +39,7 @@ import {
   registerAction,
   requestPhoneOtpAction,
   resendVerificationAction,
+  saveMarketingPreferencesAction,
   verifyRegistrationEmailOtpAction,
   verifyPhoneOtpAction,
   type AuthActionState,
@@ -564,5 +566,40 @@ describe("optional auth providers", () => {
       message: "The code is invalid or expired. Request a new code and try again.",
     });
     expect(JSON.stringify(result)).not.toContain("provider internals");
+  });
+});
+
+describe("marketing preferences", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("updates email consent without overwriting dormant SMS consent fields", async () => {
+    mocks.createServerClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: "student-id" } } }),
+      },
+    });
+    const eq = vi.fn().mockResolvedValue({ error: null });
+    const update = vi.fn().mockReturnValue({ eq });
+    mocks.createAdminClient.mockReturnValue({
+      from: vi.fn().mockReturnValue({ update }),
+    });
+    const formData = new FormData();
+    formData.set("marketingEmailOptIn", "on");
+    formData.set("marketingSmsOptIn", "on");
+
+    const result = await saveMarketingPreferencesAction(idle, formData);
+
+    expect(update).toHaveBeenCalledWith({
+      marketing_email_opt_in: true,
+      marketing_email_opt_in_at: expect.any(String),
+      marketing_consent_version: "auth-consent-v1",
+    });
+    expect(eq).toHaveBeenCalledWith("id", "student-id");
+    expect(result).toEqual({
+      status: "success",
+      message: "Marketing preferences updated.",
+    });
   });
 });

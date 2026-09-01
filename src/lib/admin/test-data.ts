@@ -2,10 +2,15 @@ import "server-only";
 
 import type {
   AdminQuestionBankItem,
+  AdminSmartFillRequest,
   AdminTestBuilderInput,
   AdminTestListItem,
   EditableAdminTest,
 } from "@/lib/admin/test-schemas";
+import {
+  getSmartFillTargetState,
+  selectSmartFillQuestions,
+} from "@/lib/admin/mock-builder";
 import {
   buildMockQuestionRows,
   buildMockSectionRows,
@@ -15,6 +20,28 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { validateOfficialFullMockSections } from "@/lib/tests/exam-spec";
 
 const PRACTICE_TEST_ID = "00000000-0000-4000-8000-000000000001";
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function questionSelectionFamily(metadata: unknown) {
+  const root = recordValue(metadata);
+  const generation = recordValue(root?.generation) ?? root;
+  if (!generation) return null;
+  const direct = [
+    generation.reasoningFamily,
+    generation.generatorFamily,
+    generation.structuralFamily,
+  ].find((value) => typeof value === "string" && value.trim());
+  if (typeof direct === "string") return direct;
+  const profile = recordValue(generation.structuralProfile);
+  const profileFamily = [profile?.family, profile?.reasoningFamily, profile?.patternFamily]
+    .find((value) => typeof value === "string" && value.trim());
+  return typeof profileFamily === "string" ? profileFamily : null;
+}
 
 function totalDuration(input: AdminTestBuilderInput) {
   return input.sections.reduce(
@@ -64,7 +91,7 @@ async function validateQuestionAssignments(input: AdminTestBuilderInput) {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("questions")
-    .select("id, module, question_type")
+    .select("id, module, question_type, difficulty")
     .in("id", questionIds)
     .eq("module", "core")
     .eq("verification_status", "approved")
@@ -117,6 +144,14 @@ async function validateQuestionAssignments(input: AdminTestBuilderInput) {
       }
       if (section.sectionType !== "mixed" && question.question_type !== section.sectionType) {
         throw mockSaveFailure(`Every question in “${section.title}” must match its section type.`, {
+          stage: "question_validation",
+          sectionType: section.sectionType,
+          sectionIndex: sectionIndex + 1,
+          questionCount: section.questionIds.length,
+        });
+      }
+      if (section.focusDifficulty && question.difficulty !== section.focusDifficulty) {
+        throw mockSaveFailure(`Every question in “${section.title}” must be ${section.focusDifficulty}.`, {
           stage: "question_validation",
           sectionType: section.sectionType,
           sectionIndex: sectionIndex + 1,
@@ -181,23 +216,61 @@ async function insertTestSections(
   return sections;
 }
 
-export async function getAdminQuestionBank(): Promise<
+export async function getAdminQuestionBank(
+  excludeFocusedTestId?: string,
+): Promise<
   AdminQuestionBankItem[]
 > {
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
+  const focusedTestQuery = admin
+    .from("tests")
+    .select("id")
+    .eq("test_type", "sectional")
+    .eq("is_published", true);
+  const [{ data, error }, { data: focusedTests, error: focusedTestError }] = await Promise.all([
+    admin
     .from("questions")
     .select(
-      "id, module, question_type, topic, subtopic, difficulty, question_text, estimated_time_seconds",
+      "id, module, question_type, topic, subtopic, difficulty, question_text, estimated_time_seconds, metadata",
     )
     .eq("module", "core")
     .eq("verification_status", "approved")
     .eq("publication_status", "published")
     .is("deleted_at", null)
     .order("topic", { ascending: true })
-    .limit(1000);
+    .limit(1000),
+    excludeFocusedTestId
+      ? focusedTestQuery.neq("id", excludeFocusedTestId)
+      : focusedTestQuery,
+  ]);
 
-  if (error) throw new Error("Unable to load the approved question bank.");
+  if (error || focusedTestError) {
+    throw new Error("Unable to load the approved question bank.");
+  }
+
+  const focusedTestIds = (focusedTests ?? []).map((test) => test.id);
+  const { data: focusedSections, error: focusedSectionError } = focusedTestIds.length
+    ? await admin
+        .from("test_sections")
+        .select("id")
+        .in("test_id", focusedTestIds)
+        .eq("is_current", true)
+        .neq("section_type", "mixed")
+    : { data: [], error: null };
+  if (focusedSectionError) throw new Error("Unable to load focused mock usage.");
+
+  const focusedSectionIds = (focusedSections ?? []).map((section) => section.id);
+  const { data: focusedMappings, error: focusedMappingError } = focusedSectionIds.length
+    ? await admin
+        .from("test_questions")
+        .select("question_id")
+        .in("test_section_id", focusedSectionIds)
+    : { data: [], error: null };
+  if (focusedMappingError) throw new Error("Unable to load focused mock usage.");
+  const protectedQuestionIds = new Set(
+    (focusedMappings ?? []).map((mapping) => mapping.question_id),
+  );
+
   return (data ?? []).map((question) => ({
     id: question.id,
     module: question.module,
@@ -207,7 +280,123 @@ export async function getAdminQuestionBank(): Promise<
     difficulty: question.difficulty,
     questionText: question.question_text,
     estimatedTimeSeconds: question.estimated_time_seconds,
+    selectionFamily: questionSelectionFamily(question.metadata),
+    usedInPublishedFocusedMock: protectedQuestionIds.has(question.id),
   })) as AdminQuestionBankItem[];
+}
+
+export type AdminSmartFillSelectionResult =
+  | { status: "at_target"; message: string }
+  | { status: "above_target"; message: string }
+  | {
+      status: "insufficient";
+      message: string;
+      available: number;
+      required: number;
+    }
+  | {
+      status: "selected";
+      questionIds: string[];
+      reusedPublishedCount: number;
+      message: string;
+    };
+
+export async function selectAdminSmartFillQuestions(
+  input: AdminSmartFillRequest,
+): Promise<AdminSmartFillSelectionResult> {
+  const target = getSmartFillTargetState(
+    input.targetCount,
+    input.existingQuestionIds.length,
+  );
+  if (target.status === "invalid") {
+    throw new Error("The Smart Fill target is invalid.");
+  }
+  if (input.mode === "fill" && target.status === "at_target") {
+    return {
+      status: "at_target",
+      message: `Section already contains ${target.targetCount} questions.`,
+    };
+  }
+  if (target.status === "above_target") {
+    return {
+      status: "above_target",
+      message: `Section currently contains ${target.currentCount} questions. Remove ${target.excessCount} questions before using Smart Fill for a target of ${target.targetCount}.`,
+    };
+  }
+
+  const questionBank = await getAdminQuestionBank(input.testId);
+  const questionById = new Map(
+    questionBank.map((question) => [question.id, question]),
+  );
+  const invalidExisting = input.existingQuestionIds.some((questionId) => {
+    const question = questionById.get(questionId);
+    return !question ||
+      question.questionType !== input.questionType ||
+      question.difficulty !== input.difficulty;
+  });
+  if (invalidExisting) {
+    throw new Error("The current section contains an ineligible question.");
+  }
+
+  const otherQuestionIds = new Set(input.otherQuestionIds);
+  const selectionCount = input.mode === "regenerate"
+    ? input.targetCount
+    : input.targetCount - input.existingQuestionIds.length;
+  const excludedQuestionIds = new Set([
+    ...input.existingQuestionIds,
+    ...input.otherQuestionIds,
+  ]);
+  let selection = selectSmartFillQuestions(questionBank, {
+    questionType: input.questionType,
+    difficulty: input.difficulty,
+    count: selectionCount,
+    excludedQuestionIds,
+    allowPublishedFocusedReuse: input.allowPublishedFocusedReuse,
+    seed: input.seed,
+  });
+  if (input.mode === "regenerate" && selection.status === "insufficient") {
+    selection = selectSmartFillQuestions(questionBank, {
+      questionType: input.questionType,
+      difficulty: input.difficulty,
+      count: input.targetCount,
+      excludedQuestionIds: otherQuestionIds,
+      allowPublishedFocusedReuse: input.allowPublishedFocusedReuse,
+      seed: input.seed,
+    });
+  }
+  if (selection.status === "insufficient") {
+    const available = input.allowPublishedFocusedReuse
+      ? selection.totalAvailable
+      : selection.unusedAvailable;
+    return {
+      status: "insufficient",
+      message: `Only ${available} eligible questions are available; ${selection.required} are required.`,
+      available,
+      required: selection.required,
+    };
+  }
+
+  const selectedIds = selection.questions.map((question) => question.id);
+  const finalQuestionIds = input.mode === "regenerate"
+    ? selectedIds
+    : [...input.existingQuestionIds, ...selectedIds];
+  if (
+    finalQuestionIds.length !== input.targetCount ||
+    new Set(finalQuestionIds).size !== finalQuestionIds.length ||
+    finalQuestionIds.some((questionId) => otherQuestionIds.has(questionId))
+  ) {
+    throw new Error("Smart Fill could not create a valid final selection.");
+  }
+  return {
+    status: "selected",
+    questionIds: finalQuestionIds,
+    reusedPublishedCount: selection.reusedPublishedCount,
+    message: selection.reusedPublishedCount
+      ? `Section now contains ${finalQuestionIds.length} questions, including ${selection.reusedPublishedCount} explicitly allowed published-mock reuse${selection.reusedPublishedCount === 1 ? "" : "s"}.`
+      : input.mode === "regenerate"
+        ? `Regenerated a valid ${finalQuestionIds.length}-question selection.`
+        : `Added ${selectedIds.length} question${selectedIds.length === 1 ? "" : "s"}; the section now contains ${finalQuestionIds.length}.`,
+  };
 }
 
 export async function getAdminTests(): Promise<AdminTestListItem[]> {
@@ -317,7 +506,7 @@ export async function getEditableAdminTest(
   if (!test) return null;
   const { data: sections, error: sectionError } = await admin
         .from("test_sections")
-        .select("id, title, section_type, module, duration_seconds, sort_order")
+        .select("id, title, section_type, module, duration_seconds, focus_difficulty, sort_order")
         .eq("test_id", testId)
         .eq("is_current", true)
         .order("sort_order", { ascending: true });
@@ -350,6 +539,7 @@ export async function getEditableAdminTest(
       sectionType: section.section_type,
       module: section.module,
       durationSeconds: section.duration_seconds,
+      focusDifficulty: section.focus_difficulty,
       questionIds: (mappings ?? [])
         .filter((mapping) => mapping.test_section_id === section.id)
         .map((mapping) => mapping.question_id),
@@ -544,7 +734,7 @@ export async function updateAdminTestPublication(
   const admin = createSupabaseAdminClient();
   const { data: test } = await admin
     .from("tests")
-    .select("id, test_type, duration_seconds, is_published")
+    .select("id, test_type, module, duration_seconds, is_published")
     .eq("id", testId)
     .maybeSingle();
   if (!test) throw new Error("Test not found.");
@@ -570,10 +760,16 @@ export async function updateAdminTestPublication(
   } else {
     const { data: sections } = await admin
       .from("test_sections")
-      .select("id, title, section_type, duration_seconds, sort_order")
+      .select("id, title, section_type, module, focus_difficulty, duration_seconds, sort_order")
       .eq("test_id", testId)
       .eq("is_current", true);
     if (!sections?.length) throw new Error("Add at least one test section.");
+    if (
+      test.test_type === "sectional" &&
+      sections.some((section) => section.section_type !== "mixed" && !section.focus_difficulty)
+    ) {
+      throw new Error("Set a focus difficulty before publishing this sectional mock.");
+    }
     const sectionIds = sections.map((section) => section.id);
     const { data: mappings } = await admin
       .from("test_questions")
@@ -599,19 +795,38 @@ export async function updateAdminTestPublication(
     ) {
       throw new Error("Section duration does not match total test duration.");
     }
-    const { count } = await admin
+    const { data: questions } = await admin
       .from("questions")
-      .select("id", { count: "exact", head: true })
+      .select("id, module, question_type, difficulty")
       .in("id", questionIds)
       .eq("module", "core")
       .eq("verification_status", "approved")
       .eq("publication_status", "published")
       .is("deleted_at", null);
-    if (count !== questionIds.length) {
+    if (!questions || questions.length !== questionIds.length) {
       throw new Error(
         "Every assigned question must be approved and published.",
       );
     }
+    const questionById = new Map(questions.map((question) => [question.id, question]));
+    sections.forEach((section) => {
+      const sectionMappings = (mappings ?? []).filter(
+        (mapping) => mapping.test_section_id === section.id,
+      );
+      sectionMappings.forEach((mapping) => {
+        const question = questionById.get(mapping.question_id);
+        const expectedModule = section.module ?? test.module;
+        if (!question || (expectedModule && question.module !== expectedModule)) {
+          throw new Error(`Questions in “${section.title}” must match its module.`);
+        }
+        if (section.section_type !== "mixed" && question.question_type !== section.section_type) {
+          throw new Error(`Questions in “${section.title}” must match its section type.`);
+        }
+        if (section.focus_difficulty && question.difficulty !== section.focus_difficulty) {
+          throw new Error(`Questions in “${section.title}” must be ${section.focus_difficulty}.`);
+        }
+      });
+    });
   }
 
   const { error } = await admin

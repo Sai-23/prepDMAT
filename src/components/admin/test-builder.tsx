@@ -8,6 +8,7 @@ import {
   FileQuestion,
   Layers3,
   Plus,
+  RefreshCw,
   Save,
   Search,
   Send,
@@ -16,10 +17,11 @@ import {
 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 
 import {
   saveAdminTestAction,
+  smartFillAdminQuestionsAction,
   type AdminTestFormState,
 } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +37,22 @@ import type {
   AdminQuestionBankItem,
   EditableAdminTest,
 } from "@/lib/admin/test-schemas";
-import { filterMockQuestions, summarizeMockComposition } from "@/lib/admin/mock-builder";
+import {
+  filterMockQuestions,
+  getSmartFillAvailability,
+  getSmartFillTargetState,
+  selectSmartFillQuestions,
+  summarizeMockComposition,
+} from "@/lib/admin/mock-builder";
 import { ADMIN_CORE_SECTION_TYPE_OPTIONS } from "@/lib/admin/core-options";
 
 type BuilderSection = EditableAdminTest["sections"][number] & {
   clientId: string;
+  smartFillCount: string;
+  allowPublishedFocusedReuse: boolean;
+  smartFillGenerated: boolean;
+  smartFillMessage: string | null;
+  smartFillMessageTone: "info" | "success" | "warning" | "error";
 };
 
 const initialState: AdminTestFormState = { status: "idle" };
@@ -51,7 +64,13 @@ function newSection(index: number): BuilderSection {
     sectionType: "mixed",
     module: null,
     durationSeconds: 1800,
+    focusDifficulty: null,
     questionIds: [],
+    smartFillCount: "20",
+    allowPublishedFocusedReuse: false,
+    smartFillGenerated: false,
+    smartFillMessage: null,
+    smartFillMessageTone: "info",
   };
 }
 
@@ -77,13 +96,25 @@ export function TestBuilder({
     initialTest?.sections.length
       ? initialTest.sections.map((section, index) => ({
           ...section,
+          focusDifficulty: section.sectionType === "mixed"
+            ? null
+            : section.focusDifficulty ??
+              questionBank.find((question) => section.questionIds.includes(question.id))?.difficulty ??
+              "easy",
           clientId: `existing-${index}`,
+          smartFillCount: String(section.questionIds.length || 20),
+          allowPublishedFocusedReuse: false,
+          smartFillGenerated: false,
+          smartFillMessage: null,
+          smartFillMessageTone: "info",
         }))
       : [newSection(0)],
   );
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [questionType, setQuestionType] = useState("all");
+  const [selectingSectionId, setSelectingSectionId] = useState<string | null>(null);
+  const selectingSectionIdRef = useRef<string | null>(null);
 
   const questionById = useMemo(
     () => new Map(questionBank.map((question) => [question.id, question])),
@@ -156,11 +187,129 @@ export function TestBuilder({
     questionId: string,
     checked: boolean,
   ) => {
+    if (selectingSectionIdRef.current === clientId) return;
     updateSection(clientId, (section) => ({
       ...section,
       questionIds: checked
         ? [...section.questionIds, questionId]
         : section.questionIds.filter((id) => id !== questionId),
+      smartFillGenerated: false,
+      smartFillMessage: null,
+      smartFillMessageTone: "info",
+    }));
+  };
+
+  const smartFillLabel = (section: BuilderSection) =>
+    section.sectionType.replaceAll("_", " ");
+
+  const smartFillSection = async (clientId: string, regenerate = false) => {
+    if (selectingSectionIdRef.current) return;
+    const section = sections.find((item) => item.clientId === clientId);
+    if (!section || section.sectionType === "mixed" || !section.focusDifficulty) return;
+    const target = getSmartFillTargetState(
+      section.smartFillCount,
+      section.questionIds.length,
+    );
+    if (target.status === "invalid") {
+      updateSection(clientId, (current) => ({
+        ...current,
+        smartFillMessage: target.message,
+        smartFillMessageTone: "error",
+      }));
+      return;
+    }
+    if (!regenerate && target.status === "at_target") {
+      updateSection(clientId, (current) => ({
+        ...current,
+        smartFillMessage: `Section already contains ${target.targetCount} questions.`,
+        smartFillMessageTone: "info",
+      }));
+      return;
+    }
+    if (!regenerate && target.status === "above_target") {
+      updateSection(clientId, (current) => ({
+        ...current,
+        smartFillMessage: `Section currently contains ${target.currentCount} questions. Remove ${target.excessCount} questions before using Smart Fill for a target of ${target.targetCount}.`,
+        smartFillMessageTone: "warning",
+      }));
+      return;
+    }
+
+    selectingSectionIdRef.current = clientId;
+    setSelectingSectionId(clientId);
+    try {
+      const result = await smartFillAdminQuestionsAction({
+        testId: initialTest?.id,
+        questionType: section.sectionType,
+        difficulty: section.focusDifficulty,
+        targetCount: target.targetCount,
+        existingQuestionIds: section.questionIds,
+        otherQuestionIds: sections
+          .filter((item) => item.clientId !== clientId)
+          .flatMap((item) => item.questionIds),
+        allowPublishedFocusedReuse: section.allowPublishedFocusedReuse,
+        mode: regenerate ? "regenerate" : "fill",
+        seed: crypto.randomUUID(),
+      });
+      if (result.status !== "selected") {
+        updateSection(clientId, (current) => ({
+          ...current,
+          smartFillMessage: result.message,
+          smartFillMessageTone:
+            result.status === "above_target"
+              ? "warning"
+              : result.status === "at_target"
+                ? "info"
+                : "error",
+        }));
+        return;
+      }
+      updateSection(clientId, (current) => ({
+        ...current,
+        questionIds: result.questionIds,
+        smartFillGenerated: true,
+        smartFillMessage: result.message,
+        smartFillMessageTone: "success",
+      }));
+    } catch {
+      updateSection(clientId, (current) => ({
+        ...current,
+        smartFillMessage:
+          "Unable to select eligible questions. Check the section and try again.",
+        smartFillMessageTone: "error",
+      }));
+    } finally {
+      selectingSectionIdRef.current = null;
+      setSelectingSectionId(null);
+    }
+  };
+
+  const replaceQuestion = (clientId: string, questionId: string) => {
+    const section = sections.find((item) => item.clientId === clientId);
+    if (!section || section.sectionType === "mixed" || !section.focusDifficulty) return;
+    const result = selectSmartFillQuestions(questionBank, {
+      questionType: section.sectionType,
+      difficulty: section.focusDifficulty,
+      count: 1,
+      excludedQuestionIds: assignedQuestionIds,
+      allowPublishedFocusedReuse: section.allowPublishedFocusedReuse,
+      seed: crypto.randomUUID(),
+    });
+    if (result.status === "insufficient") {
+      updateSection(clientId, (current) => ({
+        ...current,
+        smartFillMessage: "No different eligible replacement is currently available.",
+        smartFillMessageTone: "error",
+      }));
+      return;
+    }
+    updateSection(clientId, (current) => ({
+      ...current,
+      questionIds: current.questionIds.map((id) =>
+        id === questionId ? result.questions[0].id : id,
+      ),
+      smartFillMessage: "Question replaced with another eligible question.",
+      smartFillMessageTone: "success",
     }));
   };
 
@@ -192,11 +341,12 @@ export function TestBuilder({
   };
 
   const normalizedSections = sections.map(
-    ({ title, sectionType, module, durationSeconds, questionIds }) => ({
+    ({ title, sectionType, module, durationSeconds, focusDifficulty, questionIds }) => ({
       title,
       sectionType,
       module,
       durationSeconds,
+      focusDifficulty,
       questionIds,
     }),
   );
@@ -359,9 +509,36 @@ export function TestBuilder({
             module: effectiveModule as "core" | null,
             sectionType: section.sectionType,
             questionType: questionType as "all" | AdminQuestionBankItem["questionType"],
-            difficulty: difficulty as "all" | AdminQuestionBankItem["difficulty"],
+            difficulty: section.sectionType !== "mixed" && section.focusDifficulty
+              ? section.focusDifficulty
+              : difficulty as "all" | AdminQuestionBankItem["difficulty"],
             search,
           }).slice(0, 100);
+          const smartTarget = getSmartFillTargetState(
+            section.smartFillCount,
+            section.questionIds.length,
+          );
+          const smartAvailability =
+            section.sectionType !== "mixed" && section.focusDifficulty
+              ? getSmartFillAvailability(questionBank, {
+                  questionType: section.sectionType,
+                  difficulty: section.focusDifficulty,
+                  excludedQuestionIds: assignedQuestionIds,
+                })
+              : null;
+          const availableForSelection = section.allowPublishedFocusedReuse
+            ? smartAvailability?.totalAvailable ?? 0
+            : smartAvailability?.unusedAvailable ?? 0;
+          const shortageCount = smartTarget.status === "needs_questions"
+            ? Math.max(0, smartTarget.additionalCount - availableForSelection)
+            : 0;
+          const selectingQuestions = selectingSectionId === section.clientId;
+          const autoSelectDisabled = selectingQuestions ||
+            smartTarget.status === "invalid" ||
+            smartTarget.status === "above_target" ||
+            (!section.smartFillGenerated && (
+              smartTarget.status === "at_target" || shortageCount > 0
+            ));
 
           return (
             <Card id={`mock-section-${sectionIndex + 1}`} key={section.clientId}>
@@ -430,10 +607,30 @@ export function TestBuilder({
                     />
                   </label>
                   <label className="space-y-2 text-sm font-semibold">
-                    Section type
+                    Question module
                     <select
                       className="h-11 w-full rounded-xl border border-slate-300 bg-white px-4 font-normal"
-                      onChange={(event) => updateSection(section.clientId, (current) => ({ ...current, sectionType: event.target.value as BuilderSection["sectionType"], questionIds: current.questionIds.filter((id) => event.target.value === "mixed" || questionById.get(id)?.questionType === event.target.value) }))}
+                      onChange={(event) => updateSection(section.clientId, (current) => {
+                        const sectionType = event.target.value as BuilderSection["sectionType"];
+                        const focusDifficulty = sectionType === "mixed"
+                          ? null
+                          : current.focusDifficulty ?? "easy";
+                        return {
+                          ...current,
+                          sectionType,
+                          focusDifficulty,
+                          smartFillGenerated: false,
+                          smartFillMessage: null,
+                          questionIds: current.questionIds.filter((id) => {
+                            const question = questionById.get(id);
+                            return sectionType === "mixed" || (
+                              question?.questionType === sectionType &&
+                              question.difficulty === focusDifficulty
+                            );
+                          }),
+                        };
+                      })}
+                      disabled={selectingQuestions}
                       value={section.sectionType}
                     >
                       <option value="mixed">Mixed</option>
@@ -481,6 +678,149 @@ export function TestBuilder({
                   </label>
                 </div>
 
+                {section.sectionType === "mixed" ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                    Choose a specific question module to use Smart Fill. Manual selection remains available for mixed sections.
+                  </div>
+                ) : (
+                  <div className="space-y-4 rounded-2xl border border-workspace-border bg-surface-low p-4 text-on-surface">
+                    <div>
+                      <p className="font-semibold text-on-surface">Smart Fill</p>
+                      <p className="mt-1 text-sm text-on-surface-variant">
+                        Select published questions by module and stored difficulty. Existing selections in other sections are always excluded.
+                      </p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="space-y-2 text-sm font-semibold text-on-surface">
+                        Difficulty
+                        <select
+                          className="h-11 w-full rounded-xl border border-input-border bg-input-background px-4 font-normal text-on-surface outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          disabled={selectingQuestions}
+                          onChange={(event) => updateSection(section.clientId, (current) => {
+                            const focusDifficulty = event.target.value as AdminQuestionBankItem["difficulty"];
+                            return {
+                              ...current,
+                              focusDifficulty,
+                              smartFillGenerated: false,
+                              smartFillMessage: null,
+                              questionIds: current.questionIds.filter(
+                                (id) => questionById.get(id)?.difficulty === focusDifficulty,
+                              ),
+                            };
+                          })}
+                          value={section.focusDifficulty ?? "easy"}
+                        >
+                          <option value="easy">Easy</option>
+                          <option value="medium">Medium</option>
+                          <option value="hard">Hard</option>
+                        </select>
+                      </label>
+                      <label className="space-y-2 text-sm font-semibold text-on-surface">
+                        Question count
+                        <input
+                          aria-describedby={`smart-fill-count-help-${section.clientId}`}
+                          aria-invalid={smartTarget.status === "invalid"}
+                          className="h-11 w-full rounded-xl border border-input-border bg-input-background px-4 font-normal text-on-surface outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          disabled={selectingQuestions}
+                          max={100}
+                          min={1}
+                          onChange={(event) => updateSection(section.clientId, (current) => ({
+                            ...current,
+                            smartFillCount: event.target.value,
+                            smartFillGenerated: false,
+                            smartFillMessage: null,
+                          }))}
+                          step={1}
+                          type="number"
+                          value={section.smartFillCount}
+                        />
+                      </label>
+                    </div>
+                    <div
+                      className={[
+                        "rounded-xl border p-3 text-sm",
+                        smartTarget.status === "above_target"
+                          ? "border-warning bg-warning-container text-warning-container-foreground"
+                          : smartTarget.status === "invalid" || shortageCount > 0
+                            ? "border-error bg-error-container text-error-container-foreground"
+                            : smartTarget.status === "at_target"
+                              ? "border-success bg-success-container text-success-container-foreground"
+                              : "border-workspace-border bg-surface-lowest text-on-surface",
+                      ].join(" ")}
+                      id={`smart-fill-count-help-${section.clientId}`}
+                      role={smartTarget.status === "invalid" || smartTarget.status === "above_target" || shortageCount > 0 ? "alert" : "status"}
+                    >
+                      <p className="font-medium">
+                        <strong>{smartAvailability?.unusedAvailable ?? 0}</strong> unused published <span className="capitalize">{section.focusDifficulty} {smartFillLabel(section)}</span> questions available
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {smartTarget.status === "invalid"
+                          ? smartTarget.message
+                          : smartTarget.status === "at_target"
+                            ? `Section already contains ${smartTarget.targetCount} questions.`
+                            : smartTarget.status === "above_target"
+                              ? `Section currently contains ${smartTarget.currentCount} questions. Remove ${smartTarget.excessCount} questions before using Smart Fill for a target of ${smartTarget.targetCount}.`
+                              : shortageCount > 0
+                                ? `${shortageCount} more required · ${smartTarget.targetCount} total requested`
+                                : smartTarget.currentCount === 0
+                                  ? `${smartTarget.targetCount} questions will be selected`
+                                  : `${smartTarget.additionalCount} more questions will be selected · ${smartTarget.targetCount} total`}
+                      </p>
+                    </div>
+                    {(smartAvailability?.totalAvailable ?? 0) > (smartAvailability?.unusedAvailable ?? 0) ? (
+                      <label className="flex items-start gap-3 text-sm leading-6 text-on-surface-variant">
+                        <input
+                          checked={section.allowPublishedFocusedReuse}
+                          className="mt-1"
+                          disabled={selectingQuestions}
+                          onChange={(event) => updateSection(section.clientId, (current) => ({
+                            ...current,
+                            allowPublishedFocusedReuse: event.target.checked,
+                            smartFillMessage: null,
+                          }))}
+                          type="checkbox"
+                        />
+                        Explicitly allow reuse from published focused mocks ({smartAvailability?.totalAvailable ?? 0} total eligible).
+                      </label>
+                    ) : null}
+                    <Button
+                      className="w-full disabled:border-workspace-border disabled:bg-surface-high disabled:text-on-surface-variant disabled:opacity-100 sm:w-auto"
+                      disabled={autoSelectDisabled}
+                      onClick={() => void smartFillSection(section.clientId, section.smartFillGenerated)}
+                      type="button"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      {selectingQuestions
+                        ? "Selecting questions..."
+                        : section.smartFillGenerated
+                          ? "Regenerate selection"
+                          : "Auto-select questions"}
+                    </Button>
+                    {!section.smartFillGenerated && shortageCount > 0 ? (
+                      <p className="rounded-xl bg-error-container p-3 text-sm font-medium text-error-container-foreground" role="alert">
+                        Only {availableForSelection} {section.allowPublishedFocusedReuse ? "eligible" : "unused published"} questions are available. Reduce the count, publish more questions, or explicitly allow reuse.
+                      </p>
+                    ) : null}
+                    {section.smartFillMessage ? (
+                      <p
+                        className={[
+                          "rounded-xl p-3 text-sm",
+                          section.smartFillMessageTone === "error"
+                            ? "bg-error-container text-error-container-foreground"
+                            : section.smartFillMessageTone === "warning"
+                              ? "bg-warning-container text-warning-container-foreground"
+                              : section.smartFillMessageTone === "success"
+                                ? "bg-success-container text-success-container-foreground"
+                                : "border border-workspace-border bg-surface-lowest text-on-surface-variant",
+                        ].join(" ")}
+                        role={section.smartFillMessageTone === "error" || section.smartFillMessageTone === "warning" ? "alert" : "status"}
+                      >
+                        {section.smartFillMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+
                 {section.questionIds.length ? (
                   <div>
                     <p className="mb-3 text-sm font-semibold">
@@ -507,10 +847,22 @@ export function TestBuilder({
                                   : questionId.slice(0, 8)}
                               </span>
                             </span>
+                            {section.sectionType !== "mixed" && section.focusDifficulty ? (
+                              <button
+                                aria-label="Replace assigned question"
+                                className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-blue-800 hover:bg-white"
+                                disabled={selectingQuestions}
+                                onClick={() => replaceQuestion(section.clientId, questionId)}
+                                type="button"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Replace
+                              </button>
+                            ) : null}
                             <button
                               aria-label="Move question up"
                               className="rounded-lg p-1 text-slate-500 hover:bg-white disabled:opacity-30"
-                              disabled={index === 0}
+                              disabled={selectingQuestions || index === 0}
                               onClick={() =>
                                 moveQuestion(section.clientId, index, -1)
                               }
@@ -522,6 +874,7 @@ export function TestBuilder({
                               aria-label="Move question down"
                               className="rounded-lg p-1 text-slate-500 hover:bg-white disabled:opacity-30"
                               disabled={
+                                selectingQuestions ||
                                 index === section.questionIds.length - 1
                               }
                               onClick={() =>
@@ -534,6 +887,7 @@ export function TestBuilder({
                             <button
                               aria-label="Remove assigned question"
                               className="rounded-lg p-1 text-slate-500 hover:bg-white"
+                              disabled={selectingQuestions}
                               onClick={() =>
                                 toggleQuestion(
                                   section.clientId,
@@ -564,7 +918,12 @@ export function TestBuilder({
                       const selectedHere =
                         section.questionIds.includes(question.id);
                       const selectedElsewhere =
-                        !selectedHere && assignedQuestionIds.has(question.id);
+                         !selectedHere && assignedQuestionIds.has(question.id);
+                       const protectedFromReuse = Boolean(
+                         !selectedHere &&
+                         question.usedInPublishedFocusedMock &&
+                         !section.allowPublishedFocusedReuse,
+                       );
                       return (
                         <label
                           className={[
@@ -572,7 +931,7 @@ export function TestBuilder({
                             selectedHere
                               ? "border-blue-300 bg-blue-50"
                               : "border-slate-200",
-                            selectedElsewhere
+                            selectedElsewhere || protectedFromReuse
                               ? "cursor-not-allowed opacity-50"
                               : "hover:border-blue-200",
                           ].join(" ")}
@@ -580,7 +939,7 @@ export function TestBuilder({
                         >
                           <input
                             checked={selectedHere}
-                            disabled={selectedElsewhere}
+                            disabled={selectingQuestions || selectedElsewhere || protectedFromReuse}
                             onChange={(event) =>
                               toggleQuestion(
                                 section.clientId,
@@ -600,14 +959,22 @@ export function TestBuilder({
                               <span>{question.difficulty}</span>
                               <span>·</span>
                               <span>{question.module.replace("_", " ")}</span>
-                              {selectedElsewhere ? (
+                               {selectedElsewhere ? (
                                 <>
                                   <span>·</span>
                                   <span className="font-semibold text-blue-700">
                                     Used in another section
                                   </span>
                                 </>
-                              ) : null}
+                               ) : null}
+                               {protectedFromReuse ? (
+                                 <>
+                                   <span>Â·</span>
+                                   <span className="font-semibold text-amber-700">
+                                     Used in a published focused mock
+                                   </span>
+                                 </>
+                               ) : null}
                             </span>
                           </span>
                         </label>

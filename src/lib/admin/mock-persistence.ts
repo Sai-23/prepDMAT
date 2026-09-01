@@ -36,10 +36,10 @@ function constraintName(error?: SafeDatabaseError | null) {
 
 export class MockSaveError extends Error {
   constructor(
-    message: string,
+    readonly publicMessage: string,
     readonly diagnostic: MockSaveDiagnostic,
   ) {
-    super(message);
+    super(publicMessage);
     this.name = "MockSaveError";
   }
 }
@@ -78,6 +78,7 @@ export function buildMockSectionRows(
     section_type: section.sectionType,
     module: section.module ?? input.module,
     duration_seconds: section.durationSeconds,
+    focus_difficulty: section.focusDifficulty,
     sort_order: index + 1,
     template_version: options.templateVersion ?? 1,
     is_current: options.isCurrent ?? true,

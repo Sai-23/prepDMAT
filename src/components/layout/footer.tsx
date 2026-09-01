@@ -127,9 +127,17 @@ export function Footer({
         </div>
 
         <div className="mt-10 border-t border-workspace-separator pt-6">
-          <p className="text-sm text-on-surface-variant">
-            © {currentYear} PrepDMAT. All rights reserved.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-on-surface-variant">
+              © {currentYear} PrepDMAT. All rights reserved.
+            </p>
+            <Link
+              className="inline-flex min-h-11 items-center text-sm font-medium text-on-surface-variant transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              href="/privacy"
+            >
+              Privacy Policy
+            </Link>
+          </div>
           <p className="mt-4 max-w-4xl text-xs leading-5 text-muted-foreground">
             {independenceDisclaimer}
           </p>

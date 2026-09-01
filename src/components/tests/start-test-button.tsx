@@ -39,7 +39,7 @@ export function StartTestButton({
         {pending ? "Preparing test..." : label}
       </Button>
       {error ? (
-        <p className="text-sm text-red-700" role="alert">
+        <p className="text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}
