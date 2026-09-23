@@ -3,6 +3,8 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 import "katex/dist/katex.min.css";
 
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 import { SiteHeader } from "@/components/layout/site-header";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { resolveRootAuthState } from "@/lib/auth/root-auth-state";
@@ -67,6 +69,7 @@ export default async function RootLayout({
             <main className="min-h-0 flex-1" data-site-main>{children}</main>
           </div>
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

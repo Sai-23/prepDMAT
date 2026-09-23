@@ -14,8 +14,8 @@ Audited 1,000 synthetic student histories across eight declared profiles.
 
 | Questions | Milliseconds |
 | ---: | ---: |
-| 0 | 0.499 |
-| 10 | 0.646 |
-| 100 | 0.993 |
-| 1000 | 4.02 |
-| 5000 | 14.783 |
+| 0 | 0.26 |
+| 10 | 0.243 |
+| 100 | 0.573 |
+| 1000 | 4.188 |
+| 5000 | 19.707 |
