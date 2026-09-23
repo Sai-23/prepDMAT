@@ -27,10 +27,10 @@ describe("student General Academic UI gate", () => {
     ["src/app/dashboard/page.tsx", "generalAcademicEnabled ? <section"],
     ["src/app/practice/page.tsx", "generalAcademicEnabled ? <section"],
     ["src/app/tests/page.tsx", "generalAcademicEnabled ? <section"],
-    ["src/app/progress/page.tsx", "if (!isGeneralAcademicEnabled()) return null"],
+    ["src/app/progress/page.tsx", "if (!isGeneralAcademicUiEnabled()) return null"],
   ])("keeps %s hidden through the server gate", (file, gate) => {
     expect(source(file)).toContain(gate);
-    expect(source(file)).toContain("isGeneralAcademicEnabled");
+    expect(source(file)).toContain("isGeneralAcademicUiEnabled");
   });
 
   it("keeps navigation Core-only and retains authorized admin tooling", () => {

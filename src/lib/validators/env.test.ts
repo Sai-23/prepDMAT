@@ -36,8 +36,6 @@ describe("parseEnv", () => {
     expect(defaults.success && defaults.data.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED).toBe(false);
     expect(defaults.success && defaults.data.NEXT_PUBLIC_PHONE_AUTH_ENABLED).toBe(false);
     expect(defaults.success && defaults.data.FREE_LAUNCH_ACCESS_ENABLED).toBe(true);
-    expect(defaults.success && defaults.data.GENERAL_ACADEMIC_ENABLED).toBe(false);
-    expect(defaults.success && defaults.data.NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED).toBe(false);
     expect(defaults.success && defaults.data.TRUSTED_CLIENT_IP_HEADER).toBe("none");
     expect(defaults.success && defaults.data.OMNIROUTE_BASE_URL).toBeUndefined();
     expect(defaults.success && defaults.data.OMNIROUTE_API_KEY).toBeUndefined();

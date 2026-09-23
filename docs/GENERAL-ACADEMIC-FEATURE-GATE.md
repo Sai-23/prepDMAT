@@ -1,6 +1,6 @@
 # General Academic student release gate
 
-Student General Academic is disabled by default. Both `GENERAL_ACADEMIC_ENABLED` and `NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED` must be exactly `true` to enable it. A missing value is `false`. The server checks both variables for routes, data-loading entry points, and mutations; the public variable is not a security boundary.
+Student General Academic is disabled by default. `GENERAL_ACADEMIC_ENABLED=true` enables server routes and mutations. Student UI links and cards require both that server flag and `NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED=true`; the public flag alone can never expose the module. Any other or missing value is treated as `false`. The server flag is the security boundary; the public flag is UI only. These narrow fail-closed checks deliberately do not load or validate unrelated application environment variables.
 
 For the current production release, set both variables to `false` in the Vercel **Production** environment and redeploy. Confirm neither is overridden by a production environment group or deployment-specific override. Leave Preview and Development false unless deliberately testing the module; set both to `true` there to exercise student GAM.
 

@@ -1,33 +1,51 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ env: vi.fn(), notFound: vi.fn(() => { throw new Error("NOT_FOUND"); }) }));
+const mocks = vi.hoisted(() => ({ notFound: vi.fn(() => { throw new Error("NOT_FOUND"); }) }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ notFound: mocks.notFound }));
-vi.mock("@/lib/validators/env", () => ({ getEnv: mocks.env }));
 
 import GeneralAcademicPracticeLayout from "@/app/practice/general-academic/layout";
 import GeneralAcademicMockLayout from "@/app/mock/general-academic/layout";
 import GeneralAcademicProgressLayout from "@/app/progress/general-academic/layout";
-import { isGeneralAcademicEnabled } from "./feature-gate";
+import { isGeneralAcademicEnabled, isGeneralAcademicUiEnabled } from "./feature-gate";
+
+const layouts = [GeneralAcademicPracticeLayout, GeneralAcademicMockLayout, GeneralAcademicProgressLayout];
 
 describe("General Academic production gate", () => {
-  it.each([
-    [false, false],
-    [true, false],
-    [false, true],
-  ])("blocks every student route tree unless both flags are true (%s/%s)", (server, browser) => {
-    mocks.env.mockReturnValue({ GENERAL_ACADEMIC_ENABLED: server, NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED: browser });
-    expect(isGeneralAcademicEnabled()).toBe(false);
-    for (const Layout of [GeneralAcademicPracticeLayout, GeneralAcademicMockLayout, GeneralAcademicProgressLayout]) {
-      expect(() => Layout({ children: "hidden" })).toThrow("NOT_FOUND");
-    }
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
   });
 
-  it("allows all three student route trees when deliberately enabled", () => {
-    mocks.env.mockReturnValue({ GENERAL_ACADEMIC_ENABLED: true, NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED: true });
-    expect(isGeneralAcademicEnabled()).toBe(true);
-    for (const Layout of [GeneralAcademicPracticeLayout, GeneralAcademicMockLayout, GeneralAcademicProgressLayout]) {
-      expect(Layout({ children: "available" })).toBe("available");
-    }
+  it("fails closed when either feature flag is missing", () => {
+    vi.stubEnv("GENERAL_ACADEMIC_ENABLED", undefined);
+    vi.stubEnv("NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED", undefined);
+    expect(isGeneralAcademicEnabled()).toBe(false);
+    expect(isGeneralAcademicUiEnabled()).toBe(false);
+  });
+
+  it.each(["false", "TRUE", "1", "yes", " true "])("treats a non-exact server value %j as disabled", (value) => {
+    vi.stubEnv("GENERAL_ACADEMIC_ENABLED", value);
+    expect(isGeneralAcademicEnabled()).toBe(false);
+  });
+
+  it("uses only the server flag as the route and action security boundary", () => {
+    vi.stubEnv("GENERAL_ACADEMIC_ENABLED", "false");
+    vi.stubEnv("NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED", "true");
+    for (const Layout of layouts) expect(() => Layout({ children: "hidden" })).toThrow("NOT_FOUND");
+
+    vi.stubEnv("GENERAL_ACADEMIC_ENABLED", "true");
+    vi.stubEnv("NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED", "false");
+    for (const Layout of layouts) expect(Layout({ children: "available" })).toBe("available");
+  });
+
+  it("enables student UI only when both rollout flags are exactly true", () => {
+    vi.stubEnv("GENERAL_ACADEMIC_ENABLED", "false");
+    vi.stubEnv("NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED", "true");
+    expect(isGeneralAcademicUiEnabled()).toBe(false);
+    vi.stubEnv("GENERAL_ACADEMIC_ENABLED", "true");
+    expect(isGeneralAcademicUiEnabled()).toBe(true);
+    vi.stubEnv("NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED", "false");
+    expect(isGeneralAcademicUiEnabled()).toBe(false);
   });
 });

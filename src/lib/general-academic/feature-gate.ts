@@ -2,12 +2,15 @@ import "server-only";
 
 import { notFound } from "next/navigation";
 
-import { getEnv } from "@/lib/validators/env";
-
-/** Both switches must be enabled; the public switch is never the enforcement boundary. */
+/** Server enforcement fails closed without loading unrelated environment config. */
 export function isGeneralAcademicEnabled(): boolean {
-  const env = getEnv();
-  return env.GENERAL_ACADEMIC_ENABLED && env.NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED;
+  return process.env.GENERAL_ACADEMIC_ENABLED === "true";
+}
+
+/** UI visibility is independent; it is never the security boundary. */
+export function isGeneralAcademicUiEnabled(): boolean {
+  return isGeneralAcademicEnabled()
+    && process.env.NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED === "true";
 }
 
 export function requireGeneralAcademicEnabled(): void {

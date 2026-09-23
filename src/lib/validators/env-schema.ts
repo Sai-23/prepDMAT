@@ -24,8 +24,6 @@ export const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
-  GENERAL_ACADEMIC_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
-  NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   ENABLE_ON_DEMAND_CORE_MOCKS: z
     .enum(["true", "false"])
     .default("false")
@@ -64,8 +62,6 @@ export function parseEnv(input: Record<string, string | undefined>) {
     SECURITY_RATE_LIMIT_SECRET: input.SECURITY_RATE_LIMIT_SECRET,
     TRUSTED_CLIENT_IP_HEADER: input.TRUSTED_CLIENT_IP_HEADER,
     FREE_LAUNCH_ACCESS_ENABLED: input.FREE_LAUNCH_ACCESS_ENABLED,
-    GENERAL_ACADEMIC_ENABLED: input.GENERAL_ACADEMIC_ENABLED,
-    NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED: input.NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED,
     ENABLE_ON_DEMAND_CORE_MOCKS: input.ENABLE_ON_DEMAND_CORE_MOCKS,
     CORE_MOCK_HISTORY_WINDOW: input.CORE_MOCK_HISTORY_WINDOW,
     CORE_MOCK_GENERATION_COOLDOWN_SECONDS:

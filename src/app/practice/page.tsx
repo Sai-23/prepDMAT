@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { requireUser } from "@/lib/auth/guards";
 import { getOnboardingState } from "@/lib/onboarding/data";
 import { getGeneralAcademicDashboardActivity } from "@/lib/general-academic/practice-data";
-import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
+import { isGeneralAcademicUiEnabled } from "@/lib/general-academic/feature-gate";
 import { getActivePracticeSession, getExactPracticeModule, getPracticeLandingData } from "@/lib/practice/data";
 import type { PracticeConfig } from "@/lib/practice/schemas";
 import { CORE_SKILLS, coreSkill, type CoreSkillId } from "@/lib/progress/skills";
@@ -20,7 +20,7 @@ export default async function PracticePage({
   searchParams: Promise<{ question?: string; module?: string; focus?: string; focusName?: string; difficulty?: string; count?: string; fromMock?: string }>;
 }) {
   const user = await requireUser();
-  const generalAcademicEnabled = isGeneralAcademicEnabled();
+  const generalAcademicEnabled = isGeneralAcademicUiEnabled();
   const query = await searchParams;
   const questionId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query.question ?? "")
     ? query.question

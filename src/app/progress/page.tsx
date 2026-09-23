@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/guards";
 import { getCoreProgress } from "@/lib/progress/data";
-import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
+import { isGeneralAcademicUiEnabled } from "@/lib/general-academic/feature-gate";
 import type {
   DifficultyMetric,
   ModuleProgress,
@@ -56,7 +56,7 @@ function TrendIcon({ trend }: { trend: Trend }) {
 }
 
 function ProgressScopeNav() {
-  if (!isGeneralAcademicEnabled()) return null;
+  if (!isGeneralAcademicUiEnabled()) return null;
   return <nav aria-label="Progress areas" className="flex flex-wrap gap-2"><Button aria-current="page" variant="secondary">Core progress</Button><Button asChild variant="outline"><Link href="/progress/general-academic">General Academic progress</Link></Button></nav>;
 }
 

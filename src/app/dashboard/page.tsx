@@ -23,7 +23,7 @@ import { requireUser } from "@/lib/auth/guards";
 import { loadStudentDashboardData } from "@/lib/dashboard/data";
 import { getGeneralAcademicDashboardActivity } from "@/lib/general-academic/practice-data";
 import { getGeneralAcademicLearningOverview } from "@/lib/general-academic/learning-data";
-import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
+import { isGeneralAcademicUiEnabled } from "@/lib/general-academic/feature-gate";
 import { GENERAL_ACADEMIC_DOMAIN_LABELS, GENERAL_ACADEMIC_SKILL_LABELS } from "@/lib/general-academic/registries";
 import type {
   DashboardAction,
@@ -134,7 +134,7 @@ function ProgressModuleCard({ module }: { module: DashboardProgressModule }) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const generalAcademicEnabled = isGeneralAcademicEnabled();
+  const generalAcademicEnabled = isGeneralAcademicUiEnabled();
   const [result, gamActivity, gamLearning] = await Promise.all([
     loadStudentDashboardData(user.id),
     generalAcademicEnabled ? getGeneralAcademicDashboardActivity(user.id).catch(() => ({ active: null, recent: [] })) : Promise.resolve({ active: null, recent: [] }),

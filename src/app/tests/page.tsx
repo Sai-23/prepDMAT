@@ -22,7 +22,7 @@ import { DMAT_CURRENT_CORE_PROTOCOL } from "@/lib/protocol";
 import { getMockCategory } from "@/lib/tests/catalog";
 import { getTestCatalog } from "@/lib/tests/data";
 import { getEnv } from "@/lib/validators/env";
-import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
+import { isGeneralAcademicUiEnabled } from "@/lib/general-academic/feature-gate";
 
 function OnDemandCoreMock() {
   const coreSections = DMAT_CURRENT_CORE_PROTOCOL.core;
@@ -65,7 +65,7 @@ export default async function TestsPage({
     typeof requestedCategory === "string" ? requestedCategory : null,
   );
   const onDemandEnabled = getEnv().ENABLE_ON_DEMAND_CORE_MOCKS;
-  const generalAcademicEnabled = isGeneralAcademicEnabled();
+  const generalAcademicEnabled = isGeneralAcademicUiEnabled();
   let tests = null;
   let loadError: string | null = null;
 
