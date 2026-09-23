@@ -360,6 +360,22 @@ pre {
   color: var(--on-surface);
 }
 
+@keyframes site-announcement-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.site-announcement-enter {
+  animation: site-announcement-enter 220ms ease-out both;
+}
+
 ::selection {
   background: var(--selection-background);
 }
@@ -438,6 +454,10 @@ body:has([data-focused-assessment]) [data-site-main] {
   overflow: hidden;
 }
 
+[data-workspace-shell]:has([data-focused-assessment]) [data-workspace-content] > [data-focused-assessment] {
+  margin-block: 0;
+}
+
 [data-workspace-shell]:has([data-focused-assessment]) [data-workspace-heading] {
   display: none;
 }
@@ -464,6 +484,10 @@ body:has([data-focused-assessment]) [data-site-main] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .site-announcement-enter {
+    animation: none;
+  }
+
   *,
   *::before,
   *::after {

@@ -12,6 +12,7 @@ import type { Route } from "next";
 import Link from "next/link";
 
 import { PageShell } from "@/components/layout/page-shell";
+import { SiteAnnouncementBanner } from "@/components/site-announcement";
 import { ErrorState } from "@/components/shared/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { loadStudentDashboardData } from "@/lib/dashboard/data";
 import { getGeneralAcademicDashboardActivity } from "@/lib/general-academic/practice-data";
 import { getGeneralAcademicLearningOverview } from "@/lib/general-academic/learning-data";
 import { isGeneralAcademicUiEnabled } from "@/lib/general-academic/feature-gate";
+import { isSiteAnnouncementsEnabled } from "@/lib/site-announcements/feature-gate";
 import { GENERAL_ACADEMIC_DOMAIN_LABELS, GENERAL_ACADEMIC_SKILL_LABELS } from "@/lib/general-academic/registries";
 import type {
   DashboardAction,
@@ -135,6 +137,7 @@ function ProgressModuleCard({ module }: { module: DashboardProgressModule }) {
 export default async function DashboardPage() {
   const user = await requireUser();
   const generalAcademicEnabled = isGeneralAcademicUiEnabled();
+  const siteAnnouncementsEnabled = isSiteAnnouncementsEnabled();
   const [result, gamActivity, gamLearning] = await Promise.all([
     loadStudentDashboardData(user.id),
     generalAcademicEnabled ? getGeneralAcademicDashboardActivity(user.id).catch(() => ({ active: null, recent: [] })) : Promise.resolve({ active: null, recent: [] }),
@@ -148,6 +151,7 @@ export default async function DashboardPage() {
         title="Your Core preparation hub"
         description="Resume active work, start practice, take Core mocks, and review progress and results."
       >
+        <SiteAnnouncementBanner enabled={siteAnnouncementsEnabled} />
         <ErrorState title="Dashboard unavailable" description={result.error} />
       </PageShell>
     );
@@ -162,6 +166,7 @@ export default async function DashboardPage() {
       title={`Welcome back, ${data.displayName}`}
       description="Continue where you left off or take the next useful step in your Core preparation."
     >
+      <SiteAnnouncementBanner enabled={siteAnnouncementsEnabled} />
       {result.warnings.length ? (
         <div aria-live="polite" className="rounded-lg border border-warning bg-warning-container p-4 text-sm text-warning-container-foreground" role="status">
           {result.warnings.map((warning) => <p key={warning}>{warning}</p>)}

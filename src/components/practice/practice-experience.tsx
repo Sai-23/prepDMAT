@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle2, Clock3, Flag, LogOut } from "lucide-react";
 import type { Route } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 
 import {
   abandonPracticeAction,
@@ -122,10 +122,12 @@ export function PracticeExperience({
   performance,
   initialSession,
   initialConfig,
+  libraryIntro,
 }: {
   performance: PracticeModulePerformance[];
   initialSession: PracticeSessionState | null;
   initialConfig?: PracticeConfig;
+  libraryIntro?: ReactNode;
 }) {
   const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(initialConfig?.module ?? null);
   const [difficulty, setDifficulty] = useState<PracticeConfig["difficulty"]>(initialConfig?.difficulty ?? "mixed");
@@ -244,7 +246,9 @@ export function PracticeExperience({
     : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8" data-practice-library>
+      {libraryIntro}
+      <div className="space-y-5">
       <section aria-labelledby="choose-module">
         <div className="mb-3">
           <h2 className="text-xl font-semibold text-on-surface" id="choose-module">Choose a Core module</h2>
@@ -316,6 +320,7 @@ export function PracticeExperience({
           </CardContent>
         </Card>
       ) : null}
+      </div>
     </div>
   );
 }

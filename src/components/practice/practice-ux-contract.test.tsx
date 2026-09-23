@@ -14,6 +14,13 @@ describe("practice UX contract", () => {
     expect(page).not.toContain("Practice gives immediate explanations");
   });
 
+  it("makes library and active-session modes mutually exclusive using the existing session state", () => {
+    expect(page).toContain("libraryIntro={libraryIntro}");
+    expect(page).toContain("data-core-modules-heading");
+    expect(experience.indexOf("if (session)")).toBeLessThan(experience.indexOf("data-practice-library"));
+    expect(experience).toContain("{libraryIntro}");
+  });
+
   it("presents all three module-first cards and configuration choices", () => {
     ["Figure Sequences", "Mathematical Equations", "Latin Squares"].forEach((label) => expect(experience).toContain(label));
     expect(experience).toContain('["easy", "medium", "hard", "mixed"]');
@@ -59,6 +66,8 @@ describe("practice UX contract", () => {
     expect(experience).toContain("initialSession?.feedback");
     expect(experience).toContain("Finish practice");
     expect(experience).toContain("Review every answer");
+    expect(experience).toContain("setSession(null); setAnswer(null); setFeedback(null); setSelectedModule(null)");
+    expect(experience).toContain("useState(initialSession)");
   });
 
   it("provides responsive layouts and non-disruptive error/timer semantics", () => {

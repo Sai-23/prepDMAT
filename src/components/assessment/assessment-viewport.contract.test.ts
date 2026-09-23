@@ -29,6 +29,9 @@ describe("focused assessment viewport contract", () => {
     expect(shell).toContain("min-h-0 flex-1 overflow-y-auto");
     expect(shell).toContain("data-assessment-action-zone");
     expect(shell).toContain("shrink-0 border-t");
+    expect(styles).toContain("[data-workspace-content] > [data-focused-assessment]");
+    expect(styles).toContain("margin-block: 0");
+    expect(practice.indexOf("if (session)")).toBeLessThan(practice.indexOf("data-practice-library"));
   });
 
   it("hides the workspace sidebar only while an assessment is active", () => {
