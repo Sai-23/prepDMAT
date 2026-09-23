@@ -37,15 +37,16 @@ These controls cannot be proven from repository code and must be checked indepen
 
 ## Common Supabase Auth URL configuration
 
-- Set Supabase **Site URL** to the canonical production application origin.
+- Set Supabase **Site URL** to `https://prepdmat.in` in production.
 - Add exact application callbacks to **Redirect URLs**:
   - `http://localhost:3000/auth/callback?flow=authentication`
   - `http://localhost:3000/auth/callback?flow=recovery`
   - `https://<staging-host>/auth/callback?flow=authentication`
   - `https://<staging-host>/auth/callback?flow=recovery`
-  - `https://<production-host>/auth/callback?flow=authentication`
-  - `https://<production-host>/auth/callback?flow=recovery`
-- Set `NEXT_PUBLIC_APP_URL` to the matching application origin for each deployment.
+  - `https://prepdmat.in/auth/callback?flow=authentication`
+  - `https://prepdmat.in/auth/callback?flow=email_verification`
+  - `https://prepdmat.in/auth/callback?flow=recovery`
+- Set production `NEXT_PUBLIC_APP_URL=https://prepdmat.in` in Vercel. Application code independently pins production auth destinations to this canonical origin; local development retains its configured localhost URL. Vercel Preview uses an explicitly configured `NEXT_PUBLIC_APP_URL` for that preview deployment. Do not use `prep-dmat.vercel.app` as the production Site URL or an auth callback destination.
 - Keep email confirmation enabled if verification is required. Configure production SMTP and review Supabase email and resend rate limits.
 
 For cookie-based SSR confirmation, configure the **Confirm signup** email template to send the token hash to the one authoritative server callback:
@@ -54,7 +55,7 @@ For cookie-based SSR confirmation, configure the **Confirm signup** email templa
 {{ .SiteURL }}/auth/callback?flow=email_verification&token_hash={{ .TokenHash }}&type=email
 ```
 
-Configure the **Reset password** template equivalently with `flow=recovery` and `type=recovery`. The callback also retains PKCE `code` exchange for OAuth and existing links, but it never exchanges a code and verifies a token hash in the same request. Confirm that the production project Site URL is exactly `https://prep-dmat.vercel.app` and that `https://prep-dmat.vercel.app/auth/callback` is allowed. Local Supabase development must use its own localhost Site URL rather than placing localhost in production configuration.
+Configure the **Reset password** template equivalently with `flow=recovery` and `type=recovery`. The callback also retains PKCE `code` exchange for OAuth and existing links, but it never exchanges a code and verifies a token hash in the same request. Confirm that the production project Site URL is exactly `https://prepdmat.in` and that the canonical callback paths above are allowed. Local Supabase development must use its own localhost Site URL rather than placing localhost in production configuration.
 
 ## Google configuration
 

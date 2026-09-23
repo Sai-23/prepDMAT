@@ -20,6 +20,7 @@ export type SecurityRateLimitOperation =
   | "generation:diagnostic"
   | "generation:public-diagnostic"
   | "generation:mock"
+  | "generation:general-academic"
   | "assessment:answer"
   | "assessment:public-diagnostic"
   | "assessment:public-diagnostic-claim"
@@ -94,6 +95,10 @@ const POLICIES: Record<SecurityRateLimitOperation, RateLimitPolicy> = {
     global: { maxAttempts: 10, windowSeconds: 60 },
     user: { maxAttempts: 2, windowSeconds: 3600 },
     ip: { maxAttempts: 4, windowSeconds: 3600 },
+  },
+  "generation:general-academic": {
+    global: { maxAttempts: 100, windowSeconds: 60 },
+    user: { maxAttempts: 25, windowSeconds: 86400 },
   },
   "assessment:answer": {
     global: { maxAttempts: 5000, windowSeconds: 60 },
@@ -245,7 +250,16 @@ export async function enforceSecurityRateLimit(
     throw new SecurityControlUnavailableError();
   }
 
-  const policy = POLICIES[operation];
+  const basePolicy = POLICIES[operation];
+  const policy = operation === "generation:general-academic"
+    ? {
+        ...basePolicy,
+        user: {
+          maxAttempts: env.OMNIROUTE_GAM_DAILY_LIMIT,
+          windowSeconds: 86400,
+        },
+      }
+    : basePolicy;
   const requestHeaders = await headers();
   const clientIp = extractTrustedClientIp(requestHeaders, env.TRUSTED_CLIENT_IP_HEADER);
   const checks: Array<{

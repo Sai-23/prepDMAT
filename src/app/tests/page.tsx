@@ -1,4 +1,4 @@
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpenText, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { PageShell } from "@/components/layout/page-shell";
@@ -22,6 +22,7 @@ import { DMAT_CURRENT_CORE_PROTOCOL } from "@/lib/protocol";
 import { getMockCategory } from "@/lib/tests/catalog";
 import { getTestCatalog } from "@/lib/tests/data";
 import { getEnv } from "@/lib/validators/env";
+import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
 
 function OnDemandCoreMock() {
   const coreSections = DMAT_CURRENT_CORE_PROTOCOL.core;
@@ -64,6 +65,7 @@ export default async function TestsPage({
     typeof requestedCategory === "string" ? requestedCategory : null,
   );
   const onDemandEnabled = getEnv().ENABLE_ON_DEMAND_CORE_MOCKS;
+  const generalAcademicEnabled = isGeneralAcademicEnabled();
   let tests = null;
   let loadError: string | null = null;
 
@@ -104,6 +106,13 @@ export default async function TestsPage({
         </div>
       ) : !selectedCategory ? (
         <div className="space-y-7">
+          {generalAcademicEnabled ? <section aria-labelledby="gam-mock-heading" className="space-y-3">
+            <div>
+              <h2 className="text-xl font-semibold text-on-surface" id="gam-mock-heading">General Academic Module</h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-on-surface-variant">Take a 90-minute PrepDMAT simulation composed from complete published academic source packs.</p>
+            </div>
+            <Card className="lg:flex lg:items-center lg:justify-between"><CardHeader className="flex-1 p-5"><div className="flex items-center gap-3"><span className="rounded-xl bg-primary-muted p-3 text-primary"><BookOpenText className="size-6" /></span><div><Badge variant="subtle">PrepDMAT simulation</Badge><CardTitle className="mt-2">Full General Academic mock</CardTitle></div></div><CardDescription className="max-w-3xl pt-1">Multiple complete source packs · one shared 90-minute timer · source-aware review after submission.</CardDescription></CardHeader><CardContent className="shrink-0 p-5 pt-0 lg:pl-0 lg:pt-5"><Button asChild><Link href="/mock/general-academic">Open GAM Mocks <ArrowRight className="size-4" /></Link></Button></CardContent></Card>
+          </section> : null}
           {onDemandEnabled ? (
             <section aria-labelledby="full-core-heading" className="space-y-3">
               <div>

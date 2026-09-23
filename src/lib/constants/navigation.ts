@@ -67,6 +67,12 @@ export const adminNavigation: NavigationItem[] = [
     roles: ["admin"],
   },
   {
+    href: "/admin/general-academic" as Route,
+    label: "General Academic",
+    requiresAuth: true,
+    roles: ["admin"],
+  },
+  {
     href: "/admin/tests/new",
     label: "Mock Builder",
     requiresAuth: true,

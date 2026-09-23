@@ -11,8 +11,11 @@ type CookieMutation = {
 };
 
 export function updateSupabaseSession(request: NextRequest, requestHeaders = request.headers) {
+  // Forward the nonce/CSP headers supplied by Proxy and keep its Cookie header
+  // synchronized with any tokens rotated by Supabase during getUser().
+  const forwardedHeaders = new Headers(requestHeaders);
   let response = NextResponse.next({
-    request: { headers: requestHeaders },
+    request: { headers: forwardedHeaders },
   });
 
   const supabase = createServerClient<Database>(
@@ -25,9 +28,10 @@ export function updateSupabaseSession(request: NextRequest, requestHeaders = req
         },
         setAll(cookiesToSet: CookieMutation[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          forwardedHeaders.set("cookie", request.cookies.toString());
 
           response = NextResponse.next({
-            request: { headers: requestHeaders },
+            request: { headers: forwardedHeaders },
           });
 
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -38,5 +42,7 @@ export function updateSupabaseSession(request: NextRequest, requestHeaders = req
     },
   );
 
-  return { supabase, response };
+  // getUser() can refresh after this function returns. A getter avoids handing
+  // Proxy the superseded response that existed before the cookie mutation.
+  return { supabase, get response() { return response; } };
 }

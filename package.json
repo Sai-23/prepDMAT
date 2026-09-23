@@ -28,6 +28,7 @@
     "audit:phase9-analytics": "vitest run src/lib/results/phase9-mock-analysis-audit.test.ts --maxWorkers=1 --minWorkers=1",
     "audit:phase9-real-mocks": "node scripts/run-phase9-real-mock-audit.mjs",
     "audit:phase10-dashboard": "vitest run src/lib/dashboard/phase10-dashboard-audit.test.ts --maxWorkers=1 --minWorkers=1",
+    "export:gam-schema": "vite-node scripts/export-general-academic-schema.ts",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
@@ -38,9 +39,11 @@
     "@supabase/supabase-js": "2.100.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "katex": "^0.16.22",
     "lucide-react": "^1.28.0",
     "next": "16.3.3",
     "next-themes": "^0.4.6",
+    "openai": "7.8.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
@@ -49,6 +52,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/katex": "^0.16.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

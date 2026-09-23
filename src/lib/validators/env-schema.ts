@@ -24,6 +24,8 @@ export const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
+  GENERAL_ACADEMIC_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
+  NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   ENABLE_ON_DEMAND_CORE_MOCKS: z
     .enum(["true", "false"])
     .default("false")
@@ -35,6 +37,20 @@ export const envSchema = z.object({
     .min(0)
     .max(300)
     .default(30),
+  OMNIROUTE_BASE_URL: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().url().optional(),
+  ),
+  OMNIROUTE_API_KEY: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().min(1).optional(),
+  ),
+  OMNIROUTE_GAM_MODEL: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().min(1).max(200).optional(),
+  ),
+  OMNIROUTE_GAM_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(120_000).default(55_000),
+  OMNIROUTE_GAM_DAILY_LIMIT: z.coerce.number().int().min(1).max(100).default(25),
 });
 
 export function parseEnv(input: Record<string, string | undefined>) {
@@ -48,10 +64,17 @@ export function parseEnv(input: Record<string, string | undefined>) {
     SECURITY_RATE_LIMIT_SECRET: input.SECURITY_RATE_LIMIT_SECRET,
     TRUSTED_CLIENT_IP_HEADER: input.TRUSTED_CLIENT_IP_HEADER,
     FREE_LAUNCH_ACCESS_ENABLED: input.FREE_LAUNCH_ACCESS_ENABLED,
+    GENERAL_ACADEMIC_ENABLED: input.GENERAL_ACADEMIC_ENABLED,
+    NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED: input.NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED,
     ENABLE_ON_DEMAND_CORE_MOCKS: input.ENABLE_ON_DEMAND_CORE_MOCKS,
     CORE_MOCK_HISTORY_WINDOW: input.CORE_MOCK_HISTORY_WINDOW,
     CORE_MOCK_GENERATION_COOLDOWN_SECONDS:
       input.CORE_MOCK_GENERATION_COOLDOWN_SECONDS,
+    OMNIROUTE_BASE_URL: input.OMNIROUTE_BASE_URL,
+    OMNIROUTE_API_KEY: input.OMNIROUTE_API_KEY,
+    OMNIROUTE_GAM_MODEL: input.OMNIROUTE_GAM_MODEL,
+    OMNIROUTE_GAM_TIMEOUT_MS: input.OMNIROUTE_GAM_TIMEOUT_MS,
+    OMNIROUTE_GAM_DAILY_LIMIT: input.OMNIROUTE_GAM_DAILY_LIMIT,
   });
 }
 

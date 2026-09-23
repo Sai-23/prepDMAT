@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "general-academic-pack@1",
+  "title": "Recovering energy in an automated lifting system",
+  "domain": "engineering",
+  "topic": "Energy efficiency and regenerative recovery",
+  "difficulty": "medium",
+  "origin": "json_import",
+  "sourceMeta": {
+    "provider": "manual_import",
+    "model": null,
+    "generatedAt": null,
+    "externalReference": "prepdmat-original-engineering-fixture",
+    "generationId": null
+  },
+  "stimulus": {
+    "text": "An automated warehouse uses electric lifts to move containers between floors. During descent, each lift can recover part of the container's gravitational energy and return it to a shared battery. Engineers compare operating modes using recovery efficiency: the recovered energy divided by the available input energy. A higher efficiency means that a larger fraction of the available energy reaches the battery; it does not mean that the system creates energy.",
+    "formulas": [
+      {
+        "id": "formula_1",
+        "label": "Recovery efficiency",
+        "expression": "eta = E_recovered / E_input",
+        "display": {
+          "latex": "\\eta = \\frac{E_{\\mathrm{recovered}}}{E_{\\mathrm{input}}}"
+        },
+        "variables": [
+          { "symbol": "eta", "displaySymbol": "\\eta", "meaning": "recovery efficiency", "unit": null },
+          { "symbol": "E_recovered", "displaySymbol": "E_{\\mathrm{recovered}}", "meaning": "energy returned to the battery", "unit": "kJ" },
+          { "symbol": "E_input", "displaySymbol": "E_{\\mathrm{input}}", "meaning": "available input energy", "unit": "kJ" }
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "id": "table_1",
+        "title": "Measured energy by operating mode",
+        "columns": ["Mode", "Input energy (kJ)", "Recovered energy (kJ)"],
+        "rows": [
+          ["A", 120, 72],
+          ["B", 150, 105],
+          ["C", 160, 96]
+        ]
+      }
+    ],
+    "graphs": [],
+    "figures": []
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "order": 1,
+      "skill": "formula_substitution",
+      "difficulty": "easy",
+      "prompt": "Using the formula, what is the recovery efficiency of Mode A?",
+      "options": [
+        { "id": "A", "text": "40%" },
+        { "id": "B", "text": "60%" },
+        { "id": "C", "text": "72%" },
+        { "id": "D", "text": "120%" }
+      ],
+      "correctOption": "B",
+      "explanation": {
+        "summary": "Mode A returns 60% of its available input energy.",
+        "steps": [
+          "Substitute 72 kJ for recovered energy and 120 kJ for input energy.",
+          "Calculate 72 / 120 = 0.60 and convert the decimal to 60%."
+        ],
+        "takeaway": "Efficiency is a ratio of recovered energy to input energy."
+      },
+      "validation": { "answerType": "numeric", "expectedValue": 0.6, "tolerance": 0.0001 }
+    },
+    {
+      "id": "q2",
+      "order": 2,
+      "skill": "table_interpretation",
+      "difficulty": "medium",
+      "prompt": "Which operating mode has the highest recovery efficiency?",
+      "options": [
+        { "id": "A", "text": "Mode A" },
+        { "id": "B", "text": "Mode B" },
+        { "id": "C", "text": "Mode C" },
+        { "id": "D", "text": "Modes A and C are tied for the highest" }
+      ],
+      "correctOption": "B",
+      "explanation": {
+        "summary": "Mode B has the highest ratio of recovered to input energy.",
+        "steps": [
+          "Compute A as 72/120 = 0.60, B as 105/150 = 0.70, and C as 96/160 = 0.60.",
+          "Compare the three ratios and select the largest."
+        ],
+        "takeaway": "Absolute recovered energy alone is not enough; compare proportional efficiency."
+      },
+      "validation": { "answerType": "categorical", "expectedValue": "B" }
+    },
+    {
+      "id": "q3",
+      "order": 3,
+      "skill": "parameter_sensitivity",
+      "difficulty": "hard",
+      "prompt": "If Mode C keeps the same input energy but increases recovered energy by 10%, how does its recovery efficiency change?",
+      "options": [
+        { "id": "A", "text": "It decreases by 10%" },
+        { "id": "B", "text": "It stays unchanged" },
+        { "id": "C", "text": "It increases by 10% relative to its previous value" },
+        { "id": "D", "text": "It doubles" }
+      ],
+      "correctOption": "C",
+      "explanation": {
+        "summary": "With a fixed denominator, a 10% increase in the numerator produces a 10% relative increase in the ratio.",
+        "steps": [
+          "The input energy remains 160 kJ, so only the recovered-energy numerator changes.",
+          "Multiplying the numerator by 1.10 multiplies the efficiency by 1.10."
+        ],
+        "takeaway": "A ratio changes proportionally with its numerator when its denominator is fixed."
+      },
+      "validation": { "answerType": "categorical", "expectedValue": "C" }
+    },
+    {
+      "id": "q4",
+      "order": 4,
+      "skill": "novel_scenario_transfer",
+      "difficulty": "hard",
+      "prompt": "A redesigned lift recovers the same energy as Mode B while requiring less input energy. What follows from the stated efficiency model?",
+      "options": [
+        { "id": "A", "text": "Its efficiency must be lower than Mode B" },
+        { "id": "B", "text": "Its efficiency must equal Mode B" },
+        { "id": "C", "text": "Its efficiency must be higher than Mode B" },
+        { "id": "D", "text": "Its efficiency cannot be compared without changing recovered energy" }
+      ],
+      "correctOption": "C",
+      "explanation": {
+        "summary": "The same numerator divided by a smaller positive denominator produces a larger ratio.",
+        "steps": [
+          "Keep recovered energy fixed at Mode B's value.",
+          "Reduce the positive input-energy denominator; the resulting efficiency increases."
+        ],
+        "takeaway": "The formula can be transferred to a new design by reasoning about how numerator and denominator changes affect the ratio."
+      },
+      "validation": { "answerType": "categorical", "expectedValue": "C" }
+    }
+  ],
+  "tags": ["energy", "efficiency", "engineering"],
+  "review": { "status": "draft", "notes": null }
+}

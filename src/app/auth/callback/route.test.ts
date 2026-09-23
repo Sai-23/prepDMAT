@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/config", () => ({
-  getApplicationUrl: (path: string) => new URL(path, "https://prep-dmat.vercel.app"),
+  getApplicationUrl: (path: string) => new URL(path, "https://prepdmat.in"),
 }));
 vi.mock("@/lib/auth/post-auth", () => ({ getPostAuthRoute: mocks.getPostAuthRoute }));
 vi.mock("@/lib/onboarding/public-diagnostic", () => ({
@@ -31,7 +31,7 @@ function client() {
 }
 
 function request(query = "") {
-  return new NextRequest(`https://prep-dmat.vercel.app/auth/callback${query}`);
+  return new NextRequest(`https://prepdmat.in/auth/callback${query}`);
 }
 
 function destination(response: Response) {
@@ -187,7 +187,7 @@ describe("email verification callback", () => {
       request("?flow=email_verification&code=valid&next=https://evil.example/steal"),
     );
 
-    expect(destination(response).toString()).toBe("https://prep-dmat.vercel.app/dashboard");
+    expect(destination(response).toString()).toBe("https://prepdmat.in/dashboard");
   });
 
   it("distinguishes confirmed email with unavailable PKCE session from an expired link", async () => {

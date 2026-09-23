@@ -210,7 +210,7 @@ describe("email signup verification", () => {
     mocks.providerAvailability.phone = false;
     mocks.enforceRateLimit.mockResolvedValue(undefined);
     mocks.getAuthCallbackUrl.mockImplementation(
-      (flow: string) => `https://prep-dmat.vercel.app/auth/callback?flow=${flow}`,
+      (flow: string) => `https://prepdmat.in/auth/callback?flow=${flow}`,
     );
     mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
     mocks.claimPublicDiagnostic.mockResolvedValue(false);
@@ -239,7 +239,7 @@ describe("email signup verification", () => {
           marketing_email_opt_in: false,
         },
         emailRedirectTo:
-          "https://prep-dmat.vercel.app/auth/callback?flow=email_verification",
+          "https://prepdmat.in/auth/callback?flow=email_verification",
       }),
     }));
     expect(result).toEqual(expect.objectContaining({
@@ -346,7 +346,7 @@ describe("email signup verification", () => {
       type: "signup",
       options: {
         emailRedirectTo:
-          "https://prep-dmat.vercel.app/auth/callback?flow=email_verification",
+          "https://prepdmat.in/auth/callback?flow=email_verification",
       },
     }));
     expect(result).toEqual({

@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/guards";
 import { loadStudentDashboardData } from "@/lib/dashboard/data";
+import { getGeneralAcademicDashboardActivity } from "@/lib/general-academic/practice-data";
+import { getGeneralAcademicLearningOverview } from "@/lib/general-academic/learning-data";
+import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
+import { GENERAL_ACADEMIC_DOMAIN_LABELS, GENERAL_ACADEMIC_SKILL_LABELS } from "@/lib/general-academic/registries";
 import type {
   DashboardAction,
   DashboardActivity,
@@ -130,7 +134,12 @@ function ProgressModuleCard({ module }: { module: DashboardProgressModule }) {
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const result = await loadStudentDashboardData(user.id);
+  const generalAcademicEnabled = isGeneralAcademicEnabled();
+  const [result, gamActivity, gamLearning] = await Promise.all([
+    loadStudentDashboardData(user.id),
+    generalAcademicEnabled ? getGeneralAcademicDashboardActivity(user.id).catch(() => ({ active: null, recent: [] })) : Promise.resolve({ active: null, recent: [] }),
+    generalAcademicEnabled ? getGeneralAcademicLearningOverview(user.id, false).catch(() => null) : Promise.resolve(null),
+  ]);
 
   if (result.error || !result.data) {
     return (
@@ -180,6 +189,12 @@ export default async function DashboardPage() {
           <ActionCard action={data.supportingAction} secondary />
         </section>
       ) : null}
+
+      {generalAcademicEnabled ? <section aria-labelledby="general-academic-activity" className="space-y-3">
+        <div><h2 className="text-xl font-semibold" id="general-academic-activity">General Academic Practice</h2><p className="mt-1 text-sm text-muted-foreground">Apply source information, formulas, tables, graphs, and reasoning rules to unfamiliar problems.</p></div>
+        <Card><CardContent className="p-5">{gamActivity.active ? <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">{gamActivity.active.title}</p><p className="mt-1 text-sm text-muted-foreground">{GENERAL_ACADEMIC_DOMAIN_LABELS[gamActivity.active.domain]} · Question {gamActivity.active.currentQuestion} of {gamActivity.active.questionCount}</p></div><Button asChild><Link href={`/practice/general-academic/${gamActivity.active.id}`}>Resume General Academic</Link></Button></div> : <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Choose a published source pack</p><p className="mt-1 text-sm text-muted-foreground">Practice by domain, reasoning skill, or a mixed selection.</p></div><Button asChild variant="outline"><Link href="/practice/general-academic">Explore General Academic</Link></Button></div>}{gamActivity.recent.length ? <ol className="mt-5 divide-y divide-workspace-separator border-t border-workspace-separator pt-2">{gamActivity.recent.slice(0, 3).map((activity) => <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between" key={activity.id}><div><p className="text-sm font-semibold">{activity.title}</p><p className="text-xs text-muted-foreground">{GENERAL_ACADEMIC_DOMAIN_LABELS[activity.domain]} · {activity.correctCount ?? 0}/{activity.questionCount} correct</p></div><Link className="text-sm font-semibold text-primary" href={`/practice/general-academic/${activity.id}/results`}>View results →</Link></li>)}</ol> : null}</CardContent></Card>
+        {gamLearning?.recommendations[0] && gamLearning.recommendations[0].priority <= 3 ? <Card className="border-primary/40 bg-primary-muted"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">Continue improving</p><p className="mt-1 font-semibold">{gamLearning.recommendations[0].type === "skill" ? GENERAL_ACADEMIC_SKILL_LABELS[gamLearning.recommendations[0].target] : gamLearning.recommendations[0].type === "domain" ? GENERAL_ACADEMIC_DOMAIN_LABELS[gamLearning.recommendations[0].target] : "Mixed practice"}</p><p className="mt-1 text-sm text-muted-foreground">{gamLearning.recommendations[0].reason}</p></div><Button asChild size="sm"><Link href={gamLearning.recommendations[0].href}>Practice</Link></Button></CardContent></Card> : null}
+      </section> : null}
 
       <section aria-labelledby="core-progress" className="space-y-3">
         <div className="flex items-end justify-between gap-4">

@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(47);
+select no_plan();
 
 -- Deterministic adversarial identities. Inserting Auth users exercises the
 -- production signup trigger, which creates profiles and student roles.
@@ -323,6 +323,117 @@ select throws_ok(
 select throws_ok(
   $$update public.test_attempts set score = 100, accuracy = 100 where id = '50000000-0000-4000-8000-000000000001'$$,
   '42501'
+);
+
+reset role;
+
+select is(
+  to_regprocedure('public.current_user_has_role(public.app_role)'),
+  null,
+  'role helper is absent from the Data API exposed public schema'
+);
+select is(
+  to_regprocedure('public.current_user_has_any_role(public.app_role[])'),
+  null,
+  'multi-role helper is absent from the Data API exposed public schema'
+);
+select isnt(
+  to_regprocedure('private.current_user_has_role(public.app_role)'),
+  null,
+  'role helper exists in the non-exposed private schema'
+);
+select isnt(
+  to_regprocedure('private.current_user_has_any_role(public.app_role[])'),
+  null,
+  'multi-role helper exists in the non-exposed private schema'
+);
+select results_eq(
+  $$select count(*)::integer
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'private'
+      and p.proname in ('current_user_has_role', 'current_user_has_any_role')
+      and p.prosecdef
+      and exists (
+        select 1 from unnest(p.proconfig) setting
+        where setting ~ '^search_path=(""|)$'
+      )$$,
+  array[2],
+  'private RLS helpers retain SECURITY DEFINER with an empty search path'
+);
+select results_eq(
+  $$select count(*)::integer
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'set_updated_at'
+      and exists (
+        select 1 from unnest(p.proconfig) setting
+        where setting ~ '^search_path=(""|)$'
+      )$$,
+  array[1],
+  'set_updated_at has an empty search path'
+);
+
+select results_eq(
+  $$select count(*)::integer from (values
+      ('core_mock_generation_events'), ('generated_core_mocks'),
+      ('practice_events'), ('practice_session_items'), ('practice_sessions'),
+      ('public_diagnostic_items'), ('public_diagnostic_sessions'),
+      ('security_rate_limits'), ('general_academic_bookmarks'),
+      ('general_academic_mistakes'), ('general_academic_mock_answers'),
+      ('general_academic_mock_attempts'), ('general_academic_practice_answers'),
+      ('general_academic_practice_attempts')
+    ) denied(table_name)
+    where has_table_privilege('anon', 'public.' || table_name, 'SELECT,INSERT,UPDATE,DELETE')$$,
+  array[0],
+  'anonymous clients have no direct privileges on intentionally service-only tables'
+);
+select results_eq(
+  $$select count(*)::integer from (values
+      ('core_mock_generation_events'), ('generated_core_mocks'),
+      ('practice_events'), ('practice_session_items'), ('practice_sessions'),
+      ('public_diagnostic_items'), ('public_diagnostic_sessions'),
+      ('security_rate_limits'), ('general_academic_bookmarks'),
+      ('general_academic_mistakes'), ('general_academic_mock_answers'),
+      ('general_academic_mock_attempts'), ('general_academic_practice_answers'),
+      ('general_academic_practice_attempts')
+    ) denied(table_name)
+    where has_table_privilege('authenticated', 'public.' || table_name, 'SELECT,INSERT,UPDATE,DELETE')$$,
+  array[0],
+  'authenticated clients have no direct privileges on intentionally service-only tables'
+);
+select ok(
+  has_function_privilege('service_role', 'public.create_practice_session(uuid,uuid,public.question_type,text,integer,text,text,text,timestamptz,timestamptz,uuid,jsonb,jsonb)', 'EXECUTE'),
+  'Core Practice service RPC remains executable by service_role'
+);
+select ok(
+  has_function_privilege('service_role', 'public.create_core_mock_attempt(uuid,uuid,uuid,text,text,jsonb,jsonb,jsonb,jsonb,jsonb,timestamptz,timestamptz,uuid,timestamptz,uuid)', 'EXECUTE'),
+  'Core Mock service RPC remains executable by service_role'
+);
+select ok(
+  has_function_privilege('service_role', 'public.create_public_core_diagnostic(uuid,text,text,timestamptz,timestamptz,jsonb)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.create_public_core_diagnostic(uuid,text,text,timestamptz,timestamptz,jsonb)', 'EXECUTE'),
+  'public diagnostic remains service-mediated rather than a browser RPC'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '30000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select results_eq(
+  $$select count(*)::integer from public.profiles where id = '10000000-0000-4000-8000-000000000001'$$,
+  array[1],
+  'private role helper still grants an admin the intended RLS access'
+);
+
+reset role;
+update public.profiles
+set updated_at = '2000-01-01 00:00:00+00'
+where id = '10000000-0000-4000-8000-000000000001';
+update public.profiles
+set display_name = display_name
+where id = '10000000-0000-4000-8000-000000000001';
+select ok(
+  (select updated_at > '2000-01-01 00:00:00+00'
+   from public.profiles where id = '10000000-0000-4000-8000-000000000001'),
+  'set_updated_at trigger still advances timestamps after search-path hardening'
 );
 
 select * from finish();

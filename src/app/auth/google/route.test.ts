@@ -7,8 +7,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/config", () => ({
-  getApplicationUrl: (path: string) => new URL(path, "https://prep-dmat.vercel.app"),
-  getAuthCallbackUrl: () => "https://prep-dmat.vercel.app/auth/callback?flow=authentication",
+  getApplicationUrl: (path: string) => new URL(path, "https://prepdmat.in"),
+  getAuthCallbackUrl: () => "https://prepdmat.in/auth/callback?flow=authentication",
   getAuthProviderAvailability: () => mocks.availability,
 }));
 vi.mock("@/lib/security/rate-limit", async (importOriginal) => {
@@ -45,7 +45,7 @@ describe("Google OAuth entry route", () => {
     expect(signInWithOAuth).toHaveBeenCalledWith({
       provider: "google",
       options: {
-        redirectTo: "https://prep-dmat.vercel.app/auth/callback?flow=authentication",
+        redirectTo: "https://prepdmat.in/auth/callback?flow=authentication",
       },
     });
     expect(destination(response).origin).toBe("https://accounts.google.com");

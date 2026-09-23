@@ -9,6 +9,7 @@ import {
   WandSparkles,
   Activity,
   CalendarDays,
+  LibraryBig,
 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -210,6 +211,15 @@ export default async function AdminDashboardPage() {
                       Open validated generator
                     </Link>
                   </Button>
+                </CardContent>
+              </Card>
+            ) : null}
+            {isAdmin ? (
+              <Card>
+                <CardHeader><CardTitle>General Academic Studio</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm leading-6 text-slate-600">Create, import, validate, preview, and reopen General Academic source-pack drafts.</p>
+                  <Button asChild variant="secondary"><Link href={"/admin/general-academic" as Route}><LibraryBig className="size-4" /> Open General Academic</Link></Button>
                 </CardContent>
               </Card>
             ) : null}

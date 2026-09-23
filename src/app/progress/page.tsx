@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/guards";
 import { getCoreProgress } from "@/lib/progress/data";
+import { isGeneralAcademicEnabled } from "@/lib/general-academic/feature-gate";
 import type {
   DifficultyMetric,
   ModuleProgress,
@@ -52,6 +53,11 @@ function TrendIcon({ trend }: { trend: Trend }) {
   return trend === "improving" ? <TrendingUp aria-hidden="true" className="h-4 w-4" />
     : trend === "declining" ? <TrendingDown aria-hidden="true" className="h-4 w-4" />
       : <BarChart3 aria-hidden="true" className="h-4 w-4" />;
+}
+
+function ProgressScopeNav() {
+  if (!isGeneralAcademicEnabled()) return null;
+  return <nav aria-label="Progress areas" className="flex flex-wrap gap-2"><Button aria-current="page" variant="secondary">Core progress</Button><Button asChild variant="outline"><Link href="/progress/general-academic">General Academic progress</Link></Button></nav>;
 }
 
 function moduleAccuracy(module: ModuleProgress) {
@@ -226,6 +232,7 @@ export default async function ProgressPage() {
   } catch {
     return (
       <PageShell eyebrow="Progress" title="How am I doing?" description="Progress from completed Core practice and assessments.">
+        <ProgressScopeNav />
         <ErrorState title="Progress unavailable" description="We could not load your progress. Try again shortly." />
       </PageShell>
     );
@@ -234,6 +241,7 @@ export default async function ProgressPage() {
   if (progress.totalQuestions === 0) {
     return (
       <PageShell eyebrow="Progress" title="How am I doing?" description="Your progress will appear as you complete Practice and Mock questions.">
+        <ProgressScopeNav />
         <Card className="mx-auto max-w-2xl">
           <CardContent className="p-8 text-center sm:p-12">
             <Target aria-hidden="true" className="mx-auto h-10 w-10 text-primary" />
@@ -261,6 +269,7 @@ export default async function ProgressPage() {
 
   return (
     <PageShell eyebrow="Progress" title="How am I doing?" description={`${progress.totalQuestions} answered questions across Practice and Mock Tests.`}>
+      <ProgressScopeNav />
       <section aria-labelledby="overall-progress" className="space-y-4">
         <div>
           <h2 className="text-2xl font-semibold" id="overall-progress">Overall progress</h2>

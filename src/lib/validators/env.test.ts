@@ -36,7 +36,14 @@ describe("parseEnv", () => {
     expect(defaults.success && defaults.data.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED).toBe(false);
     expect(defaults.success && defaults.data.NEXT_PUBLIC_PHONE_AUTH_ENABLED).toBe(false);
     expect(defaults.success && defaults.data.FREE_LAUNCH_ACCESS_ENABLED).toBe(true);
+    expect(defaults.success && defaults.data.GENERAL_ACADEMIC_ENABLED).toBe(false);
+    expect(defaults.success && defaults.data.NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED).toBe(false);
     expect(defaults.success && defaults.data.TRUSTED_CLIENT_IP_HEADER).toBe("none");
+    expect(defaults.success && defaults.data.OMNIROUTE_BASE_URL).toBeUndefined();
+    expect(defaults.success && defaults.data.OMNIROUTE_API_KEY).toBeUndefined();
+    expect(defaults.success && defaults.data.OMNIROUTE_GAM_MODEL).toBeUndefined();
+    expect(defaults.success && defaults.data.OMNIROUTE_GAM_TIMEOUT_MS).toBe(55_000);
+    expect(defaults.success && defaults.data.OMNIROUTE_GAM_DAILY_LIMIT).toBe(25);
 
     const invalid = parseEnv({
       NEXT_PUBLIC_APP_URL: "http://localhost:3000",
@@ -45,6 +52,35 @@ describe("parseEnv", () => {
       ENABLE_ON_DEMAND_CORE_MOCKS: "true",
       CORE_MOCK_HISTORY_WINDOW: "99",
       CORE_MOCK_GENERATION_COOLDOWN_SECONDS: "999",
+    });
+    expect(invalid.success).toBe(false);
+  });
+
+  it("accepts optional server-only OmniRoute configuration and bounds generation controls", () => {
+    const configured = parseEnv({
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+      NEXT_PUBLIC_SUPABASE_URL: "https://demo.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+      OMNIROUTE_BASE_URL: "http://127.0.0.1:20128/v1",
+      OMNIROUTE_API_KEY: "server-key",
+      OMNIROUTE_GAM_MODEL: "gam-production-route",
+      OMNIROUTE_GAM_TIMEOUT_MS: "60000",
+      OMNIROUTE_GAM_DAILY_LIMIT: "30",
+    });
+    expect(configured.success && configured.data).toMatchObject({
+      OMNIROUTE_BASE_URL: "http://127.0.0.1:20128/v1",
+      OMNIROUTE_API_KEY: "server-key",
+      OMNIROUTE_GAM_MODEL: "gam-production-route",
+      OMNIROUTE_GAM_TIMEOUT_MS: 60_000,
+      OMNIROUTE_GAM_DAILY_LIMIT: 30,
+    });
+
+    const invalid = parseEnv({
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+      NEXT_PUBLIC_SUPABASE_URL: "https://demo.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
+      OMNIROUTE_GAM_TIMEOUT_MS: "1000",
+      OMNIROUTE_GAM_DAILY_LIMIT: "1000",
     });
     expect(invalid.success).toBe(false);
   });
