@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const catalog = readFileSync(resolve(process.cwd(), "src/app/tests/page.tsx"), "utf8");
+const catalog = readFileSync(resolve(process.cwd(), "src/app/(authenticated)/tests/page.tsx"), "utf8");
 const mockLibrary = readFileSync(resolve(process.cwd(), "src/components/tests/mock-library.tsx"), "utf8");
 const categoryCard = readFileSync(resolve(process.cwd(), "src/components/tests/mock-category-card.tsx"), "utf8");
 const generationButton = readFileSync(resolve(process.cwd(), "src/components/tests/generate-core-mock-button.tsx"), "utf8");
-const overview = readFileSync(resolve(process.cwd(), "src/app/tests/[testId]/page.tsx"), "utf8");
+const overview = readFileSync(resolve(process.cwd(), "src/app/(authenticated)/tests/[testId]/page.tsx"), "utf8");
 const runner = readFileSync(resolve(process.cwd(), "src/components/tests/test-runner.tsx"), "utf8");
 const testData = readFileSync(resolve(process.cwd(), "src/lib/tests/data.ts"), "utf8");
 
@@ -118,14 +118,15 @@ describe("Mock Test student experience contract", () => {
     );
   });
 
-  it("loads the attempt, existing response, and immutable item in one autosave read phase", () => {
+  it("loads only the immutable item before the authoritative secure autosave RPC", () => {
     const saveStart = testData.indexOf("export async function saveTestResponse");
     const saveEnd = testData.indexOf("export async function gradeAndSubmitTest", saveStart);
     const saveResponse = testData.slice(saveStart, saveEnd);
 
-    expect(saveResponse).toContain(
-      "const [{ data: attempt }, { data: response }, { data: item }] = await Promise.all([",
-    );
+    expect(saveResponse).toContain('select("public_snapshot")');
+    expect(saveResponse).toContain('admin.rpc("save_test_response_secure"');
+    expect(saveResponse).not.toContain('.from("test_attempts")');
+    expect(saveResponse).not.toContain('.from("user_responses")');
     expect(saveResponse.match(/practice_attempt_items/g)).toHaveLength(1);
   });
 });

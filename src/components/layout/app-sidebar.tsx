@@ -119,6 +119,7 @@ export function AppSidebar({
               )}
               href={item.href}
               key={item.href}
+              prefetch={false}
               title={collapsed ? item.label : undefined}
             >
               {active ? (

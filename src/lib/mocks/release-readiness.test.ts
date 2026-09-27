@@ -38,10 +38,12 @@ describe("Core mock release-readiness invariants", () => {
 
   it("keeps the server clock and immutable snapshots authoritative", () => {
     const testData = source("src/lib/tests/data.ts");
+    const secureRpc = source("supabase/migrations/202608280026_mock_state_security.sql");
     expect(testData).toContain("activeSectionFromCursor(sections");
     expect(testData).toContain("section_expires_at");
     expect(testData).toContain("expectedSectionId");
-    expect(testData).toContain("Only the current timed section can be changed.");
+    expect(secureRpc).toContain("test_question_not_active");
+    expect(secureRpc).toContain("item.section_key = attempt_row.current_section_key");
     expect(testData).toContain("gradePracticeAnswer(");
     expect(testData).toContain("response.response_payload as PracticeAnswer");
     expect(testData).toContain("private_snapshot");

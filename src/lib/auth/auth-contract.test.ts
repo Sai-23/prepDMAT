@@ -31,24 +31,28 @@ describe("authentication contracts", () => {
 
   it("shares one server auth interpretation and reconciles header session changes", () => {
     const guards = source("src/lib/auth/guards.ts");
-    const layout = source("src/app/layout.tsx");
+    const rootLayout = source("src/app/layout.tsx");
+    const authenticatedFrame = source("src/components/layout/authenticated-app-frame.tsx");
     const header = source("src/components/layout/site-header-account.tsx");
     const actions = source("src/app/auth/actions.ts");
 
     expect(guards).toContain("getCurrentUser = cache(async () =>");
-    expect(layout).toContain("resolveRootAuthState()");
-    expect(layout).toContain("initialAccount={authState.account}");
+    expect(rootLayout).not.toContain("resolveRootAuthState");
+    expect(authenticatedFrame).toContain("resolveRootAuthState()");
+    expect(authenticatedFrame).toContain("authState={authState}");
     expect(header).toContain('event !== "SIGNED_IN"');
     expect(header).toContain('event !== "SIGNED_OUT"');
     expect(header).toContain('event !== "TOKEN_REFRESHED"');
     expect(header).toContain('event === "SIGNED_OUT" ? null : session?.user ?? null');
     expect(header).toContain("reconcileHeaderAccount(current, user)");
+    expect(header).not.toContain("usePathname");
+    expect(header).toContain('event !== "TOKEN_REFRESHED" || (user?.id ?? null) !== initialUserId');
     expect(actions).toContain('revalidatePath("/", "layout")');
   });
 
   it("keeps provider entry points disabled unless explicitly configured", () => {
     const env = source("src/lib/validators/env-schema.ts");
-    const pages = [source("src/app/login/page.tsx"), source("src/app/register/page.tsx")].join("\n");
+    const pages = [source("src/app/(session)/login/page.tsx"), source("src/app/(session)/register/page.tsx")].join("\n");
     expect(env).toContain("NEXT_PUBLIC_GOOGLE_AUTH_ENABLED");
     expect(env).toContain("NEXT_PUBLIC_PHONE_AUTH_ENABLED");
     expect(env.match(/\.default\("false"\)/g)?.length).toBeGreaterThanOrEqual(3);
@@ -66,7 +70,7 @@ describe("authentication contracts", () => {
 
   it("keeps Google outcomes specific and retryable", () => {
     const callback = source("src/app/auth/callback/route.ts");
-    const login = source("src/app/login/page.tsx");
+    const login = source("src/app/(session)/login/page.tsx");
     expect(callback).toContain('"google_expired"');
     expect(callback).toContain('"google_unavailable"');
     expect(login).toContain("Your Google sign-in attempt expired. Please try again.");
@@ -76,14 +80,14 @@ describe("authentication contracts", () => {
 
   it("keeps every protected learning route behind the existing proxy", () => {
     const proxy = source("src/proxy.ts");
-    for (const route of ["/dashboard", "/practice", "/tests", "/progress", "/results", "/onboarding"]) {
+    for (const route of ["/dashboard", "/practice", "/tests", "/progress", "/results", "/onboarding", "/feedback"]) {
       expect(proxy).toContain(`"${route}"`);
     }
   });
 
   it("keeps compact auth forms and their primary action in normal document flow", () => {
     const form = source("src/components/auth/auth-form.tsx");
-    const pages = [source("src/app/login/page.tsx"), source("src/app/register/page.tsx")].join("\n");
+    const pages = [source("src/app/(session)/login/page.tsx"), source("src/app/(session)/register/page.tsx")].join("\n");
 
     expect(form).toContain('compact ? "space-y-3" : "space-y-4"');
     expect(form).toContain('className="min-h-11 w-full"');

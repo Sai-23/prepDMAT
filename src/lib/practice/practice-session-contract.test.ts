@@ -10,7 +10,9 @@ describe("practice session service contract", () => {
   const migration = source("supabase/migrations/202608220018_practice_sessions.sql");
 
   it("authenticates every mutating action and scopes service queries to the user", () => {
-    expect(actions.match(/await requireUser\(\)/g)?.length).toBeGreaterThanOrEqual(8);
+    expect(actions.match(/requireUser\(\)/g)?.length).toBe(
+      actions.match(/export async function/g)?.length,
+    );
     expect(data).toContain('.eq("user_id", userId)');
     expect(migration).toContain("user_id = p_user_id");
   });

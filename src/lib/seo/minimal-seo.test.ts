@@ -4,10 +4,10 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import nextConfig from "../../../next.config";
-import { metadata as diagnosticMetadata } from "@/app/diagnostic/page";
-import { metadata as examFormatMetadata } from "@/app/exam-format/page";
-import { metadata as homeMetadata } from "@/app/page";
-import { metadata as privacyMetadata } from "@/app/privacy/page";
+import { metadata as diagnosticMetadata } from "@/app/(session)/diagnostic/page";
+import { metadata as examFormatMetadata } from "@/app/(public)/exam-format/page";
+import { metadata as homeMetadata } from "@/app/(public)/page";
+import { metadata as privacyMetadata } from "@/app/(public)/privacy/page";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import {
@@ -53,12 +53,18 @@ describe("minimal production SEO", () => {
     expect(noIndexMetadata.robots).toMatchObject({ index: false, follow: false });
 
     const privateLayouts = [
-      "admin", "bookmarks", "dashboard", "forgot-password", "login", "mistakes",
-      "onboarding", "practice", "profile", "progress", "register", "reset-password",
-      "results", "tests", "diagnostic/result", "diagnostic/take",
+      "src/app/(authenticated)/layout.tsx",
+      "src/app/admin/layout.tsx",
+      "src/app/onboarding/layout.tsx",
+      "src/app/(session)/forgot-password/layout.tsx",
+      "src/app/(session)/login/layout.tsx",
+      "src/app/(session)/register/layout.tsx",
+      "src/app/(session)/reset-password/layout.tsx",
+      "src/app/(session)/diagnostic/result/layout.tsx",
+      "src/app/(session)/diagnostic/take/layout.tsx",
     ];
-    for (const route of privateLayouts) {
-      expect(read(`src/app/${route}/layout.tsx`)).toContain("noIndexMetadata");
+    for (const layout of privateLayouts) {
+      expect(read(layout)).toContain("noIndexMetadata");
     }
 
     const headers = await nextConfig.headers?.();
@@ -98,7 +104,7 @@ describe("minimal production SEO", () => {
   });
 
   it("keeps public intent and navigation in server-rendered source", () => {
-    const home = read("src/app/page.tsx");
+    const home = read("src/app/(public)/page.tsx");
     expect(home.match(/<h1\b/g)).toHaveLength(1);
     expect(home).toContain('href="/exam-format"');
     expect(home).toContain('href="/diagnostic"');
@@ -106,7 +112,7 @@ describe("minimal production SEO", () => {
     expect(home).toContain("Mathematical Equations");
     expect(home).toContain("Latin Squares");
 
-    expect(read("src/app/exam-format/page.tsx").match(/<h1\b/g)).toHaveLength(1);
+    expect(read("src/app/(public)/exam-format/page.tsx").match(/<h1\b/g)).toHaveLength(1);
     expect(read("src/components/layout/page-shell.tsx")).toContain("<h1");
   });
 

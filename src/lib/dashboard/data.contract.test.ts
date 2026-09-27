@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const dataSource = readFileSync(resolve(process.cwd(), "src/lib/dashboard/data.ts"), "utf8");
-const pageSource = readFileSync(resolve(process.cwd(), "src/app/dashboard/page.tsx"), "utf8");
+const pageSource = readFileSync(resolve(process.cwd(), "src/app/(authenticated)/dashboard/page.tsx"), "utf8");
 
 describe("Phase 10 dashboard data contract", () => {
   it("keeps student-owned activity queries server scoped", () => {

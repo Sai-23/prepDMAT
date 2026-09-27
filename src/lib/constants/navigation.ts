@@ -39,6 +39,7 @@ export const studentNavigation: NavigationItem[] = [
   { href: "/results", label: "Results", requiresAuth: true },
   { href: "/mistakes", label: "Mistake Notebook", requiresAuth: true },
   { href: "/bookmarks", label: "Bookmarks", requiresAuth: true },
+  { href: "/feedback" as Route, label: "Feedback", requiresAuth: true },
 ];
 
 export const adminNavigation: NavigationItem[] = [
@@ -83,6 +84,12 @@ export const adminNavigation: NavigationItem[] = [
     label: "Question Bank",
     requiresAuth: true,
     roles: ["admin", "reviewer"],
+  },
+  {
+    href: "/admin/feedback" as Route,
+    label: "Student Feedback",
+    requiresAuth: true,
+    roles: ["admin"],
   },
 ];
 

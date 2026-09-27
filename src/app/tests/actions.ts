@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/guards";
+import { profileServerOperation } from "@/lib/performance/server-timing";
 import { generateOnDemandCoreMock } from "@/lib/mocks/on-demand";
 import { safeActionFailure } from "@/lib/security/public-errors";
 import {
@@ -45,99 +46,112 @@ export async function generateCoreMockForCurrentUser(input: unknown) {
 }
 
 export async function startTestAction(testId: unknown) {
-  const user = await requireUser();
-  const parsed = testIdSchema.safeParse(testId);
-  if (!parsed.success) return { error: "The selected test is invalid." };
-  try {
-    await enforceSecurityRateLimit("assessment:mock-start", { userId: user.id });
-  } catch (error) {
-    return rateLimitActionError(error);
-  }
+  return profileServerOperation("mock.start_or_resume", async (trace) => {
+    const user = await trace.measure("auth", () => requireUser());
+    const parsed = testIdSchema.safeParse(testId);
+    if (!parsed.success) return { error: "The selected test is invalid." };
+    try {
+      await trace.measure("rate_limit", () => enforceSecurityRateLimit("assessment:mock-start", { userId: user.id }));
+    } catch (error) {
+      return rateLimitActionError(error);
+    }
 
-  try {
-    const result = await startTestAttempt(user.id, parsed.data);
-    return { error: null, ...result };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to start this test.");
-  }
+    try {
+      const result = await startTestAttempt(user.id, parsed.data, trace);
+      trace.metric("resumed", result.resumed ? 1 : 0);
+      return { error: null, ...result };
+    } catch (error) {
+      return safeActionFailure(error, "Unable to start this test.");
+    }
+  });
 }
 
 export async function saveTestResponseAction(input: unknown) {
-  const user = await requireUser();
-  const parsed = saveTestResponseSchema.safeParse(input);
-  if (!parsed.success) return { error: "Your answer couldn't be saved. Try again." };
-  try {
-    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
-  } catch (error) {
-    return rateLimitActionError(error);
-  }
+  return profileServerOperation("mock.save_answer", async (trace) => {
+    const user = await trace.measure("auth", () => requireUser());
+    const parsed = saveTestResponseSchema.safeParse(input);
+    if (!parsed.success) return { error: "Your answer couldn't be saved. Try again." };
+    try {
+      await trace.measure("rate_limit", () => enforceSecurityRateLimit("assessment:mock-write", { userId: user.id }));
+    } catch (error) {
+      return rateLimitActionError(error);
+    }
 
-  try {
-    await saveTestResponse(user.id, parsed.data);
-    return { error: null, saved: true };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to save this response.");
-  }
+    try {
+      await saveTestResponse(user.id, parsed.data, trace);
+      return { error: null, saved: true };
+    } catch (error) {
+      return safeActionFailure(error, "Unable to save this response.");
+    }
+  });
 }
 
 export async function submitTestAction(input: unknown) {
-  const user = await requireUser();
-  const parsed = submitTestSchema.safeParse(input);
-  if (!parsed.success) return { error: "The test submission is invalid." };
-  try {
-    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
-  } catch (error) {
-    return rateLimitActionError(error);
-  }
+  return profileServerOperation("mock.complete", async (trace) => {
+    const user = await trace.measure("auth", () => requireUser());
+    const parsed = submitTestSchema.safeParse(input);
+    if (!parsed.success) return { error: "The test submission is invalid." };
+    try {
+      await trace.measure("rate_limit", () => enforceSecurityRateLimit("assessment:mock-write", { userId: user.id }));
+    } catch (error) {
+      return rateLimitActionError(error);
+    }
 
-  try {
-    const result = await gradeAndSubmitTest(
-      user.id,
-      parsed.data.attemptId,
-      parsed.data.autoSubmitted,
-    );
-    return { error: null, ...result };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to submit this test.");
-  }
+    try {
+      const result = await gradeAndSubmitTest(
+        user.id,
+        parsed.data.attemptId,
+        parsed.data.autoSubmitted,
+        trace,
+      );
+      return { error: null, ...result };
+    } catch (error) {
+      return safeActionFailure(error, "Unable to submit this test.");
+    }
+  });
 }
 
 export async function advanceTestSectionAction(input: unknown) {
-  const user = await requireUser();
-  const parsed = advanceTestSectionSchema.safeParse(input);
-  if (!parsed.success) return { error: "The section transition is invalid." };
-  try {
-    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
-  } catch (error) {
-    return rateLimitActionError(error);
-  }
+  return profileServerOperation("mock.section_transition", async (trace) => {
+    const user = await trace.measure("auth", () => requireUser());
+    const parsed = advanceTestSectionSchema.safeParse(input);
+    if (!parsed.success) return { error: "The section transition is invalid." };
+    try {
+      await trace.measure("rate_limit", () => enforceSecurityRateLimit("assessment:mock-write", { userId: user.id }));
+    } catch (error) {
+      return rateLimitActionError(error);
+    }
 
-  try {
-    return {
-      error: null,
-      ...(await advanceTestSection(
-        user.id,
-        parsed.data.attemptId,
-        parsed.data.currentSectionId,
-      )),
-    };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to continue to the next section.");
-  }
+    try {
+      return {
+        error: null,
+        ...(await advanceTestSection(
+          user.id,
+          parsed.data.attemptId,
+          parsed.data.currentSectionId,
+          trace,
+        )),
+      };
+    } catch (error) {
+      return safeActionFailure(error, "Unable to continue to the next section.");
+    }
+  });
 }
 
 export async function processTestClockAction(input: unknown) {
-  const user = await requireUser();
-  const parsed = submitTestSchema.pick({ attemptId: true }).safeParse(input);
-  if (!parsed.success) return { error: "The test attempt is invalid." };
-  try {
-    await enforceSecurityRateLimit("assessment:mock-write", { userId: user.id });
-  } catch (error) {
-    return rateLimitActionError(error);
-  }
-  try {
-    return { error: null, ...(await processTestClock(user.id, parsed.data.attemptId)) };
-  } catch (error) {
-    return safeActionFailure(error, "Unable to update the test clock.");
-  }
+  return profileServerOperation("mock.clock_transition", async (trace) => {
+    const user = await trace.measure("auth", () => requireUser());
+    const parsed = submitTestSchema.pick({ attemptId: true }).safeParse(input);
+    if (!parsed.success) return { error: "The test attempt is invalid." };
+    try {
+      await trace.measure("rate_limit", () => enforceSecurityRateLimit("assessment:mock-write", { userId: user.id }));
+    } catch (error) {
+      return rateLimitActionError(error);
+    }
+    try {
+      return { error: null, ...(await processTestClock(user.id, parsed.data.attemptId, trace)) };
+    } catch (error) {
+      return safeActionFailure(error, "Unable to update the test clock.");
+    }
+  });
 }

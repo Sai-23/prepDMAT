@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import { EquationRenderer } from "../questions/equation-renderer";
@@ -19,7 +19,7 @@ export function NativePracticeResponse({ question, answer, correctAnswer, disabl
 }) {
   const response = question.response ?? { kind: "single_choice" as const, options: question.options };
   if (response.kind === "symbol_assignment") {
-    return <EquationResponse answer={answer} disabled={disabled} hideAnswerInputs={hideAnswerInputs} key={question.id} onChange={onChange} question={question} symbols={response.symbols} />;
+    return <EquationResponse answer={answer} correctAnswer={correctAnswer} disabled={disabled} hideAnswerInputs={hideAnswerInputs} key={question.id} onChange={onChange} question={question} symbols={response.symbols} />;
   }
   if (response.kind === "two_stage_single_choice") {
     return <TwoStageResponse answer={answer} correctAnswer={correctAnswer} disabled={disabled} key={question.id} onChange={onChange} question={question} />;
@@ -96,11 +96,31 @@ export function completeTwoStageDraft(
     : null;
 }
 
-function EquationResponse({ question, symbols, answer, disabled, hideAnswerInputs, onChange }: { question: PracticeQuestion; symbols: string[]; answer: PracticeAnswer | null; disabled: boolean; hideAnswerInputs: boolean; onChange(answer: PracticeAnswer): void }) {
+function expectedEquationValue(correctAnswer: unknown, symbol: string): number | null {
+  if (!correctAnswer || typeof correctAnswer !== "object" || Array.isArray(correctAnswer)) return null;
+  const value = (correctAnswer as Record<string, unknown>)[symbol];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function EquationResponse({ question, symbols, answer, correctAnswer, disabled, hideAnswerInputs, onChange }: { question: PracticeQuestion; symbols: string[]; answer: PracticeAnswer | null; correctAnswer?: unknown; disabled: boolean; hideAnswerInputs: boolean; onChange(answer: PracticeAnswer): void }) {
   const initialValues = answer?.kind === "symbol_assignment" ? answer.values : {};
   const [rawValues, setRawValues] = useState<Record<string, string>>(() => Object.fromEntries(symbols.map((symbol) => [symbol, initialValues[symbol]?.toString() ?? ""])));
   const values = answer?.kind === "symbol_assignment" ? answer.values : {};
-  return <div className="space-y-4"><EquationRenderer data={question.structuredData as MathematicalEquationStructuredData} />{hideAnswerInputs ? null : <div className="mx-auto grid max-w-xl gap-3 sm:grid-cols-3" data-response-interface="equation-variable-values">{symbols.map((symbol) => { const normalized = normalizeEquationInput(rawValues[symbol] ?? ""); return <label className="space-y-2 text-sm font-semibold" key={symbol}><span>{symbol} =</span><input aria-invalid={!normalized.valid} aria-label={`${symbol} value`} className="h-12 w-full rounded-md border border-workspace-border bg-surface-lowest px-3 text-center font-mono text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" disabled={disabled} inputMode="numeric" maxLength={2} onChange={(event) => { const next = normalizeEquationInput(event.target.value); if (!/^\d{0,2}$/.test(event.target.value)) return; setRawValues((current) => ({ ...current, [symbol]: next.raw })); const nextValues = { ...values }; if (next.value === null) delete nextValues[symbol]; else nextValues[symbol] = next.value; onChange({ kind: "symbol_assignment", values: nextValues }); }} pattern="[0-9]*" type="text" value={rawValues[symbol] ?? ""} />{!normalized.valid ? <span className="block text-xs font-normal text-error">Enter a whole number from 1 to 20.</span> : null}</label>; })}</div>}</div>;
+  return <div className="space-y-4"><EquationRenderer data={question.structuredData as MathematicalEquationStructuredData} />{hideAnswerInputs ? null : <div className="mx-auto grid max-w-xl gap-3 sm:grid-cols-3" data-response-interface="equation-variable-values">{symbols.map((symbol) => {
+    const normalized = normalizeEquationInput(rawValues[symbol] ?? "");
+    const expected = expectedEquationValue(correctAnswer, symbol);
+    const correctness = correctAnswer === undefined || expected === null
+      ? null
+      : normalized.value === expected ? "correct" : "incorrect";
+    const statusId = `equation-${question.id}-${symbol}-status`;
+    const correctnessClass = correctness === "correct"
+      ? "border-success bg-success-container"
+      : correctness === "incorrect"
+        ? "border-error bg-error-container"
+        : "border-workspace-border bg-surface-lowest";
+
+    return <label className="space-y-2 text-sm font-semibold" data-answer-correctness={correctness ?? "unchecked"} key={symbol}><span>{symbol} =</span><span className="relative block"><input aria-describedby={correctness ? statusId : undefined} aria-invalid={!normalized.valid || correctness === "incorrect"} aria-label={`${symbol} value`} className={`h-12 w-full rounded-md border px-3 pr-10 text-center font-mono text-lg text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${correctnessClass}`} disabled={disabled} inputMode="numeric" maxLength={2} onChange={(event) => { const next = normalizeEquationInput(event.target.value); if (!/^\d{0,2}$/.test(event.target.value)) return; setRawValues((current) => ({ ...current, [symbol]: next.raw })); const nextValues = { ...values }; if (next.value === null) delete nextValues[symbol]; else nextValues[symbol] = next.value; onChange({ kind: "symbol_assignment", values: nextValues }); }} pattern="[0-9]*" type="text" value={rawValues[symbol] ?? ""} />{correctness === "correct" ? <CheckCircle2 aria-hidden="true" className="absolute right-3 top-1/2 size-5 -translate-y-1/2 text-success" /> : correctness === "incorrect" ? <XCircle aria-hidden="true" className="absolute right-3 top-1/2 size-5 -translate-y-1/2 text-error" /> : null}</span>{correctness ? <span className="sr-only" id={statusId}>{symbol} answer is {correctness}.</span> : null}{!normalized.valid ? <span className="block text-xs font-normal text-error">Enter a whole number from 1 to 20.</span> : null}</label>;
+  })}</div>}</div>;
 }
 
 function ChoiceButtons({ options, answer, correctAnswer, disabled, onChange }: { options: Array<{ id: string; label: string; content: string }>; answer: PracticeAnswer | null; correctAnswer?: unknown; disabled: boolean; onChange(answer: PracticeAnswer): void }) {

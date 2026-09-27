@@ -2,7 +2,7 @@
 
 import { ClipboardCheck, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -32,15 +32,19 @@ function LogoutButton() {
 
 export function SiteHeaderAccount({
   initialAccount,
+  browserReconciliation = true,
+  pending = false,
 }: {
   initialAccount: HeaderAccountState | null;
+  browserReconciliation?: boolean;
+  pending?: boolean;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [account, setAccount] = useState(initialAccount);
   const initialUserId = initialAccount?.userId ?? null;
 
   useEffect(() => {
+    if (!browserReconciliation) return;
     const supabase = createSupabaseBrowserClient();
     let disposed = false;
     const deferredChecks = new Set<number>();
@@ -68,7 +72,9 @@ export function SiteHeaderAccount({
         if (disposed) return;
         const user = event === "SIGNED_OUT" ? null : session?.user ?? null;
         setAccount((current) => reconcileHeaderAccount(current, user));
-        router.refresh();
+        if (event !== "TOKEN_REFRESHED" || (user?.id ?? null) !== initialUserId) {
+          router.refresh();
+        }
       }, 0);
       deferredChecks.add(deferredCheck);
     });
@@ -79,7 +85,11 @@ export function SiteHeaderAccount({
       deferredChecks.forEach((timer) => window.clearTimeout(timer));
       data.subscription.unsubscribe();
     };
-  }, [initialUserId, pathname, router]);
+  }, [browserReconciliation, initialUserId, router]);
+
+  if (pending) {
+    return <div aria-label="Loading account" className="h-9 w-24 animate-pulse rounded-md bg-surface-high sm:w-36" />;
+  }
 
   if (!account) {
     return (

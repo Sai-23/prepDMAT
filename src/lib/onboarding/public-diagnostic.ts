@@ -6,8 +6,8 @@ import { cookies } from "next/headers";
 import type { StructuralProfile } from "@/lib/generation/novelty";
 import type { PrivatePracticeSnapshot } from "@/lib/practice/native";
 import { gradePracticeAnswer } from "@/lib/practice/native";
+import { answerMatchesQuestion } from "@/lib/practice/answer-contract";
 import {
-  answerMatchesQuestion,
   type PracticeAnswer,
   type PracticeQuestion,
 } from "@/lib/practice/schemas";

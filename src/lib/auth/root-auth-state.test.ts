@@ -22,11 +22,14 @@ function serverClient({
   roles: Array<{ role: string }>;
 }) {
   return {
-    from: vi.fn((table: string) => ({
+    from: vi.fn(() => ({
       select: vi.fn(() => ({
-        eq: vi.fn(() => table === "profiles"
-          ? { maybeSingle: vi.fn(async () => ({ data: profile, error: null })) }
-          : Promise.resolve({ data: roles, error: null })),
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn(async () => ({
+            data: profile ? { ...profile, roles: roles.map(({ role }) => role) } : null,
+            error: null,
+          })),
+        })),
       })),
     })),
   };

@@ -7,17 +7,18 @@ function source(path: string) {
 }
 
 describe("General Academic practice landing redesign contract", () => {
-  const hub = source("src/app/practice/page.tsx");
+  const hub = source("src/app/(authenticated)/practice/page.tsx");
+  const coreExperience = source("src/components/practice/practice-experience.tsx");
   const page = source("src/app/practice/general-academic/page.tsx");
   const landing = source("src/components/general-academic/practice-landing.tsx");
   const data = source("src/lib/general-academic/practice-data.ts");
   const practice = source("src/lib/general-academic/practice.ts");
 
-  it("presents GAM as a first-class option before the unchanged Core experience", () => {
-    expect(hub).toContain("What do you want to practice?");
+  it("keeps GAM available after the compact Core setup", () => {
+    expect(hub).not.toContain("What do you want to practice?");
     expect(hub).toContain("Major practice area");
-    expect(hub).toContain("Core modules");
-    expect(hub.indexOf("General Academic")).toBeLessThan(hub.indexOf("<PracticeExperience"));
+    expect(hub).not.toContain("Core modules");
+    expect(coreExperience.indexOf('aria-label="Core practice modules"')).toBeLessThan(coreExperience.indexOf("{librarySupplement}"));
     expect(hub).toContain("<PracticeExperience");
   });
 

@@ -6,9 +6,9 @@ import { describe, expect, it } from "vitest";
 import { Footer } from "./footer";
 
 const studentFacingFiles = [
-  "src/app/page.tsx",
-  "src/app/tests/page.tsx",
-  "src/app/tests/[testId]/page.tsx",
+  "src/app/(public)/page.tsx",
+  "src/app/(authenticated)/tests/page.tsx",
+  "src/app/(authenticated)/tests/[testId]/page.tsx",
   "src/components/tests/start-test-button.tsx",
   "src/components/layout/site-footer.tsx",
   "src/components/layout/site-header-navigation.tsx",

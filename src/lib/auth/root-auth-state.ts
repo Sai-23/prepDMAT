@@ -29,26 +29,22 @@ export async function resolveRootAuthState(): Promise<RootAuthState> {
 
   if (!user) return anonymousRootState;
 
-  let profile: {
+  let headerState: {
     display_name: string | null;
     full_name: string | null;
     theme_preference: string | null;
     diagnostic_status: StudentDiagnosticStatus;
+    roles: UserRole[];
   } | null = null;
-  let roles: UserRole[] = [];
 
   try {
     const supabase = await createSupabaseServerClient();
-    const [profileResult, rolesResult] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("display_name, full_name, theme_preference, diagnostic_status")
-        .eq("id", user.id)
-        .maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", user.id),
-    ]);
-    profile = profileResult.data;
-    roles = ((rolesResult.data ?? []) as Array<{ role: UserRole }>).map(({ role }) => role);
+    const result = await supabase
+      .from("user_header_state")
+      .select("display_name, full_name, theme_preference, diagnostic_status, roles")
+      .eq("id", user.id)
+      .maybeSingle();
+    headerState = result.data;
   } catch {
     // A profile lookup failure must not downgrade an authenticated user to a
     // logged-out header. User identity remains authoritative.
@@ -58,22 +54,22 @@ export async function resolveRootAuthState(): Promise<RootAuthState> {
     account: {
       userId: user.id,
       displayName: resolveDisplayName({
-        profileDisplayName: profile?.display_name,
-        profileFullName: profile?.full_name,
+        profileDisplayName: headerState?.display_name,
+        profileFullName: headerState?.full_name,
         metadataDisplayName: user.user_metadata.display_name,
         metadataFullName: user.user_metadata.full_name,
         email: user.email,
         phone: user.phone,
       }),
-      workspace: roles.includes("admin")
+      workspace: headerState?.roles.includes("admin")
         ? "admin"
-        : roles.includes("reviewer")
+        : headerState?.roles.includes("reviewer")
           ? "reviewer"
           : null,
     },
-    diagnosticStatus: profile?.diagnostic_status ?? null,
-    theme: isThemePreference(profile?.theme_preference)
-      ? profile.theme_preference
+    diagnosticStatus: headerState?.diagnostic_status ?? null,
+    theme: isThemePreference(headerState?.theme_preference)
+      ? headerState.theme_preference
       : "system",
   };
 }

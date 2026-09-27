@@ -16,10 +16,12 @@ const authenticatedRoutes = [
   "/mistakes",
   "/bookmarks",
   "/profile",
+  "/feedback",
 ];
 
 const reviewerRoutes = ["/admin", "/admin/review"];
-const adminOnlyRoutes = ["/admin/questions", "/admin/tests"];
+const adminOnlyRoutes = ["/admin/questions", "/admin/tests", "/admin/feedback"];
+const anonymousPublicRoutes = ["/", "/exam-format", "/privacy"];
 
 function matchesRoute(pathname: string, routes: readonly string[]) {
   return routes.some((route) =>
@@ -56,12 +58,20 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
-  const session = updateSupabaseSession(request, requestHeaders);
   const protectedRoute = matchesRoute(pathname, authenticatedRoutes)
     || matchesRoute(pathname, reviewerRoutes)
     || matchesRoute(pathname, adminOnlyRoutes);
-  // The root layout reads auth on public pages too. Refresh here first so its
-  // Server Component sees the rotated request cookie and the browser receives it.
+
+  // Public marketing routes resolve the optional account controls in a small
+  // browser island. Avoid turning their document request into an auth request.
+  if (matchesRoute(pathname, anonymousPublicRoutes)) {
+    return withContentSecurityPolicy(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      contentSecurityPolicy,
+    );
+  }
+
+  const session = updateSupabaseSession(request, requestHeaders);
   let user;
   try {
     const result = await session.supabase.auth.getUser();
@@ -109,6 +119,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$).*)",
   ],
 };

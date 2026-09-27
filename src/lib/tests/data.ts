@@ -1,9 +1,10 @@
 import "server-only";
 
-import {
-  answerMatchesQuestion,
-  type PracticeQuestion,
-} from "@/lib/practice/schemas";
+import { unstable_cache } from "next/cache";
+
+import { answerMatchesQuestion } from "@/lib/practice/answer-contract";
+import type { ServerTimingTrace } from "@/lib/performance/server-timing";
+import type { PracticeQuestion } from "@/lib/practice/schemas";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { seededShuffle } from "@/lib/tests/randomization";
 import { createPracticeSnapshots, gradePracticeAnswer } from "@/lib/practice/native";
@@ -88,6 +89,10 @@ type OptionRow = {
 
 const CORE_SECTION_TYPES = new Set(["figure_sequence", "mathematical_equation", "latin_square", "mixed"]);
 
+function measure<T>(trace: ServerTimingTrace | undefined, stage: string, task: () => PromiseLike<T> | T) {
+  return trace ? trace.measure(stage, task) : Promise.resolve(task());
+}
+
 type ActiveAttemptCursor = {
   current_section_key: string | null;
   section_started_at: string | null;
@@ -114,23 +119,24 @@ async function loadActiveSectionPayload(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   attemptId: string,
   section: ExamSectionSnapshot,
+  trace?: ServerTimingTrace,
 ) {
-  const { data: itemData, error: itemError } = await admin
+  const { data: itemData, error: itemError } = await measure(trace, "section_snapshot_query", () => admin
     .from("practice_attempt_items")
     .select("question_key, section_key, section_position, public_snapshot, position")
     .eq("attempt_id", attemptId)
     .eq("section_key", section.id)
-    .order("section_position");
+    .order("section_position"));
   if (itemError || !itemData?.length) {
     throw new Error("The immutable section snapshot is incomplete.");
   }
 
   const questionKeys = itemData.map((item) => item.question_key);
-  const { data: responseData, error: responseError } = await admin
+  const { data: responseData, error: responseError } = await measure(trace, "section_responses_query", () => admin
     .from("user_responses")
     .select("question_key, response_payload, selected_option_id, response_status, is_marked_for_review, time_spent_seconds")
     .eq("attempt_id", attemptId)
-    .in("question_key", questionKeys);
+    .in("question_key", questionKeys));
   if (responseError) throw new Error("Unable to restore this section's responses.");
 
   return {
@@ -205,28 +211,52 @@ async function assertTestAccess(userId: string, testId: string) {
   return test;
 }
 
-export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]> {
-  const admin = createSupabaseAdminClient();
-  const { data: testData, error } = await admin
-    .from("tests")
-    .select(
-      "id, title, description, test_type, module, duration_seconds, instructions, is_premium, randomize_questions, randomize_options",
-    )
-    .eq("is_published", true)
-    .neq("id", "00000000-0000-4000-8000-000000000001")
-    .order("created_at", { ascending: false });
+const getPublishedTestCatalogBase = unstable_cache(
+  async () => {
+    const admin = createSupabaseAdminClient();
+    const { data: testData, error } = await admin
+      .from("tests")
+      .select(
+        "id, title, description, test_type, module, duration_seconds, instructions, is_premium, randomize_questions, randomize_options",
+      )
+      .eq("is_published", true)
+      .neq("id", "00000000-0000-4000-8000-000000000001")
+      .order("created_at", { ascending: false });
 
-  if (error) throw new Error("Unable to load published tests.");
-  const tests = (testData ?? []) as PublishedTestRow[];
-  if (!tests.length) return [];
+    if (error) throw new Error("Unable to load published tests.");
+    const tests = (testData ?? []) as PublishedTestRow[];
+    if (!tests.length) return { tests, sections: [] as SectionRow[], mappings: [] as MappingRow[] };
 
-  const testIds = tests.map((test) => test.id);
-  const [{ data: sectionData }, premiumAccess, { data: attemptSummaryData, error: attemptSummaryError }] = await Promise.all([
-    admin
+    const testIds = tests.map((test) => test.id);
+    const { data: sectionData, error: sectionError } = await admin
       .from("test_sections")
       .select("id, test_id, title, section_type, focus_difficulty, duration_seconds, sort_order")
       .in("test_id", testIds)
-      .eq("is_current", true),
+      .eq("is_current", true);
+    if (sectionError) throw new Error("Unable to load published test sections.");
+    const sections = (sectionData ?? []) as SectionRow[];
+    const sectionIds = sections.map((section) => section.id);
+    const { data: mappingData, error: mappingError } = sectionIds.length
+      ? await admin
+          .from("test_questions")
+          .select("test_section_id, question_id, sort_order")
+          .in("test_section_id", sectionIds)
+      : { data: [], error: null };
+    if (mappingError) throw new Error("Unable to load published test questions.");
+
+    return { tests, sections, mappings: (mappingData ?? []) as MappingRow[] };
+  },
+  ["published-core-test-catalog"],
+  { revalidate: 300, tags: ["published-core-test-catalog"] },
+);
+
+export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]> {
+  const admin = createSupabaseAdminClient();
+  const { tests, sections, mappings } = await getPublishedTestCatalogBase();
+  if (!tests.length) return [];
+
+  const testIds = tests.map((test) => test.id);
+  const [premiumAccess, { data: attemptSummaryData, error: attemptSummaryError }] = await Promise.all([
     hasPremiumAccess(userId),
     admin.rpc("get_curated_test_attempt_summaries", {
       p_user_id: userId,
@@ -234,18 +264,9 @@ export async function getTestCatalog(userId: string): Promise<TestCatalogItem[]>
     }),
   ]);
   if (attemptSummaryError) throw new Error("Unable to load mock attempt summaries.");
-  const sections = (sectionData ?? []) as SectionRow[];
   const summaries = new Map(
     ((attemptSummaryData ?? []) as AttemptSummaryRow[]).map((summary) => [summary.test_id, summary]),
   );
-  const sectionIds = sections.map((section) => section.id);
-  const { data: mappingData } = sectionIds.length
-    ? await admin
-        .from("test_questions")
-        .select("test_section_id, question_id, sort_order")
-        .in("test_section_id", sectionIds)
-    : { data: [] };
-  const mappings = (mappingData ?? []) as MappingRow[];
 
   return tests
     .filter((test) => sections
@@ -329,11 +350,11 @@ export async function getTestOverview(
   };
 }
 
-export async function startTestAttempt(userId: string, testId: string) {
-  const test = await assertTestAccess(userId, testId);
+export async function startTestAttempt(userId: string, testId: string, trace?: ServerTimingTrace) {
+  const test = await measure(trace, "test_metadata_access", () => assertTestAccess(userId, testId));
   const admin = createSupabaseAdminClient();
 
-  const { data: currentAttempt } = await admin
+  const { data: currentAttempt } = await measure(trace, "resume_lookup", () => admin
     .from("test_attempts")
     .select("id, expires_at")
     .eq("user_id", userId)
@@ -342,27 +363,27 @@ export async function startTestAttempt(userId: string, testId: string) {
     .eq("status", "in_progress")
     .order("started_at", { ascending: false })
     .limit(1)
-    .maybeSingle();
+    .maybeSingle());
 
   if (currentAttempt?.expires_at && new Date(currentAttempt.expires_at).getTime() > Date.now()) {
     return { attemptId: currentAttempt.id as string, resumed: true };
   }
 
   if (currentAttempt) {
-    await gradeAndSubmitTest(userId, currentAttempt.id, true);
+    await measure(trace, "expired_attempt_finalize", () => gradeAndSubmitTest(userId, currentAttempt.id, true, trace));
   }
 
-  const { data: sectionData, error: sectionError } = await admin
+  const { data: sectionData, error: sectionError } = await measure(trace, "section_metadata_query", () => admin
     .from("test_sections")
     .select("id, test_id, title, section_type, duration_seconds, sort_order")
     .eq("test_id", testId)
     .eq("is_current", true)
-    .order("sort_order");
+    .order("sort_order"));
   if (sectionError) throw new Error("Unable to assemble the test sections.");
   const sections = (sectionData ?? []) as SectionRow[];
   const sectionIds = sections.map((section) => section.id);
-  const { data: mappingData, error: mappingError } = await admin.from("test_questions")
-    .select("test_section_id, question_id, sort_order").in("test_section_id", sectionIds).order("sort_order");
+  const { data: mappingData, error: mappingError } = await measure(trace, "question_mapping_query", () => admin.from("test_questions")
+    .select("test_section_id, question_id, sort_order").in("test_section_id", sectionIds).order("sort_order"));
   if (mappingError) throw new Error("Unable to assemble the test questions.");
   const mappings = (mappingData ?? []) as MappingRow[];
   if (!sections.length || !mappings.length) throw new Error("This test does not contain a complete test structure.");
@@ -380,14 +401,14 @@ export async function startTestAttempt(userId: string, testId: string) {
     return test.randomize_questions ? seededShuffle(values, `${seed}:${section.id}`) : values;
   });
   const questionIds = orderedMappings.map((mapping) => mapping.question_id);
-  const [{ data: questionData }, { data: optionData }] = await Promise.all([
+  const [{ data: questionData }, { data: optionData }] = await measure(trace, "snapshot_source_queries", () => Promise.all([
     admin.from("questions").select("id, module, question_type, topic, subtopic, difficulty, question_text, passage, code, formula, table_data, image_url, estimated_time_seconds, structured_data, metadata, explanation, correct_option_id, source_type")
       .in("id", questionIds).eq("module", "core").eq("verification_status", "approved").eq("publication_status", "published").is("deleted_at", null),
     admin.from("question_options").select("id, question_id, label, content, sort_order").in("question_id", questionIds).order("sort_order"),
-  ]);
+  ]));
   const questionById = new Map(((questionData ?? []) as SafeQuestionRow[]).map((question) => [question.id, question]));
   const options = (optionData ?? []) as OptionRow[];
-  const assembled = orderedMappings.map((mapping, position) => {
+  const assembled = await measure(trace, "snapshot_creation", () => orderedMappings.map((mapping, position) => {
     const question = questionById.get(mapping.question_id);
     if (!question) throw new Error("Every mock question must remain approved and published until assembly completes.");
     const section = sections.find((value) => value.id === mapping.test_section_id);
@@ -404,7 +425,8 @@ export async function startTestAttempt(userId: string, testId: string) {
       correctOptionId: question.correct_option_id, sourceType: question.source_type,
     });
     return { mapping, section, snapshot, position };
-  });
+  }));
+  trace?.metric("question_count", assembled.length);
   const sectionSnapshots: ExamSectionSnapshot[] = sections.map((section) => ({
     id: section.id, title: section.title, sectionType: section.section_type,
     durationSeconds: section.duration_seconds, sortOrder: section.sort_order,
@@ -452,7 +474,7 @@ export async function startTestAttempt(userId: string, testId: string) {
     seed: snapshot.privateSnapshot.provenance.seed ?? null,
     fingerprint: snapshot.privateSnapshot.provenance.fingerprint ?? null,
   }));
-  const { error: persistenceError } = await admin.rpc("create_core_mock_attempt", {
+  const { error: persistenceError } = await measure(trace, "attempt_creation_rpc", () => admin.rpc("create_core_mock_attempt", {
     p_attempt_id: attemptId,
     p_test_id: testId,
     p_user_id: userId,
@@ -468,7 +490,7 @@ export async function startTestAttempt(userId: string, testId: string) {
     p_current_section_id: firstSection.id,
     p_section_expires_at: sectionExpiresAt.toISOString(),
     p_current_question_id: assembled[0].snapshot.publicQuestion.id,
-  });
+  }));
   if (persistenceError) {
     const { data: racedAttempt } = await admin
       .from("test_attempts")
@@ -563,42 +585,16 @@ export async function saveTestResponse(
     markedForReview: boolean;
     timeSpentSeconds: number;
   },
+  trace?: ServerTimingTrace,
 ) {
   const admin = createSupabaseAdminClient();
-  const [{ data: attempt }, { data: response }, { data: item }] = await Promise.all([
-    admin
-      .from("test_attempts")
-      .select("id, user_id, status, current_section_key, section_started_at, section_expires_at, test_snapshot")
-      .eq("id", input.attemptId)
-      .maybeSingle(),
-    admin
-      .from("user_responses")
-      .select("id, shown_at")
-      .eq("attempt_id", input.attemptId)
-      .eq("question_key", input.questionId)
-      .maybeSingle(),
-    admin.from("practice_attempt_items")
-      .select("section_key, public_snapshot")
-      .eq("attempt_id", input.attemptId)
-      .eq("question_key", input.questionId)
-      .maybeSingle(),
-  ]);
-
-  if (
-    !attempt ||
-    attempt.user_id !== userId ||
-    attempt.status !== "in_progress" ||
-    !response
-  ) {
-    throw new Error("This response cannot be updated.");
-  }
-  const sections = ((attempt.test_snapshot as { sections?: ExamSectionSnapshot[] }).sections ?? []);
-  const active = resolveActiveSection(sections, attempt);
-  if (!active) {
-    await gradeAndSubmitTest(userId, input.attemptId, true);
-    throw new Error("Time expired and the test was submitted automatically.");
-  }
-  if (!item || item.section_key !== active.section.id) throw new Error("Only the current timed section can be changed.");
+  const { data: item } = await measure(trace, "immutable_item_query", () => admin
+    .from("practice_attempt_items")
+    .select("public_snapshot")
+    .eq("attempt_id", input.attemptId)
+    .eq("question_key", input.questionId)
+    .maybeSingle());
+  if (!item) throw new Error("This response cannot be updated.");
   const publicQuestion = item.public_snapshot as PracticeQuestion;
   if (input.answer && !answerMatchesQuestion(input.answer, publicQuestion)) {
     throw new Error("The answer does not match the immutable attempt snapshot.");
@@ -606,7 +602,7 @@ export async function saveTestResponse(
 
   const isComplete = isTestAnswerComplete(publicQuestion, input.answer);
 
-  const { error } = await admin.rpc("save_test_response_secure", {
+  const { error } = await measure(trace, "save_response_rpc", () => admin.rpc("save_test_response_secure", {
     p_user_id: userId,
     p_attempt_id: input.attemptId,
     p_question_key: input.questionId,
@@ -619,7 +615,7 @@ export async function saveTestResponse(
     p_response_status: isComplete ? "answered" : "unanswered",
     p_is_marked_for_review: input.markedForReview,
     p_time_spent_seconds: input.timeSpentSeconds,
-  });
+  }));
 
   if (error) throw new Error("Unable to save this response.");
   return { saved: true };
@@ -629,22 +625,23 @@ export async function gradeAndSubmitTest(
   userId: string,
   attemptId: string,
   autoSubmitted: boolean,
+  trace?: ServerTimingTrace,
 ) {
   const admin = createSupabaseAdminClient();
-  const { data: attempt } = await admin
+  const { data: attempt } = await measure(trace, "completion_attempt_query", () => admin
     .from("test_attempts")
     .select("id, user_id, status, started_at, score, accuracy, total_time_seconds, test_snapshot, current_section_key, section_started_at, section_expires_at")
     .eq("id", attemptId)
-    .maybeSingle();
+    .maybeSingle());
 
   if (!attempt || attempt.user_id !== userId) {
     throw new Error("This test attempt is unavailable or already submitted.");
   }
 
-  const { data: responses } = await admin
+  const { data: responses } = await measure(trace, "completion_responses_query", () => admin
     .from("user_responses")
     .select("id, question_key, selected_option_id, response_payload")
-    .eq("attempt_id", attemptId);
+    .eq("attempt_id", attemptId));
   if (attempt.status === "submitted" || attempt.status === "auto_submitted") {
     return {
       correct: Number(attempt.score ?? 0),
@@ -656,10 +653,10 @@ export async function gradeAndSubmitTest(
   if (attempt.status !== "in_progress") {
     throw new Error("This test attempt is unavailable or already submitted.");
   }
-  const { data: items } = await admin.from("practice_attempt_items")
-    .select("question_key, private_snapshot").eq("attempt_id", attemptId);
+  const { data: items } = await measure(trace, "completion_snapshot_query", () => admin.from("practice_attempt_items")
+    .select("question_key, private_snapshot").eq("attempt_id", attemptId));
   const privateByQuestion = new Map((items ?? []).map((item) => [item.question_key, item.private_snapshot]));
-  const grades = (responses ?? []).map((response) => ({
+  const grades = await measure(trace, "grading", () => (responses ?? []).map((response) => ({
     response_id: response.id,
     response_payload: response.response_payload,
     is_correct: response.response_payload
@@ -670,12 +667,13 @@ export async function gradeAndSubmitTest(
           >[1],
         )
       : false,
-  }));
+  })));
+  trace?.metric("response_count", grades.length);
   const sections = ((attempt.test_snapshot as { sections?: ExamSectionSnapshot[] }).sections ?? []);
   const effectiveAutoSubmitted = !resolveActiveSection(sections, attempt);
   void autoSubmitted;
 
-  const { data: finalized, error: completionError } = await admin.rpc(
+  const { data: finalized, error: completionError } = await measure(trace, "finalize_attempt_rpc", () => admin.rpc(
     "finalize_test_attempt_secure",
     {
       p_user_id: userId,
@@ -683,7 +681,7 @@ export async function gradeAndSubmitTest(
       p_auto_submitted: effectiveAutoSubmitted,
       p_grades: grades,
     },
-  );
+  ));
   const row = (Array.isArray(finalized) ? finalized[0] : finalized) as {
     correct: number;
     total: number;
@@ -701,29 +699,30 @@ export async function gradeAndSubmitTest(
   };
 }
 
-export async function processTestClock(userId: string, attemptId: string) {
+export async function processTestClock(userId: string, attemptId: string, trace?: ServerTimingTrace) {
   const admin = createSupabaseAdminClient();
-  const { data: attempt } = await admin.from("test_attempts")
-    .select("id, user_id, status, current_section_key, section_started_at, section_expires_at, test_snapshot").eq("id", attemptId).maybeSingle();
+  const { data: attempt } = await measure(trace, "clock_attempt_query", () => admin.from("test_attempts")
+    .select("id, user_id, status, current_section_key, section_started_at, section_expires_at, test_snapshot").eq("id", attemptId).maybeSingle());
   if (!attempt || attempt.user_id !== userId || attempt.status !== "in_progress") {
     throw new Error("This test attempt is unavailable.");
   }
   const sections = ((attempt.test_snapshot as { sections?: ExamSectionSnapshot[] }).sections ?? []);
   const active = resolveActiveSection(sections, attempt);
-  if (!active) return { finalized: true, ...(await gradeAndSubmitTest(userId, attemptId, true)) };
-  const { data: firstItem } = await admin.from("practice_attempt_items")
+  if (!active) return { finalized: true, ...(await gradeAndSubmitTest(userId, attemptId, true, trace)) };
+  const { data: firstItem } = await measure(trace, "next_section_cursor_query", () => admin.from("practice_attempt_items")
     .select("question_key").eq("attempt_id", attemptId).eq("section_key", active.section.id)
-    .order("section_position").limit(1).maybeSingle();
-  const { error: transitionError } = await admin.from("test_attempts").update({
+    .order("section_position").limit(1).maybeSingle());
+  const { error: transitionError } = await measure(trace, "section_cursor_update", () => admin.from("test_attempts").update({
     current_section_key: active.section.id, section_started_at: new Date(active.startedAt).toISOString(),
     section_expires_at: new Date(active.expiresAt).toISOString(), current_question_key: firstItem?.question_key ?? null,
     last_activity_at: new Date().toISOString(),
-  }).eq("id", attemptId).eq("user_id", userId).eq("status", "in_progress");
+  }).eq("id", attemptId).eq("user_id", userId).eq("status", "in_progress"));
   if (transitionError) throw new Error("Unable to continue the timed test.");
   const sectionPayload = await loadActiveSectionPayload(
     admin,
     attemptId,
     active.section,
+    trace,
   );
   return {
     finalized: false,
@@ -738,12 +737,13 @@ export async function advanceTestSection(
   userId: string,
   attemptId: string,
   expectedSectionId: string,
+  trace?: ServerTimingTrace,
 ) {
   const admin = createSupabaseAdminClient();
-  const { data: attempt } = await admin.from("test_attempts")
+  const { data: attempt } = await measure(trace, "section_attempt_query", () => admin.from("test_attempts")
     .select("id, user_id, status, current_section_key, section_started_at, section_expires_at, test_snapshot")
     .eq("id", attemptId)
-    .maybeSingle();
+    .maybeSingle());
   if (!attempt || attempt.user_id !== userId || attempt.status !== "in_progress") {
     throw new Error("This test attempt is unavailable.");
   }
@@ -756,32 +756,33 @@ export async function advanceTestSection(
   const nextSection = sections[active.sectionIndex + 1];
   if (!nextSection) throw new Error("This is already the final section.");
 
-  const { data: firstItem } = await admin.from("practice_attempt_items")
+  const { data: firstItem } = await measure(trace, "next_section_cursor_query", () => admin.from("practice_attempt_items")
     .select("question_key")
     .eq("attempt_id", attemptId)
     .eq("section_key", nextSection.id)
     .order("section_position")
     .limit(1)
-    .maybeSingle();
+    .maybeSingle());
   if (!firstItem?.question_key) throw new Error("The next section snapshot is incomplete.");
 
   const startedAt = new Date();
   const sectionExpiresAt = new Date(
     startedAt.getTime() + nextSection.durationSeconds * 1000,
   );
-  const { error } = await admin.from("test_attempts").update({
+  const { error } = await measure(trace, "section_cursor_update", () => admin.from("test_attempts").update({
     current_section_key: nextSection.id,
     section_started_at: startedAt.toISOString(),
     section_expires_at: sectionExpiresAt.toISOString(),
     current_question_key: firstItem.question_key,
     last_activity_at: startedAt.toISOString(),
-  }).eq("id", attemptId).eq("user_id", userId).eq("status", "in_progress");
+  }).eq("id", attemptId).eq("user_id", userId).eq("status", "in_progress"));
   if (error) throw new Error("Unable to continue to the next section.");
 
   const sectionPayload = await loadActiveSectionPayload(
     admin,
     attemptId,
     nextSection,
+    trace,
   );
 
   return {

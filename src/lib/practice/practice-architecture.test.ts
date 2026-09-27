@@ -38,7 +38,7 @@ describe("practice persistence architecture", () => {
     const createSession = data.slice(createStart, createEnd);
 
     expect(createSession).toContain("const sourceContextPromise =");
-    expect(createSession).toContain("const [recentItemsResult, sourceContext] = await Promise.all([");
+    expect(createSession).toContain('const [recentItemsResult, sourceContext] = await measure(trace, "history_context_queries", () => Promise.all([');
     expect(createSession).toContain("sourceContextPromise");
     expect(createSession).toContain("return state(");
     expect(createSession).not.toContain("getActivePracticeSession(");

@@ -1,8 +1,8 @@
 import {
-  answerMatchesQuestion,
   type PracticeAnswer,
   type PracticeQuestion,
 } from "@/lib/practice/schemas";
+import { answerMatchesQuestion } from "@/lib/practice/answer-contract";
 
 export function isTestAnswerComplete(
   question: PracticeQuestion,

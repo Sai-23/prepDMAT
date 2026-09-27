@@ -89,15 +89,15 @@ describe("Proxy session refresh and protected-route redirects", () => {
     expect(mocks.getUser).toHaveBeenCalledTimes(2);
   });
 
-  it("refreshes a public page for the root layout without restricting access", async () => {
+  it("keeps an anonymous public page out of the Supabase session path", async () => {
     configureClient({ refresh: true, user: null });
 
     const response = await proxy(request("/exam-format"));
 
-    expect(mocks.getUser).toHaveBeenCalledOnce();
+    expect(mocks.createServerClient).not.toHaveBeenCalled();
+    expect(mocks.getUser).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBeNull();
-    expect(response.headers.get("x-middleware-request-cookie")).toContain("sb-session=new-token");
-    expect(response.cookies.get("sb-session")?.value).toBe("new-token");
+    expect(response.headers.get("x-middleware-request-x-nonce")).toBeTruthy();
     expect(response.headers.get("Content-Security-Policy")).toContain("script-src");
   });
 
@@ -109,12 +109,13 @@ describe("Proxy session refresh and protected-route redirects", () => {
     expect(response.headers.get("location")).toBe("https://prepdmat.in/login");
   });
 
-  it("keeps a public page available when the Auth transport fails", async () => {
+  it("keeps an anonymous public page independent of Auth transport state", async () => {
     configureClient({ refresh: false, user: null });
     mocks.getUser.mockRejectedValue(new Error("socket failure"));
 
     const response = await proxy(request("/exam-format"));
 
+    expect(mocks.getUser).not.toHaveBeenCalled();
     expect(response.headers.get("location")).toBeNull();
     expect(response.headers.get("Content-Security-Policy")).toContain("script-src");
   });

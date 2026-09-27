@@ -61,6 +61,38 @@ describe("mathematical-equation response UX", () => {
     expect(html).not.toContain("border-error");
   });
 
+  it("marks every submitted letter independently while preserving entered values", () => {
+    const threeLetterQuestion: PracticeQuestion = {
+      ...question,
+      structuredData: {
+        ...(question.structuredData as NonNullable<PracticeQuestion["structuredData"]>),
+        variables: ["A", "B", "C"],
+      },
+      response: { kind: "symbol_assignment", symbols: ["A", "B", "C"] },
+    };
+    const html = renderToStaticMarkup(
+      <NativePracticeResponse
+        answer={{ kind: "symbol_assignment", values: { A: 6, B: 6, C: 4 } }}
+        correctAnswer={{ A: 6, B: 6, C: 5 }}
+        disabled
+        onChange={() => undefined}
+        question={threeLetterQuestion}
+      />,
+    );
+
+    expect(html.match(/data-answer-correctness="correct"/g)).toHaveLength(2);
+    expect(html.match(/data-answer-correctness="incorrect"/g)).toHaveLength(1);
+    expect(html.match(/border-success bg-success-container/g)).toHaveLength(2);
+    expect(html.match(/border-error bg-error-container/g)).toHaveLength(1);
+    expect(html).toContain("A answer is correct.");
+    expect(html).toContain("B answer is correct.");
+    expect(html).toContain("C answer is incorrect.");
+    expect(html).toContain('aria-label="C value"');
+    expect(html).toContain('value="4"');
+    expect(html).not.toContain('value="5"');
+    expect(html.match(/ disabled=""/g)).toHaveLength(3);
+  });
+
   it("can retain the equation while removing redundant submitted inputs in review", () => {
     const html = renderToStaticMarkup(<NativePracticeResponse answer={{ kind: "symbol_assignment", values: { A: 6 } }} disabled hideAnswerInputs onChange={() => undefined} question={question} />);
     expect(html).toContain('aria-label="Equation system"');

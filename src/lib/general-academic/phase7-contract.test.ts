@@ -10,7 +10,7 @@ const workspace = source("src/components/general-academic/mock-workspace.tsx");
 const results = source("src/components/general-academic/mock-results.tsx");
 const review = source("src/components/general-academic/mock-review.tsx");
 const history = source("src/components/general-academic/mock-history.tsx");
-const library = source("src/app/tests/page.tsx");
+const library = source("src/app/(authenticated)/tests/page.tsx");
 const learning = source("src/lib/general-academic/learning-data.ts");
 
 describe("General Academic Phase 7 product contract", () => {

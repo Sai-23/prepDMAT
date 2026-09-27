@@ -3,13 +3,13 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const studentFiles = [
-  "src/app/page.tsx",
-  "src/app/exam-format/page.tsx",
-  "src/app/practice/page.tsx",
-  "src/app/tests/page.tsx",
-  "src/app/dashboard/page.tsx",
-  "src/app/results/page.tsx",
-  "src/app/progress/page.tsx",
+  "src/app/(public)/page.tsx",
+  "src/app/(public)/exam-format/page.tsx",
+  "src/app/(authenticated)/practice/page.tsx",
+  "src/app/(authenticated)/tests/page.tsx",
+  "src/app/(authenticated)/dashboard/page.tsx",
+  "src/app/(authenticated)/results/page.tsx",
+  "src/app/(authenticated)/progress/page.tsx",
   "src/components/practice/practice-experience.tsx",
   "src/components/practice/practice-review.tsx",
   "src/components/results/mock-analysis-view.tsx",

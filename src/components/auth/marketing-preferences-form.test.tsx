@@ -23,7 +23,7 @@ describe("student marketing preferences", () => {
 
   it("keeps phone and SMS controls out of the rendered profile page", () => {
     const profile = readFileSync(
-      resolve(process.cwd(), "src/app/profile/page.tsx"),
+      resolve(process.cwd(), "src/app/(authenticated)/profile/page.tsx"),
       "utf8",
     );
 

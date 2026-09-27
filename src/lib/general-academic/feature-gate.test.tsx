@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { isValidElement } from "react";
 
 const mocks = vi.hoisted(() => ({ notFound: vi.fn(() => { throw new Error("NOT_FOUND"); }) }));
 vi.mock("server-only", () => ({}));
@@ -6,7 +7,7 @@ vi.mock("next/navigation", () => ({ notFound: mocks.notFound }));
 
 import GeneralAcademicPracticeLayout from "@/app/practice/general-academic/layout";
 import GeneralAcademicMockLayout from "@/app/mock/general-academic/layout";
-import GeneralAcademicProgressLayout from "@/app/progress/general-academic/layout";
+import GeneralAcademicProgressLayout from "@/app/(authenticated)/progress/general-academic/layout";
 import { isGeneralAcademicEnabled, isGeneralAcademicUiEnabled } from "./feature-gate";
 
 const layouts = [GeneralAcademicPracticeLayout, GeneralAcademicMockLayout, GeneralAcademicProgressLayout];
@@ -36,7 +37,13 @@ describe("General Academic production gate", () => {
 
     vi.stubEnv("GENERAL_ACADEMIC_ENABLED", "true");
     vi.stubEnv("NEXT_PUBLIC_GENERAL_ACADEMIC_ENABLED", "false");
-    for (const Layout of layouts) expect(Layout({ children: "available" })).toBe("available");
+    for (const Layout of layouts) {
+      const result = Layout({ children: "available" });
+      const wrappedChild = isValidElement<{ children: React.ReactNode }>(result)
+        ? result.props.children
+        : null;
+      expect(result === "available" || wrappedChild === "available").toBe(true);
+    }
   });
 
   it("enables student UI only when both rollout flags are exactly true", () => {

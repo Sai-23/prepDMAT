@@ -10,9 +10,13 @@ import type { StudentDiagnosticStatus } from "@/lib/constants/navigation";
 export function SiteHeader({
   initialAccount,
   diagnosticStatus,
+  accountPending = false,
+  browserReconciliation = true,
 }: {
   initialAccount: HeaderAccountState | null;
   diagnosticStatus: StudentDiagnosticStatus | null;
+  accountPending?: boolean;
+  browserReconciliation?: boolean;
 }) {
   return (
     <header
@@ -31,7 +35,7 @@ export function SiteHeader({
             alt=""
             width={192}
             height={192}
-            priority
+            sizes="40px"
             className="size-10 object-contain sm:hidden"
           />
           <span className="hidden sm:flex">
@@ -40,7 +44,7 @@ export function SiteHeader({
               alt=""
               width={800}
               height={300}
-              priority
+              sizes="(min-width: 1280px) 220px, 180px"
               className="prepdmat-logo-light h-auto w-[180px] object-contain xl:w-[220px]"
             />
 
@@ -49,7 +53,7 @@ export function SiteHeader({
               alt=""
               width={800}
               height={300}
-              priority
+              sizes="(min-width: 1280px) 220px, 180px"
               className="prepdmat-logo-dark h-auto w-[180px] object-contain xl:w-[220px]"
             />
           </span>
@@ -72,6 +76,8 @@ export function SiteHeader({
           </div>
 
           <SiteHeaderAccount
+            browserReconciliation={browserReconciliation}
+            pending={accountPending}
             initialAccount={initialAccount}
             key={
               initialAccount

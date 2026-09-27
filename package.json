@@ -28,6 +28,7 @@
     "audit:phase9-analytics": "vitest run src/lib/results/phase9-mock-analysis-audit.test.ts --maxWorkers=1 --minWorkers=1",
     "audit:phase9-real-mocks": "node scripts/run-phase9-real-mock-audit.mjs",
     "audit:phase10-dashboard": "vitest run src/lib/dashboard/phase10-dashboard-audit.test.ts --maxWorkers=1 --minWorkers=1",
+    "analyze:performance": "node scripts/analyze-performance-timings.mjs",
     "export:gam-schema": "vite-node scripts/export-general-academic-schema.ts",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },

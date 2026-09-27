@@ -7,8 +7,13 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf
 
 describe("student General Academic UI gate", () => {
   it("checks the gate before loading data in every student GAM page", () => {
-    const pages = ["practice", "mock", "progress"].flatMap((area) => {
-      const root = resolve(process.cwd(), `src/app/${area}/general-academic`);
+    const roots = [
+      "src/app/practice/general-academic",
+      "src/app/mock/general-academic",
+      "src/app/(authenticated)/progress/general-academic",
+    ];
+    const pages = roots.flatMap((rootPath) => {
+      const root = resolve(process.cwd(), rootPath);
       const walk = (directory: string): string[] => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
         const path = resolve(directory, entry.name);
         return entry.isDirectory() ? walk(path) : entry.name === "page.tsx" ? [path] : [];
@@ -24,10 +29,10 @@ describe("student General Academic UI gate", () => {
   });
 
   it.each([
-    ["src/app/dashboard/page.tsx", "generalAcademicEnabled ? <section"],
-    ["src/app/practice/page.tsx", "generalAcademicEnabled ? <section"],
-    ["src/app/tests/page.tsx", "generalAcademicEnabled ? <section"],
-    ["src/app/progress/page.tsx", "if (!isGeneralAcademicUiEnabled()) return null"],
+    ["src/app/(authenticated)/dashboard/page.tsx", "generalAcademicEnabled ? <section"],
+    ["src/app/(authenticated)/practice/page.tsx", "generalAcademicEnabled ? <section"],
+    ["src/app/(authenticated)/tests/page.tsx", "generalAcademicEnabled ? <section"],
+    ["src/app/(authenticated)/progress/page.tsx", "if (!isGeneralAcademicUiEnabled()) return null"],
   ])("keeps %s hidden through the server gate", (file, gate) => {
     expect(source(file)).toContain(gate);
     expect(source(file)).toContain("isGeneralAcademicUiEnabled");

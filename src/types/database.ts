@@ -219,8 +219,35 @@ export type Database = {
         due_at: string | null;
         sort_order: number;
       }>;
+      student_feedback: DatabaseTable<{
+        id: string;
+        user_id: string;
+        rating: number;
+        liked_most: string | null;
+        improvements: string | null;
+        public_consent: boolean;
+        status: "pending" | "approved" | "rejected";
+        is_featured: boolean;
+        testimonial_public: string | null;
+        created_at: string;
+        updated_at: string;
+        reviewed_at: string | null;
+        reviewed_by: string | null;
+      }>;
     };
-    Views: Record<string, never>;
+    Views: {
+      user_header_state: {
+        Row: {
+          id: string;
+          display_name: string | null;
+          full_name: string | null;
+          theme_preference: "light" | "dark" | "system";
+          diagnostic_status: "not_started" | "in_progress" | "completed" | "skipped";
+          roles: UserRole[];
+        };
+        Relationships: [];
+      };
+    };
     Functions: Record<string, never>;
   };
 };

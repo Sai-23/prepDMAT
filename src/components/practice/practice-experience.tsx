@@ -12,7 +12,6 @@ import {
   nextPracticeQuestionAction,
   openPracticeExplanationAction,
   reportPracticeQuestionAction,
-  showPracticeQuestionAction,
   startPracticeAction,
   submitPracticeAnswerAction,
 } from "@/app/practice/actions";
@@ -122,12 +121,12 @@ export function PracticeExperience({
   performance,
   initialSession,
   initialConfig,
-  libraryIntro,
+  librarySupplement,
 }: {
   performance: PracticeModulePerformance[];
   initialSession: PracticeSessionState | null;
   initialConfig?: PracticeConfig;
-  libraryIntro?: ReactNode;
+  librarySupplement?: ReactNode;
 }) {
   const [selectedModule, setSelectedModule] = useState<PracticeModule | null>(initialConfig?.module ?? null);
   const [difficulty, setDifficulty] = useState<PracticeConfig["difficulty"]>(initialConfig?.difficulty ?? "mixed");
@@ -141,11 +140,6 @@ export function PracticeExperience({
   const [expired, setExpired] = useState(false);
   const [isPending, startTransition] = useTransition();
   const handleExpire = useCallback(() => setExpired(true), []);
-
-  useEffect(() => {
-    if (!session || feedback || session.answer) return;
-    void showPracticeQuestionAction({ sessionId: session.sessionId, questionId: session.question.id });
-  }, [feedback, session]);
 
   useEffect(() => {
     if (!session) return;
@@ -246,14 +240,8 @@ export function PracticeExperience({
     : null;
 
   return (
-    <div className="space-y-8" data-practice-library>
-      {libraryIntro}
-      <div className="space-y-5">
-      <section aria-labelledby="choose-module">
-        <div className="mb-3">
-          <h2 className="text-xl font-semibold text-on-surface" id="choose-module">Choose a Core module</h2>
-          <p className="mt-1 text-sm text-on-surface-variant">Select what you want to practise.</p>
-        </div>
+    <div className="space-y-3" data-practice-library>
+      <section aria-label="Core practice modules">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {MODULES.map((item) => {
             const selected = selectedModule === item.value;
@@ -277,27 +265,24 @@ export function PracticeExperience({
 
       {selectedModule ? (
         <Card>
-          <CardHeader className="p-4 pb-3">
+          <CardHeader className="p-3 pb-2">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <CardTitle>Configure your session</CardTitle>
-                <CardDescription className="mt-1">Answers lock after checking and worked explanations appear immediately.</CardDescription>
-              </div>
+              <CardTitle>Configure your session</CardTitle>
               {recentAccuracy != null ? (
-                <p className="rounded-md bg-surface-low px-3 py-2 text-sm text-on-surface-variant">
+                <p className="rounded-md bg-surface-low px-3 py-1.5 text-sm text-on-surface-variant">
                   Recent accuracy: <strong className="text-on-surface">{Math.round(recentAccuracy)}%</strong>
                 </p>
               ) : null}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 p-4 pt-0">
+          <CardContent className="space-y-3 px-3 pb-3 pt-0">
             {initialConfig?.questionId ? (
               <p className="rounded-md border border-primary bg-primary-muted p-3 text-sm"><strong>Exact-question review:</strong> this approved question will open as a one-question, untimed learning session.</p>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_1.4fr]">
+              <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_1.4fr]">
                 <ChoiceGroup label="Difficulty" options={["easy", "medium", "hard", "mixed"]} selected={difficulty} onSelect={(value) => setDifficulty(value as PracticeConfig["difficulty"])} />
                 <ChoiceGroup label="Questions" options={["5", "10", "20"]} selected={String(questionCount)} onSelect={(value) => setQuestionCount(Number(value) as 5 | 10 | 20)} />
-                <fieldset className="min-w-0 rounded-lg border border-workspace-border bg-surface-low p-3 md:col-span-2 lg:col-span-1">
+                <fieldset className="min-w-0 rounded-lg border border-workspace-border bg-surface-low p-2.5 md:col-span-2 lg:col-span-1">
                   <legend className="px-1 text-sm font-semibold text-on-surface">Timing</legend>
                   <div className="mt-1 grid gap-2 sm:grid-cols-2">
                     {PRACTICE_TIMING_MODES.map((mode) => (
@@ -311,7 +296,7 @@ export function PracticeExperience({
               </div>
             )}
             {error ? <ActionError action={{ label: "Retry", onClick: startPractice, disabled: isPending }} description={`${error} Your practice wasn't created.`} title="Couldn't start this practice" /> : null}
-            <div className="flex flex-col gap-3 border-t border-workspace-separator pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 border-t border-workspace-separator pt-3 sm:flex-row sm:items-center sm:justify-between">
               <p aria-live="polite" className="text-sm font-medium text-on-surface-variant">
                 {initialConfig?.questionId ? `${moduleTitle(selectedModule)} · Exact-question review · Untimed learning` : selectionSummary}
               </p>
@@ -320,14 +305,14 @@ export function PracticeExperience({
           </CardContent>
         </Card>
       ) : null}
-      </div>
+      {librarySupplement}
     </div>
   );
 }
 
 function ChoiceGroup({ label, options, selected, onSelect }: { label: string; options: string[]; selected: string; onSelect(value: string): void }) {
   const columns = options.length === 4 ? "grid-cols-2" : "grid-cols-3";
-  return <fieldset className="min-w-0 rounded-lg border border-workspace-border bg-surface-low p-3"><legend className="px-1 text-sm font-semibold text-on-surface">{label}</legend><div className={`mt-1 grid gap-2 ${columns}`}>{options.map((option) => <button aria-pressed={selected === option} className={`min-h-11 min-w-0 rounded-md border px-3 py-2 text-sm font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected === option ? "border-primary bg-primary text-primary-foreground" : "border-workspace-border bg-surface-lowest text-on-surface hover:border-primary"}`} key={option} onClick={() => onSelect(option)} type="button">{option}</button>)}</div></fieldset>;
+  return <fieldset className="min-w-0 rounded-lg border border-workspace-border bg-surface-low p-2.5"><legend className="px-1 text-sm font-semibold text-on-surface">{label}</legend><div className={`mt-1 grid gap-2 ${columns}`}>{options.map((option) => <button aria-pressed={selected === option} className={`min-h-11 min-w-0 rounded-md border px-3 py-2 text-sm font-semibold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selected === option ? "border-primary bg-primary text-primary-foreground" : "border-workspace-border bg-surface-lowest text-on-surface hover:border-primary"}`} key={option} onClick={() => onSelect(option)} type="button">{option}</button>)}</div></fieldset>;
 }
 
 function PracticeSession({ session, answer, feedback, canSubmit, expired, error, isPending, onAnswer, onSubmit, onAdvance, onExplanation, onExit, onExpire }: {

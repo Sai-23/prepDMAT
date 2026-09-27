@@ -124,7 +124,7 @@ describe("General Academic Phase 3.5 integration contract", () => {
   });
 
   it("adds no student generation entry point and no publish path", () => {
-    const studentFiles = ["src/app/practice/actions.ts", "src/app/tests/actions.ts", "src/app/diagnostic/actions.ts", "src/app/onboarding/actions.ts", "src/app/dashboard/page.tsx"]
+    const studentFiles = ["src/app/practice/actions.ts", "src/app/tests/actions.ts", "src/app/diagnostic/actions.ts", "src/app/onboarding/actions.ts", "src/app/(authenticated)/dashboard/page.tsx"]
       .filter((path) => existsSync(resolve(process.cwd(), path))).map(source).join("\n");
     expect(studentFiles).not.toContain("generateGeneralAcademicWithAIAction");
     expect(studentFiles).not.toMatch(/providers\/omniroute|OMNIROUTE_/);

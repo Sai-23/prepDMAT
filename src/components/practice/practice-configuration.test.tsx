@@ -64,16 +64,16 @@ describe("compact Practice configuration", () => {
     const html = renderToStaticMarkup(
       <PracticeExperience
         initialSession={null}
-        libraryIntro={<div>What do you want to practice?<span>Build skills with focused practice sessions.</span><span>Core modules</span></div>}
         performance={performance}
       />,
     );
 
-    expect(html).toContain("What do you want to practice?");
-    expect(html).toContain("Core modules");
     expect(html).toContain("Figure Sequences");
     expect(html).toContain("Mathematical Equations");
     expect(html).toContain("Latin Squares");
+    expect(html).not.toContain("What do you want to practice?");
+    expect(html).not.toContain("Choose a Core module");
+    expect(html).not.toContain("Core modules");
     expect(html).not.toContain("Configure your session");
   });
 
@@ -81,7 +81,6 @@ describe("compact Practice configuration", () => {
     const html = renderToStaticMarkup(
       <PracticeExperience
         initialSession={activeSession}
-        libraryIntro={<div>What do you want to practice?<span>Build skills with focused practice sessions.</span><span>Core modules</span></div>}
         performance={performance}
       />,
     );
@@ -116,6 +115,7 @@ describe("compact Practice configuration", () => {
     expect(html).toContain("60%");
     expect(html).toContain("Figure Sequences · Medium · 10 questions · Untimed learning");
     expect(html).toContain("Start practice");
+    expect(html).not.toContain("Answers lock after checking and worked explanations appear immediately.");
     expect(html.match(/<fieldset/g)).toHaveLength(3);
     expect(html).toContain("<legend");
     expect(html).toContain("Difficulty");

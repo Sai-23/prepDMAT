@@ -54,10 +54,10 @@ describe("public footer", () => {
   it("is mounted by public pages, including privacy, outside the root layout", () => {
     const read = (file: string) => readFileSync(resolve(process.cwd(), file), "utf8");
 
-    expect(read("src/app/page.tsx")).toContain("<SiteFooter />");
-    expect(read("src/app/exam-format/page.tsx")).toContain("<SiteFooter />");
-    expect(read("src/app/diagnostic/page.tsx")).toContain("<SiteFooter />");
-    expect(read("src/app/privacy/page.tsx")).toContain("<SiteFooter />");
+    expect(read("src/app/(public)/page.tsx")).toContain("<SiteFooter />");
+    expect(read("src/app/(public)/exam-format/page.tsx")).toContain("<SiteFooter />");
+    expect(read("src/app/(session)/diagnostic/page.tsx")).toContain("<SiteFooter />");
+    expect(read("src/app/(public)/privacy/page.tsx")).toContain("<SiteFooter />");
     expect(read("src/app/layout.tsx")).not.toContain("SiteFooter");
     expect(read("src/components/layout/site-footer.tsx")).toContain("new Date().getUTCFullYear()");
   });

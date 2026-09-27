@@ -6,19 +6,23 @@ const source = (file: string) => fs.readFileSync(path.join(process.cwd(), file),
 
 describe("practice UX contract", () => {
   const experience = source("src/components/practice/practice-experience.tsx");
-  const page = source("src/app/practice/page.tsx");
+  const page = source("src/app/(authenticated)/practice/page.tsx");
 
-  it("keeps the Practice heading and removes the redundant introductory paragraph", () => {
+  it("removes every redundant Practice setup heading without leaving a heading row", () => {
+    expect(page).toContain("hideHeading");
+    expect(page).toContain("compact");
     expect(page).toContain('title="Practice"');
-    expect(page).not.toContain("Choose a Core module and configure a focused learning session");
-    expect(page).not.toContain("Practice gives immediate explanations");
+    expect(page).not.toContain("What do you want to practice?");
+    expect(page).not.toContain("Build skills with focused practice sessions.");
+    expect(page).not.toContain("data-core-modules-heading");
+    expect(experience).not.toContain("Choose a Core module");
+    expect(experience).not.toContain("Select what you want to practise.");
   });
 
   it("makes library and active-session modes mutually exclusive using the existing session state", () => {
-    expect(page).toContain("libraryIntro={libraryIntro}");
-    expect(page).toContain("data-core-modules-heading");
+    expect(page).toContain("librarySupplement={librarySupplement}");
     expect(experience.indexOf("if (session)")).toBeLessThan(experience.indexOf("data-practice-library"));
-    expect(experience).toContain("{libraryIntro}");
+    expect(experience).toContain("{librarySupplement}");
   });
 
   it("presents all three module-first cards and configuration choices", () => {
@@ -43,6 +47,8 @@ describe("practice UX contract", () => {
     expect(experience).toContain("selectionSummary");
     expect(experience).toContain("Recent accuracy:");
     expect(experience).toContain("Start practice");
+    expect(experience).not.toContain("Answers lock after checking and worked explanations appear immediately.");
+    expect(experience).toContain('className="space-y-3" data-practice-library');
   });
 
   it("keeps every landing choice keyboard-accessible with clear selected state", () => {

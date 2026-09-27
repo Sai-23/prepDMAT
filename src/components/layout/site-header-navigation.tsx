@@ -36,7 +36,8 @@ export function SiteHeaderNavigation({
   const mobileNavigation = [
     ...navigation,
     ...studentNavigation.filter(
-      (item) => !navigation.some((primary) => primary.href === item.href),
+      (item) => (String(item.href) !== "/feedback" || isAuthenticated)
+        && !navigation.some((primary) => primary.href === item.href),
     ),
   ];
 
@@ -100,6 +101,7 @@ export function SiteHeaderNavigation({
                   href={item.href}
                   key={item.href}
                   onClick={() => setMobileOpen(false)}
+                  prefetch={String(item.href) === "/feedback" ? false : undefined}
                 >
                   {item.label}
                 </Link>

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("focused assessment viewport contract", () => {
-  const layout = source("src/app/layout.tsx");
+  const layout = source("src/components/layout/app-frame.tsx");
   const styles = source("src/app/globals.css");
   const shell = source("src/components/assessment/assessment-shell.tsx");
   const workspace = source("src/components/layout/workspace-shell.tsx");

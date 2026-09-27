@@ -7,8 +7,8 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf
 describe("public diagnostic security and acquisition contract", () => {
   const data = source("src/lib/onboarding/public-diagnostic.ts");
   const actions = source("src/app/diagnostic/actions.ts");
-  const take = source("src/app/diagnostic/take/page.tsx");
-  const result = source("src/app/diagnostic/result/page.tsx");
+  const take = source("src/app/(session)/diagnostic/take/page.tsx");
+  const result = source("src/app/(session)/diagnostic/result/page.tsx");
   const experience = source("src/components/onboarding/diagnostic-experience.tsx");
   const migration = source("supabase/migrations/202608290028_public_diagnostic_and_mock_summaries.sql");
 

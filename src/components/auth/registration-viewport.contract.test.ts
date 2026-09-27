@@ -7,7 +7,7 @@ function source(path: string) {
 }
 
 describe("registration viewport and interaction contract", () => {
-  const register = source("src/app/register/page.tsx");
+  const register = source("src/app/(session)/register/page.tsx");
   const form = source("src/components/auth/auth-form.tsx");
   const providers = source("src/components/auth/auth-providers.tsx");
 
@@ -42,7 +42,7 @@ describe("registration viewport and interaction contract", () => {
   });
 
   it("keeps OTP out of the ordinary login form", () => {
-    const login = source("src/app/login/page.tsx");
+    const login = source("src/app/(session)/login/page.tsx");
     expect(login).toContain('name: "email"');
     expect(login).toContain('name: "password"');
     expect(login).not.toContain('name: "token"');

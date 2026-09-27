@@ -20,11 +20,13 @@ export function WorkspaceShell({
   roles,
   heading,
   children,
+  compact = false,
 }: {
   admin: boolean;
   roles: UserRole[];
-  heading: ReactNode;
+  heading?: ReactNode;
   children: ReactNode;
+  compact?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [zenMode, setZenMode] = useState(false);
@@ -50,7 +52,8 @@ export function WorkspaceShell({
   return (
     <section
       className={[
-        "mx-auto flex w-full gap-4 px-4 py-6 lg:px-6",
+        "mx-auto flex w-full gap-4 px-4 lg:px-6",
+        compact ? "py-3" : "py-6",
         zenMode ? "max-w-[1600px]" : "max-w-7xl",
       ].join(" ")}
       data-workspace-shell
@@ -67,37 +70,39 @@ export function WorkspaceShell({
         </div>
       ) : null}
       <div className="min-w-0 flex-1 space-y-5" data-workspace-content>
-        <div className="flex items-start justify-between gap-4" data-workspace-heading>
-          <div className="min-w-0 flex-1">{heading}</div>
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="lg:hidden">
-              <ThemeToggle compact />
+        {heading ? (
+          <div className="flex items-start justify-between gap-4" data-workspace-heading>
+            <div className="min-w-0 flex-1">{heading}</div>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="lg:hidden">
+                <ThemeToggle compact />
+              </div>
+              {zenMode ? (
+                <Button
+                  aria-label="Exit Zen Mode"
+                  onClick={() => setZenMode(false)}
+                  size="sm"
+                  title="Exit Zen Mode"
+                  variant="outline"
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exit Zen</span>
+                </Button>
+              ) : (
+                <Button
+                  aria-label="Enter Zen Mode"
+                  className="lg:hidden"
+                  onClick={() => setZenMode(true)}
+                  size="sm"
+                  title="Enter Zen Mode"
+                  variant="outline"
+                >
+                  <Focus className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            {zenMode ? (
-              <Button
-                aria-label="Exit Zen Mode"
-                onClick={() => setZenMode(false)}
-                size="sm"
-                title="Exit Zen Mode"
-                variant="outline"
-              >
-                <PanelLeftOpen className="h-4 w-4" />
-                <span className="hidden sm:inline">Exit Zen</span>
-              </Button>
-            ) : (
-              <Button
-                aria-label="Enter Zen Mode"
-                className="lg:hidden"
-                onClick={() => setZenMode(true)}
-                size="sm"
-                title="Enter Zen Mode"
-                variant="outline"
-              >
-                <Focus className="h-4 w-4" />
-              </Button>
-            )}
           </div>
-        </div>
+        ) : null}
         {children}
       </div>
     </section>

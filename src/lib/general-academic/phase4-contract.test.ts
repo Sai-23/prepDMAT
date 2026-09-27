@@ -76,6 +76,7 @@ describe("General Academic Phase 4 product contract", () => {
     const appRoot = resolve(process.cwd(), "src/app");
     const routes = filesUnder(appRoot)
       .map((path) => relative(appRoot, path).replaceAll("\\", "/"))
+      .map((path) => path.replace(/(^|\/)\([^/]+\)\//g, "$1"))
       .filter((path) => path.includes("general-academic"));
     const adminRoutes = routes.filter((path) => path.startsWith("admin/general-academic/"));
     const studentRoutes = routes.filter((path) =>

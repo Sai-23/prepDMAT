@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const page = readFileSync(resolve(process.cwd(), "src/app/practice/page.tsx"), "utf8");
+const page = readFileSync(resolve(process.cwd(), "src/app/(authenticated)/practice/page.tsx"), "utf8");
 const data = readFileSync(resolve(process.cwd(), "src/lib/practice/data.ts"), "utf8");
 
 describe("practice start routing", () => {

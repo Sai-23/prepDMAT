@@ -19,9 +19,9 @@ describe("student result and empty-state next actions", () => {
   });
 
   it("describes Results as mock history and makes empty libraries actionable", () => {
-    const results = source("src/app/results/page.tsx");
-    const mistakes = source("src/app/mistakes/page.tsx");
-    const bookmarks = source("src/app/bookmarks/page.tsx");
+    const results = source("src/app/(authenticated)/results/page.tsx");
+    const mistakes = source("src/app/(authenticated)/mistakes/page.tsx");
+    const bookmarks = source("src/app/(authenticated)/bookmarks/page.tsx");
 
     expect(results).toContain("No completed mocks yet");
     expect(results).toContain("Browse mock tests");

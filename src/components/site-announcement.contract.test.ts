@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 const component = source("src/components/site-announcement.tsx");
-const dashboard = source("src/app/dashboard/page.tsx");
-const practicePage = source("src/app/practice/page.tsx");
+const dashboard = source("src/app/(authenticated)/dashboard/page.tsx");
+const practicePage = source("src/app/(authenticated)/practice/page.tsx");
 const practiceExperience = source("src/components/practice/practice-experience.tsx");
 const selection = source("src/lib/site-announcements/selection.ts");
 const styles = source("src/app/globals.css");
@@ -18,8 +18,8 @@ describe("site announcement integration contract", () => {
   });
 
   it("keeps the announcement out of an active or resumed Practice session", () => {
-    expect(practicePage.indexOf("<SiteAnnouncementBanner")).toBeLessThan(practicePage.indexOf("libraryIntro={libraryIntro}"));
-    expect(practiceExperience.indexOf("if (session)")).toBeLessThan(practiceExperience.indexOf("{libraryIntro}"));
+    expect(practicePage).toContain("librarySupplement={librarySupplement}");
+    expect(practiceExperience.indexOf("if (session)")).toBeLessThan(practiceExperience.indexOf("{librarySupplement}"));
   });
 
   it("persists dismissal by ID and supports automatic expiration", () => {

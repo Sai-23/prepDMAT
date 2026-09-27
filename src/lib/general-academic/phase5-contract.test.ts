@@ -24,8 +24,8 @@ describe("General Academic Phase 5 student UX and security contract", () => {
   });
 
   it("keeps Core Practice intact and links GAM naturally", () => {
-    expect(source("src/app/practice/page.tsx")).toContain("<PracticeExperience");
-    expect(source("src/app/practice/page.tsx")).toContain('/practice/general-academic');
+    expect(source("src/app/(authenticated)/practice/page.tsx")).toContain("<PracticeExperience");
+    expect(source("src/app/(authenticated)/practice/page.tsx")).toContain('/practice/general-academic');
   });
 
   it("uses a source/question split on desktop and accessible switch on mobile", () => {
@@ -125,7 +125,7 @@ describe("General Academic Phase 5 student UX and security contract", () => {
   });
 
   it("integrates GAM activity without changing Core dashboard priority logic", () => {
-    const dashboard = source("src/app/dashboard/page.tsx");
+    const dashboard = source("src/app/(authenticated)/dashboard/page.tsx");
     expect(dashboard).toContain("getGeneralAcademicDashboardActivity");
     expect(dashboard).toContain("data.primaryAction");
     expect(source("src/lib/dashboard/model.ts")).not.toContain("gam_practice");

@@ -23,7 +23,7 @@ describe("General Academic Phase 6 learning-loop contract", () => {
     for (const route of ["bookmarks/page.tsx", "bookmarks/[bookmarkId]/page.tsx", "mistakes/page.tsx", "mistakes/[mistakeId]/page.tsx"]) {
       expect(source(`src/app/practice/general-academic/${route}`)).toContain("requireUser()");
     }
-    expect(source("src/app/progress/general-academic/page.tsx")).toContain("requireUser()");
+    expect(source("src/app/(authenticated)/progress/general-academic/page.tsx")).toContain("requireUser()");
     expect(actions.match(/requireUser\(\)/g)).toHaveLength(2);
   });
 
@@ -92,7 +92,7 @@ describe("General Academic Phase 6 learning-loop contract", () => {
   });
 
   it("integrates learning links without displacing Core dashboard priority", () => {
-    const dashboard = source("src/app/dashboard/page.tsx");
+    const dashboard = source("src/app/(authenticated)/dashboard/page.tsx");
     expect(dashboard.indexOf("data.primaryAction")).toBeLessThan(dashboard.indexOf("gamLearning?.recommendations"));
     expect(source("src/lib/dashboard/model.ts")).not.toContain("general_academic");
   });

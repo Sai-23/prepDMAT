@@ -271,13 +271,13 @@ describe("application security boundary", () => {
       "src/app/admin/tests/[testId]/edit/page.tsx",
       "src/app/admin/tests/new/page.tsx",
       "src/app/admin/tests/page.tsx",
-      "src/app/bookmarks/page.tsx",
-      "src/app/mistakes/page.tsx",
-      "src/app/practice/page.tsx",
-      "src/app/results/page.tsx",
-      "src/app/tests/[testId]/page.tsx",
-      "src/app/tests/[testId]/take/page.tsx",
-      "src/app/tests/page.tsx",
+      "src/app/(authenticated)/bookmarks/page.tsx",
+      "src/app/(authenticated)/mistakes/page.tsx",
+      "src/app/(authenticated)/practice/page.tsx",
+      "src/app/(authenticated)/results/page.tsx",
+      "src/app/(authenticated)/tests/[testId]/page.tsx",
+      "src/app/(authenticated)/tests/[testId]/take/page.tsx",
+      "src/app/(authenticated)/tests/page.tsx",
     ].map(source).join("\n");
 
     expect(pages).not.toMatch(/error instanceof Error[\s\S]{0,80}error\.message/);

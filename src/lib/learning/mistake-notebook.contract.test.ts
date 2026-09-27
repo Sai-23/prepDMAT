@@ -6,7 +6,7 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf
 
 describe("mistake notebook remediation contract", () => {
   const data = source("src/lib/learning/data.ts");
-  const page = source("src/app/mistakes/page.tsx");
+  const page = source("src/app/(authenticated)/mistakes/page.tsx");
   const notebook = source("src/components/learning/mistake-notebook.tsx");
   const migration = source("supabase/migrations/202608280025_mistake_notebook_sources.sql");
 

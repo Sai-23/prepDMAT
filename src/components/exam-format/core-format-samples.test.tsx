@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { CoreFormatSamples } from "./core-format-samples";
 
-const examPage = readFileSync(resolve(process.cwd(), "src/app/exam-format/page.tsx"), "utf8");
+const examPage = readFileSync(resolve(process.cwd(), "src/app/(public)/exam-format/page.tsx"), "utf8");
 const practice = readFileSync(resolve(process.cwd(), "src/components/practice/practice-experience.tsx"), "utf8");
 
 describe("Student Experience 2.0 Core format fidelity", () => {
@@ -32,8 +32,9 @@ describe("Student Experience 2.0 Core format fidelity", () => {
   });
 
   it("keeps Practice module-first and reveals setup only after selection", () => {
-    expect(practice).toContain("Choose a Core module");
+    expect(practice).toContain('aria-label="Core practice modules"');
     expect(practice).toContain("{selectedModule ? (");
+    expect(practice).not.toContain("Choose a Core module");
     expect(practice).not.toContain("No completed sessions yet");
     expect(practice).not.toContain("Generating validated questions");
   });

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import {
   createPublishedGeneratedEquation,
@@ -605,6 +605,7 @@ export async function saveAdminTestAction(
     revalidatePath("/admin");
     revalidatePath("/admin/tests");
     revalidatePath("/tests");
+    revalidateTag("published-core-test-catalog", "max");
     return {
       status: "success",
       message: result.isPublished
@@ -660,6 +661,7 @@ export async function adminTestLifecycleAction(input: unknown) {
     revalidatePath("/admin");
     revalidatePath("/admin/tests");
     revalidatePath("/tests");
+    revalidateTag("published-core-test-catalog", "max");
     return { error: null, success: true };
   } catch (error) {
     return safeActionFailure(error, "Unable to update the mock lifecycle.");

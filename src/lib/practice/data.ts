@@ -2,11 +2,12 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { PublicActionError } from "@/lib/security/public-errors";
+import type { ServerTimingTrace } from "@/lib/performance/server-timing";
 
 import { generatePracticeManifest, practiceDurationSeconds, type PracticeItemManifest } from "./generation";
 import { createPracticeSnapshots, gradePracticeAnswer, type PrivatePracticeSnapshot } from "./native";
+import { answerMatchesQuestion } from "@/lib/practice/answer-contract";
 import {
-  answerMatchesQuestion,
   type PracticeAnswer,
   type PracticeConfig,
   type PracticeFeedback,
@@ -86,6 +87,15 @@ type ItemRow = {
   seed?: string | null;
   fingerprint?: string | null;
 };
+
+const PRACTICE_SESSION_STATE_COLUMNS =
+  "id, module, difficulty_mode, question_count, timing_mode, status, expires_at, current_position, correct_count, incorrect_count, total_time_seconds, completed_at";
+const PRACTICE_ITEM_STATE_COLUMNS =
+  "id, question_key, position, public_snapshot, private_snapshot, response_status, response_payload, is_correct, time_spent_seconds, shown_at, answered_at, reasoning_family, reasoning_classification, difficulty, structural_profile, source_question_id, generator_version, validator_version, seed, fingerprint";
+
+function measure<T>(trace: ServerTimingTrace | undefined, stage: string, task: () => PromiseLike<T> | T) {
+  return trace ? trace.measure(stage, task) : Promise.resolve(task());
+}
 
 function feedback(item: ItemRow, question: PracticeQuestion): PracticeFeedback | null {
   if (item.response_status !== "answered") return null;
@@ -224,7 +234,7 @@ async function exactQuestionManifest(questionId: string, expectedModule: Practic
   };
 }
 
-export async function createPracticeSession(userId: string, config: PracticeConfig) {
+export async function createPracticeSession(userId: string, config: PracticeConfig, trace?: ServerTimingTrace) {
   const admin = createSupabaseAdminClient();
   const sessionId = crypto.randomUUID();
   const masterSeed = crypto.randomUUID();
@@ -232,19 +242,19 @@ export async function createPracticeSession(userId: string, config: PracticeConf
   const sourceContextPromise = config.sourceAttemptId
     ? getMockPracticeContext(userId, config.sourceAttemptId)
     : Promise.resolve({ fingerprints: [], structuralProfiles: [] });
-  const { data: recentSessionData } = config.questionId ? { data: [] } : await admin.from("practice_sessions")
+  const { data: recentSessionData } = config.questionId ? { data: [] } : await measure(trace, "recent_session_query", () => admin.from("practice_sessions")
     .select("id").eq("user_id", userId).eq("status", "completed").eq("source_mode", "generated")
-    .order("completed_at", { ascending: false }).limit(20);
+    .order("completed_at", { ascending: false }).limit(20));
   const recentSessionIds = (recentSessionData ?? []).map((row) => row.id as string);
-  const [recentItemsResult, sourceContext] = await Promise.all([
+  const [recentItemsResult, sourceContext] = await measure(trace, "history_context_queries", () => Promise.all([
     recentSessionIds.length
       ? admin.from("practice_session_items").select("fingerprint, structural_profile")
           .in("session_id", recentSessionIds).order("created_at", { ascending: true }).limit(400)
       : Promise.resolve({ data: [] }),
     sourceContextPromise,
-  ]);
+  ]));
   const recentItemData = recentItemsResult.data;
-  const items = config.questionId
+  const items = await measure(trace, "manifest_generation", async () => config.questionId
     ? [await exactQuestionManifest(config.questionId, config.module)]
     : generatePracticeManifest({
         module: config.module,
@@ -260,10 +270,11 @@ export async function createPracticeSession(userId: string, config: PracticeConf
           ...(recentItemData ?? []).map((item) => item.structural_profile as never),
           ...sourceContext.structuralProfiles,
         ],
-      });
+      }));
+  trace?.metric("question_count", items.length);
   const duration = practiceDurationSeconds(config.module, config.questionCount, config.timingMode, items);
   const expiresAt = duration === null ? null : new Date(startedAt.getTime() + duration * 1000).toISOString();
-  const { error } = await admin.rpc("create_practice_session", {
+  const { error } = await measure(trace, "create_session_rpc", () => admin.rpc("create_practice_session", {
     p_session_id: sessionId,
     p_user_id: userId,
     p_module: config.module,
@@ -277,7 +288,7 @@ export async function createPracticeSession(userId: string, config: PracticeConf
     p_retry_of_session_id: config.retryOfSessionId ?? null,
     p_focus_families: config.focusFamilies ?? [],
     p_items: items,
-  });
+  }));
   if (error) {
     if (String(error.message).includes("active_practice_session_exists")) {
       throw new PublicActionError(
@@ -287,15 +298,6 @@ export async function createPracticeSession(userId: string, config: PracticeConf
     }
     throw new Error("Unable to save this practice session. Apply the latest database migration and try again.");
   }
-  const sessionType = config.questionId
-    ? "exact_review"
-    : config.focusFamilies?.length
-      ? "targeted_practice"
-      : "standard_practice";
-  const { error: categoryError } = await admin.from("practice_sessions")
-    .update({ session_type: sessionType })
-    .eq("id", sessionId).eq("user_id", userId);
-  if (categoryError) throw new Error("Unable to classify this practice session.");
   const firstItem = items[0];
   if (!firstItem) throw new Error("Unable to restore the new practice session.");
   return state(
@@ -350,16 +352,16 @@ export async function getExactPracticeModule(questionId: string): Promise<Practi
   return type === "figure_sequence" || type === "mathematical_equation" || type === "latin_square" ? type : null;
 }
 
-export async function getActivePracticeSession(userId: string, sessionId?: string): Promise<PracticeSessionState | null> {
+export async function getActivePracticeSession(userId: string, sessionId?: string, trace?: ServerTimingTrace): Promise<PracticeSessionState | null> {
   const admin = createSupabaseAdminClient();
-  let query = admin.from("practice_sessions").select("*").eq("user_id", userId)
+  let query = admin.from("practice_sessions").select(PRACTICE_SESSION_STATE_COLUMNS).eq("user_id", userId)
     .eq("status", "in_progress").neq("session_type", "diagnostic");
   query = sessionId ? query.eq("id", sessionId) : query.order("started_at", { ascending: false }).limit(1);
-  const { data } = await query.maybeSingle();
+  const { data } = await measure(trace, "active_session_query", () => query.maybeSingle());
   if (!data) return null;
   const session = data as SessionRow;
-  const { data: itemData } = await admin.from("practice_session_items").select("*")
-    .eq("session_id", session.id).eq("position", Math.min(session.current_position, session.question_count)).maybeSingle();
+  const { data: itemData } = await measure(trace, "active_item_query", () => admin.from("practice_session_items").select(PRACTICE_ITEM_STATE_COLUMNS)
+    .eq("session_id", session.id).eq("position", Math.min(session.current_position, session.question_count)).maybeSingle());
   if (!itemData) return null;
   return state(session, itemData as ItemRow);
 }
@@ -375,26 +377,27 @@ export async function markPracticeQuestionShown(userId: string, sessionId: strin
   if (error) throw new Error("Unable to start response timing.");
 }
 
-async function recordPracticeAnswerResult(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }) {
+async function recordPracticeAnswerResult(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }, trace?: ServerTimingTrace) {
   const admin = createSupabaseAdminClient();
-  const { data: session } = await admin.from("practice_sessions").select("*")
-    .eq("id", input.sessionId).eq("user_id", userId).eq("status", "in_progress").maybeSingle();
+  const { data: session } = await measure(trace, "ownership_session_query", () => admin.from("practice_sessions")
+    .select("id, expires_at, current_position, question_count")
+    .eq("id", input.sessionId).eq("user_id", userId).eq("status", "in_progress").maybeSingle());
   if (!session) throw new Error("This practice session is no longer available.");
   if (session.expires_at && new Date(session.expires_at).getTime() < Date.now()) throw new Error("Time has expired for this practice session.");
-  const { data } = await admin.from("practice_session_items").select("*")
-    .eq("session_id", input.sessionId).eq("question_key", input.questionId).maybeSingle();
+  const { data } = await measure(trace, "immutable_item_query", () => admin.from("practice_session_items").select(PRACTICE_ITEM_STATE_COLUMNS)
+    .eq("session_id", input.sessionId).eq("question_key", input.questionId).maybeSingle());
   if (!data) throw new Error("The submitted answer is invalid.");
   const item = data as ItemRow;
   if (item.response_status === "answered") throw new Error("This question has already been answered.");
   if (!item.shown_at) throw new Error("The question timer has not started. Refresh and try again.");
   if (!answerMatchesQuestion(input.answer, item.public_snapshot as PracticeQuestion)) throw new Error("The submitted answer does not match this question's response format.");
   const privateSnapshot = item.private_snapshot as PrivatePracticeSnapshot;
-  const isCorrect = gradePracticeAnswer(input.answer, privateSnapshot);
+  const isCorrect = await measure(trace, "grading", () => gradePracticeAnswer(input.answer, privateSnapshot));
   const timeSpentSeconds = Math.max(0, Math.min(86_400, Math.round((Date.now() - new Date(item.shown_at).getTime()) / 1000)));
-  const { error } = await admin.rpc("record_practice_answer", {
+  const { error } = await measure(trace, "record_answer_rpc", () => admin.rpc("record_practice_answer", {
     p_user_id: userId, p_session_id: input.sessionId, p_question_key: input.questionId,
     p_response_payload: input.answer, p_is_correct: isCorrect, p_time_spent_seconds: timeSpentSeconds,
-  });
+  }));
   if (error) {
     if (String(error.message).includes("practice_answer_locked")) throw new Error("This question has already been answered.");
     throw new Error("Unable to save this answer.");
@@ -409,8 +412,8 @@ async function recordPracticeAnswerResult(userId: string, input: { sessionId: st
   };
 }
 
-export async function recordPracticeAnswer(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }) {
-  const { currentPosition: _currentPosition, questionCount: _questionCount, ...result } = await recordPracticeAnswerResult(userId, input);
+export async function recordPracticeAnswer(userId: string, input: { sessionId: string; questionId: string; answer: PracticeAnswer }, trace?: ServerTimingTrace) {
+  const { currentPosition: _currentPosition, questionCount: _questionCount, ...result } = await recordPracticeAnswerResult(userId, input, trace);
   void _currentPosition;
   void _questionCount;
   return result;
@@ -426,14 +429,14 @@ export async function openPracticeExplanation(userId: string, sessionId: string,
   if (error) throw new Error("Unable to record explanation activity.");
 }
 
-export async function completePracticeSession(userId: string, sessionId: string): Promise<PracticeSummary> {
+export async function completePracticeSession(userId: string, sessionId: string, trace?: ServerTimingTrace): Promise<PracticeSummary> {
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.rpc("complete_practice_session", { p_user_id: userId, p_session_id: sessionId });
+  const { error } = await measure(trace, "complete_session_rpc", () => admin.rpc("complete_practice_session", { p_user_id: userId, p_session_id: sessionId }));
   if (error) {
     if (String(error.message).includes("practice_session_incomplete")) throw new Error("Answer every question before completing this session.");
     throw new Error("Unable to complete this practice session.");
   }
-  const review = await getPracticeReview(userId, sessionId);
+  const review = await measure(trace, "completed_review_reload", () => getPracticeReview(userId, sessionId));
   return review.summary;
 }
 
@@ -445,10 +448,10 @@ export async function abandonPracticeSession(userId: string, sessionId: string) 
 
 export async function getPracticeReview(userId: string, sessionId: string): Promise<PracticeReview> {
   const admin = createSupabaseAdminClient();
-  const { data } = await admin.from("practice_sessions").select("*").eq("id", sessionId).eq("user_id", userId).eq("status", "completed").maybeSingle();
+  const { data } = await admin.from("practice_sessions").select(PRACTICE_SESSION_STATE_COLUMNS).eq("id", sessionId).eq("user_id", userId).eq("status", "completed").maybeSingle();
   if (!data) throw new Error("This completed practice session is unavailable.");
   const session = data as SessionRow;
-  const { data: itemData, error } = await admin.from("practice_session_items").select("*").eq("session_id", sessionId).order("position");
+  const { data: itemData, error } = await admin.from("practice_session_items").select(PRACTICE_ITEM_STATE_COLUMNS).eq("session_id", sessionId).order("position");
   if (error || !itemData?.length) throw new Error("Unable to load this practice review.");
   const items = itemData as ItemRow[];
   return {
@@ -465,11 +468,11 @@ export async function getPracticeReview(userId: string, sessionId: string): Prom
   };
 }
 
-export async function getNextPracticeQuestion(userId: string, sessionId: string): Promise<PracticeSessionState> {
+export async function getNextPracticeQuestion(userId: string, sessionId: string, trace?: ServerTimingTrace): Promise<PracticeSessionState> {
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.rpc("advance_practice_question", { p_user_id: userId, p_session_id: sessionId });
+  const { error } = await measure(trace, "advance_question_rpc", () => admin.rpc("advance_practice_question", { p_user_id: userId, p_session_id: sessionId }));
   if (error) throw new Error("Finish checking the current answer before moving forward.");
-  const session = await getActivePracticeSession(userId, sessionId);
+  const session = await getActivePracticeSession(userId, sessionId, trace);
   if (!session) throw new Error("This practice session is unavailable.");
   return session;
 }

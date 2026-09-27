@@ -11,6 +11,8 @@ type PageShellProps = {
   children: ReactNode;
   admin?: boolean;
   roles?: UserRole[];
+  compact?: boolean;
+  hideHeading?: boolean;
 };
 
 export function PageShell({
@@ -20,12 +22,15 @@ export function PageShell({
   children,
   admin = false,
   roles = [],
+  compact = false,
+  hideHeading = false,
 }: PageShellProps) {
   return (
     <WorkspaceShell
       admin={admin}
+      compact={compact}
       roles={roles}
-      heading={
+      heading={hideHeading ? undefined : (
         <div className="space-y-3">
           <Badge variant="subtle">{eyebrow}</Badge>
           <div className="space-y-2">
@@ -39,7 +44,7 @@ export function PageShell({
             ) : null}
           </div>
         </div>
-      }
+      )}
     >
       {children}
     </WorkspaceShell>
