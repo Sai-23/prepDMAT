@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 const optionalShortText = z.string().trim().max(200).transform((value) => value || null);
+const optionalStudentFeedbackText = z.string().trim().max(200).optional().transform((value) => value || null);
 
 export const studentFeedbackInputSchema = z.object({
   rating: z.number().int().min(1).max(5),
-  likedMost: optionalShortText,
-  improvements: optionalShortText,
+  likedMost: optionalStudentFeedbackText,
+  improvements: optionalStudentFeedbackText,
   publicConsent: z.boolean(),
 }).strict();
 

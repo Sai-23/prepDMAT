@@ -26,6 +26,11 @@ describe("student feedback validation", () => {
       .toEqual({ rating: 4, likedMost: null, improvements: null, publicConsent: true });
   });
 
+  it("accepts omitted optional text fields", () => {
+    expect(studentFeedbackInputSchema.parse({ rating: 4, publicConsent: false }))
+      .toEqual({ rating: 4, likedMost: null, improvements: null, publicConsent: false });
+  });
+
   it.each([0, 1.5, 6])("rejects invalid rating %s", (rating) => {
     expect(studentFeedbackInputSchema.safeParse({ rating, likedMost: "", improvements: "", publicConsent: false }).success).toBe(false);
   });
@@ -57,6 +62,7 @@ describe("feedback moderation", () => {
       { ...approved, status: "pending" as const },
       { ...approved, public_consent: false },
       { ...approved, liked_most: "" },
+      { ...approved, liked_most: null },
     ]) expect(() => moderationUpdate(ineligible, { feedbackId: base.id, action: "feature" }, "admin", "now")).toThrow("FEEDBACK_NOT_ELIGIBLE");
   });
 });
@@ -70,6 +76,7 @@ describe("public testimonial projection", () => {
       { ...eligible, id: "3", status: "rejected" },
       { ...eligible, id: "4", public_consent: false },
       { ...eligible, id: "5", is_featured: false },
+      { ...eligible, id: "6", testimonial_public: "   " },
     ], [{ id: base.user_id, display_name: "Ananya Sharma", full_name: null }]);
     expect(result).toEqual([{ id: eligible.id, rating: 5, testimonial: "Public wording", displayName: "Ananya", createdAt: eligible.created_at }]);
     expect(JSON.stringify(result)).not.toMatch(/improvements|user_id|reviewed_by|status|public_consent/);

@@ -31,6 +31,19 @@ describe("student feedback action", () => {
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/feedback");
   });
 
+  it("allows both text fields to be empty even with public consent", async () => {
+    mocks.create.mockResolvedValue({ id: "feedback", public_consent: true });
+
+    await expect(submitStudentFeedbackAction({ rating: 5, likedMost: "", improvements: "", publicConsent: true }))
+      .resolves.toEqual({ ok: true, submission: "created", publicConsent: true });
+    expect(mocks.create).toHaveBeenCalledWith("student-a", {
+      rating: 5,
+      likedMost: null,
+      improvements: null,
+      publicConsent: true,
+    });
+  });
+
   it("rejects spoofed identity and moderation fields", async () => {
     const result = await submitStudentFeedbackAction({ rating: 5, likedMost: "Helpful", improvements: "", publicConsent: true, userId: "student-b", status: "approved", isFeatured: true });
     expect(result.ok).toBe(false);

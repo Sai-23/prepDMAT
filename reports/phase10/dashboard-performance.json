@@ -15,23 +15,23 @@
   "benchmarks": [
     {
       "answerCount": 0,
-      "phase8ProgressPreparationMedianMs": 0.222,
-      "dashboardAssemblyMedianMs": 0.11
-    },
-    {
-      "answerCount": 100,
-      "phase8ProgressPreparationMedianMs": 0.428,
+      "phase8ProgressPreparationMedianMs": 0.11,
       "dashboardAssemblyMedianMs": 0.05
     },
     {
+      "answerCount": 100,
+      "phase8ProgressPreparationMedianMs": 0.444,
+      "dashboardAssemblyMedianMs": 0.065
+    },
+    {
       "answerCount": 1000,
-      "phase8ProgressPreparationMedianMs": 3.731,
-      "dashboardAssemblyMedianMs": 0.047
+      "phase8ProgressPreparationMedianMs": 3.392,
+      "dashboardAssemblyMedianMs": 0.038
     },
     {
       "answerCount": 5000,
-      "phase8ProgressPreparationMedianMs": 14.855,
-      "dashboardAssemblyMedianMs": 0.045
+      "phase8ProgressPreparationMedianMs": 14.791,
+      "dashboardAssemblyMedianMs": 0.046
     }
   ],
   "databaseRoundTripMeasurement": "Not sampled without an authenticated test student; bounded query and no-N+1 contracts are verified instead.",

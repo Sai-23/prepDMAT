@@ -39,7 +39,9 @@ export function StudentFeedbackForm() {
   return (
     <form action={submit} className="space-y-5">
       <fieldset disabled={pending}>
-        <legend className="text-sm font-semibold text-on-surface">How would you rate PrepDMAT?</legend>
+        <legend className="text-sm font-semibold text-on-surface">
+          How would you rate PrepDMAT? <span className="font-normal text-muted-foreground">Required</span>
+        </legend>
         <div aria-label="Overall rating" className="mt-2 flex w-fit gap-1" role="radiogroup">
           {[1, 2, 3, 4, 5].map((value) => (
             <label className="cursor-pointer" key={value}>
@@ -62,7 +64,7 @@ export function StudentFeedbackForm() {
       </fieldset>
 
       <label className="block space-y-2">
-        <span className="text-sm font-semibold text-on-surface">What did you like most? <span className="font-normal text-muted-foreground">Optional</span></span>
+        <span className="text-sm font-semibold text-on-surface">What did you like most? <span className="font-normal text-muted-foreground">Recommended</span></span>
         <textarea className={textAreaClass} disabled={pending} maxLength={200} onChange={(event) => setLikedMost(event.target.value)} value={likedMost} />
         <span className="block text-right text-xs text-muted-foreground">{likedMost.length}/200</span>
       </label>

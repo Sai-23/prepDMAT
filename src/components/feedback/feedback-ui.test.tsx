@@ -22,6 +22,10 @@ describe("student feedback UI", () => {
     expect(form.match(/maxLength=\{200\}/g)).toHaveLength(2);
     expect(form).not.toMatch(/email|testimonial field|name preference|usefulness scale/i);
     expect(form).not.toMatch(/Update feedback|existing\?\.|existing\.status/);
+    expect(form).toContain('How would you rate PrepDMAT? <span className="font-normal text-muted-foreground">Required</span>');
+    expect(form).toContain('What did you like most? <span className="font-normal text-muted-foreground">Recommended</span>');
+    expect(form).toContain('What should we improve? <span className="font-normal text-muted-foreground">Optional</span>');
+    expect(form.match(/>Optional<\/span>/g)).toHaveLength(1);
   });
 
   it("disables submission while pending and preserves controlled text after errors", () => {
