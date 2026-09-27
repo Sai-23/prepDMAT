@@ -20,28 +20,87 @@ describe("student feedback action", () => {
 
   it("requires authentication before accepting feedback", async () => {
     mocks.requireUser.mockRejectedValue(new Error("redirected"));
-    await expect(submitStudentFeedbackAction({ rating: 5, likedMost: "", improvements: "", publicConsent: false })).rejects.toThrow("redirected");
+    await expect(submitStudentFeedbackAction({ rating: 5, likedMost: "Helpful", improvements: "", publicConsent: false })).rejects.toThrow("redirected");
     expect(mocks.create).not.toHaveBeenCalled();
   });
 
   it("saves only against the verified user ID", async () => {
-    await expect(submitStudentFeedbackAction({ rating: 5, likedMost: "Helpful", improvements: "", publicConsent: true }))
+    await expect(submitStudentFeedbackAction({ rating: 5, likedMost: "  Helpful  ", improvements: "", publicConsent: true }))
       .resolves.toEqual({ ok: true, submission: "created", publicConsent: true });
     expect(mocks.create).toHaveBeenCalledWith("student-a", { rating: 5, likedMost: "Helpful", improvements: null, publicConsent: true });
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/feedback");
   });
 
-  it("allows both text fields to be empty even with public consent", async () => {
-    mocks.create.mockResolvedValue({ id: "feedback", public_consent: true });
+  it.each([false, true])("accepts empty improvements with consent=%s", async (publicConsent) => {
+    mocks.create.mockResolvedValue({ id: "feedback", public_consent: publicConsent });
 
-    await expect(submitStudentFeedbackAction({ rating: 5, likedMost: "", improvements: "", publicConsent: true }))
-      .resolves.toEqual({ ok: true, submission: "created", publicConsent: true });
+    await expect(submitStudentFeedbackAction({
+      rating: 5,
+      likedMost: "Mock tests",
+      improvements: "",
+      publicConsent,
+    })).resolves.toEqual({ ok: true, submission: "created", publicConsent });
     expect(mocks.create).toHaveBeenCalledWith("student-a", {
       rating: 5,
-      likedMost: null,
+      likedMost: "Mock tests",
       improvements: null,
+      publicConsent,
+    });
+  });
+
+  it("accepts short optional improvement feedback", async () => {
+    await submitStudentFeedbackAction({
+      rating: 4,
+      likedMost: "Practice questions",
+      improvements: "speed",
+      publicConsent: false,
+    });
+
+    expect(mocks.create).toHaveBeenCalledWith("student-a", {
+      rating: 4,
+      likedMost: "Practice questions",
+      improvements: "speed",
+      publicConsent: false,
+    });
+  });
+
+  it("requires both rating and positive feedback without treating consent or improvements as required", async () => {
+    const missingRating = await submitStudentFeedbackAction({
+      rating: 0,
+      likedMost: "",
+      improvements: "",
+      publicConsent: false,
+    });
+
+    expect(missingRating).toEqual({
+      ok: false,
+      error: "Check the required fields and keep each response within 200 characters.",
+    });
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it.each(["", "   ", "\n\t"])("rejects whitespace-only positive feedback %j", async (likedMost) => {
+    const result = await submitStudentFeedbackAction({
+      rating: 5,
+      likedMost,
+      improvements: "",
       publicConsent: true,
     });
+
+    expect(result.ok).toBe(false);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects over-limit text before persistence without changing optional-field rules", async () => {
+    const result = await submitStudentFeedbackAction({
+      rating: 5,
+      likedMost: "x".repeat(201),
+      improvements: "",
+      publicConsent: false,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 
   it("rejects spoofed identity and moderation fields", async () => {

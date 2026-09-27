@@ -21,23 +21,31 @@ const base: FeedbackRecord = {
 };
 
 describe("student feedback validation", () => {
-  it("accepts a rating with no text and normalizes empty optional fields", () => {
-    expect(studentFeedbackInputSchema.parse({ rating: 4, likedMost: "", improvements: "  ", publicConsent: true }))
-      .toEqual({ rating: 4, likedMost: null, improvements: null, publicConsent: true });
+  it("trims required positive feedback and normalizes empty optional improvement text", () => {
+    expect(studentFeedbackInputSchema.parse({ rating: 4, likedMost: "  Mock tests  ", improvements: "  ", publicConsent: true }))
+      .toEqual({ rating: 4, likedMost: "Mock tests", improvements: null, publicConsent: true });
   });
 
-  it("accepts omitted optional text fields", () => {
-    expect(studentFeedbackInputSchema.parse({ rating: 4, publicConsent: false }))
-      .toEqual({ rating: 4, likedMost: null, improvements: null, publicConsent: false });
+  it.each([undefined, "", " ", "     ", "\n", "\n\n", "\t"])(
+    "rejects missing or whitespace-only positive feedback %j",
+    (likedMost) => {
+      expect(studentFeedbackInputSchema.safeParse({ rating: 4, likedMost, improvements: "", publicConsent: false }).success)
+        .toBe(false);
+    },
+  );
+
+  it("accepts omitted optional improvement text", () => {
+    expect(studentFeedbackInputSchema.parse({ rating: 4, likedMost: "Practice", publicConsent: false }))
+      .toEqual({ rating: 4, likedMost: "Practice", improvements: null, publicConsent: false });
   });
 
   it.each([0, 1.5, 6])("rejects invalid rating %s", (rating) => {
-    expect(studentFeedbackInputSchema.safeParse({ rating, likedMost: "", improvements: "", publicConsent: false }).success).toBe(false);
+    expect(studentFeedbackInputSchema.safeParse({ rating, likedMost: "Good", improvements: "", publicConsent: false }).success).toBe(false);
   });
 
   it("enforces both text limits and rejects moderation or identity fields", () => {
     expect(studentFeedbackInputSchema.safeParse({ rating: 5, likedMost: "x".repeat(201), improvements: "", publicConsent: false }).success).toBe(false);
-    expect(studentFeedbackInputSchema.safeParse({ rating: 5, likedMost: "", improvements: "x".repeat(201), publicConsent: false }).success).toBe(false);
+    expect(studentFeedbackInputSchema.safeParse({ rating: 5, likedMost: "Good", improvements: "x".repeat(201), publicConsent: false }).success).toBe(false);
     expect(studentFeedbackInputSchema.safeParse({ rating: 5, likedMost: "Good", improvements: "", publicConsent: true, userId: "spoofed", status: "approved", isFeatured: true }).success).toBe(false);
   });
 });

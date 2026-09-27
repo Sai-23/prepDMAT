@@ -14,6 +14,9 @@ describe("student feedback security contract", () => {
     expect(migration.match(/char_length\([^)]*\) <= 200/g)).toHaveLength(3);
     expect(migration).toContain("student_feedback_feature_eligibility");
     expect(migration).toMatch(/not is_featured or \([\s\S]*status = 'approved'[\s\S]*public_consent[\s\S]*liked_most[\s\S]*testimonial_public/);
+    expect(migration).toMatch(/liked_most text check/);
+    expect(migration).toMatch(/improvements text check/);
+    expect(migration).not.toMatch(/liked_most text not null|improvements text not null/);
   });
 
   it("keeps anonymous users out and scopes student access through RLS", () => {

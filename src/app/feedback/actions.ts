@@ -13,7 +13,7 @@ export type SubmitFeedbackResult =
 export async function submitStudentFeedbackAction(input: unknown): Promise<SubmitFeedbackResult> {
   const user = await requireUser();
   const parsed = studentFeedbackInputSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Check your rating and keep each response under 200 characters." };
+  if (!parsed.success) return { ok: false, error: "Check the required fields and keep each response within 200 characters." };
   try {
     const created = await createStudentFeedback(user.id, parsed.data);
     revalidatePath("/feedback");
