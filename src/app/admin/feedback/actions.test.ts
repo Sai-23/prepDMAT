@@ -28,13 +28,18 @@ describe("feedback moderation action", () => {
   });
 
   it.each(["approve", "reject", "feature", "unfeature"] as const)("performs %s and expires the public cache", async (action) => {
-    await expect(moderateFeedbackAction({ feedbackId: id, action })).resolves.toEqual({ ok: true });
+    await expect(moderateFeedbackAction({ feedbackId: id, action })).resolves.toEqual({ ok: true, feedback: { id } });
     expect(mocks.moderate).toHaveBeenCalledWith("admin", { feedbackId: id, action });
     expect(mocks.revalidateTag).toHaveBeenCalledWith("public-student-testimonials", { expire: 0 });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/admin/feedback");
   });
 
   it("validates edited public text independently of the original", async () => {
-    await moderateFeedbackAction({ feedbackId: id, action: "edit_testimonial", testimonialPublic: "Lightly edited" });
+    await expect(moderateFeedbackAction({ feedbackId: id, action: "edit_testimonial", testimonialPublic: "Lightly edited" }))
+      .resolves.toEqual({ ok: true, feedback: { id } });
     expect(mocks.moderate).toHaveBeenCalledWith("admin", { feedbackId: id, action: "edit_testimonial", testimonialPublic: "Lightly edited" });
+    expect(mocks.revalidateTag).toHaveBeenCalledWith("public-student-testimonials", { expire: 0 });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
   });
 });

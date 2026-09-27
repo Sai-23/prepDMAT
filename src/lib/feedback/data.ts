@@ -149,7 +149,13 @@ export function toPublicTestimonials(
 
 const getPublicTestimonialsBase = unstable_cache(
   async (): Promise<PublicTestimonial[]> => {
-    const admin = createSupabaseAdminClient();
+    let admin: ReturnType<typeof createSupabaseAdminClient>;
+    try {
+      admin = createSupabaseAdminClient();
+    } catch {
+      console.error("[feedback.public_testimonials] failed", { stage: "admin_client" });
+      return [];
+    }
     const { data, error } = await admin
       .from("student_feedback")
       .select(PUBLIC_FEEDBACK_COLUMNS)
@@ -160,12 +166,24 @@ const getPublicTestimonialsBase = unstable_cache(
       .order("created_at", { ascending: false })
       .limit(3)
       .overrideTypes<PublicFeedbackSource[], { merge: false }>();
-    if (error || !data?.length) return [];
-    const { data: profiles } = await admin
+    if (error) {
+      console.error("[feedback.public_testimonials] failed", {
+        stage: "feedback_query",
+        code: error.code || "unknown",
+      });
+      return [];
+    }
+    if (!data?.length) return [];
+    const { data: profiles, error: profileError } = await admin
       .from("profiles")
       .select("id, display_name, full_name")
       .in("id", data.map((item) => item.user_id))
       .overrideTypes<ProfileName[], { merge: false }>();
+    if (profileError) {
+      console.error("[feedback.public_testimonials] profile enrichment failed", {
+        code: profileError.code || "unknown",
+      });
+    }
     return toPublicTestimonials(data, profiles ?? []);
   },
   [TESTIMONIAL_CACHE_TAG],

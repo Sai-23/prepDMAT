@@ -51,10 +51,24 @@ describe("student feedback security contract", () => {
     const publicColumns = data.match(/const PUBLIC_FEEDBACK_COLUMNS = "([^"]+)"/)?.[1] ?? "";
     expect(publicColumns).not.toMatch(/improvements|liked_most|reviewed_by|reviewed_at/);
     expect(publicColumns).toMatch(/id, user_id, rating/);
+    expect(data).toContain("createSupabaseAdminClient()");
     expect(data).toContain('tags: [TESTIMONIAL_CACHE_TAG]');
     expect(data).toContain('.eq("status", "approved")');
     expect(data).toContain('.eq("public_consent", true)');
     expect(data).toContain('.eq("is_featured", true)');
     expect(action).toContain("revalidateTag(TESTIMONIAL_CACHE_TAG, { expire: 0 })");
+    expect(action).toContain('revalidatePath("/")');
+  });
+
+  it("returns only the explicit public DTO and safely diagnoses public-query failures", () => {
+    const data = source("src/lib/feedback/data.ts");
+    const model = source("src/lib/feedback/model.ts");
+    const dto = model.split("export type PublicTestimonial")[1].split("};")[0];
+    expect(dto).toMatch(/id: string;[\s\S]*rating: number;[\s\S]*testimonial: string;[\s\S]*displayName: string;[\s\S]*createdAt: string/);
+    expect(dto).not.toMatch(/user_id|liked_most|improvements|reviewed_by|public_consent|status/);
+    expect(data).toContain('[feedback.public_testimonials] failed');
+    expect(data).toContain('stage: "feedback_query"');
+    expect(data).toContain('profile enrichment failed');
+    expect(data).not.toContain("console.error(error");
   });
 });

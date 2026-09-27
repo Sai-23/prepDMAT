@@ -11,11 +11,11 @@ export async function moderateFeedbackAction(input: unknown) {
   const parsed = feedbackModerationInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "The moderation request is invalid." };
   try {
-    await moderateFeedback(user.id, parsed.data);
+    const feedback = await moderateFeedback(user.id, parsed.data);
     revalidateTag(TESTIMONIAL_CACHE_TAG, { expire: 0 });
     revalidatePath("/");
     revalidatePath("/admin/feedback");
-    return { ok: true as const };
+    return { ok: true as const, feedback };
   } catch (error) {
     return {
       ok: false as const,

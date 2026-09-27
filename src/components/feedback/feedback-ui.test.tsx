@@ -104,6 +104,37 @@ describe("student feedback UI", () => {
     expect(html).not.toMatch(/user_id|improvements|reviewed_by|pending/);
   });
 
+  it.each([1, 2])("renders %s eligible testimonial cards", (count) => {
+    const testimonials = Array.from({ length: count }, (_, index) => ({
+      id: `review-${index}`,
+      rating: 5,
+      testimonial: `Review ${index}`,
+      displayName: `Student ${index}`,
+      createdAt: "2026-09-27T00:00:00Z",
+    }));
+    const html = renderToStaticMarkup(<StudentTestimonials testimonials={testimonials} />);
+    expect(html.match(/<figure/g)).toHaveLength(count);
+  });
+
+  it("renders at most three testimonial cards when passed five", () => {
+    const testimonials = Array.from({ length: 5 }, (_, index) => ({
+      id: `review-${index}`,
+      rating: 5,
+      testimonial: `Review ${index}`,
+      displayName: `Student ${index}`,
+      createdAt: "2026-09-27T00:00:00Z",
+    }));
+    const html = renderToStaticMarkup(<StudentTestimonials testimonials={testimonials} />);
+    expect(html.match(/<figure/g)).toHaveLength(3);
+    expect(html).not.toContain("Review 4");
+  });
+
+  it("awaits public testimonial data on the homepage and passes it to the renderer", () => {
+    const homepage = source("src/app/(public)/page.tsx");
+    expect(homepage).toContain("await getPublicTestimonials()");
+    expect(homepage).toContain("<StudentTestimonials testimonials={testimonials} />");
+  });
+
   it("keeps feedback secondary and disables its prefetch path", () => {
     const navigation = source("src/lib/constants/navigation.ts");
     const sidebar = source("src/components/layout/app-sidebar.tsx");

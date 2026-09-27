@@ -58,8 +58,18 @@ describe("feedback moderation", () => {
   });
 
   it("rejects privately and removes public eligibility", () => {
-    expect(moderationUpdate({ ...base, status: "approved", is_featured: true }, { feedbackId: base.id, action: "reject" }, "admin", "now"))
-      .toMatchObject({ status: "rejected", is_featured: false, testimonial_public: null });
+    const visible = { ...base, status: "approved" as const, is_featured: true, testimonial_public: "Public wording" };
+    const update = moderationUpdate(visible, { feedbackId: base.id, action: "reject" }, "admin", "now");
+    expect(update).toMatchObject({ status: "rejected", is_featured: false, testimonial_public: null });
+    expect(toPublicTestimonials([{ ...visible, ...update }], [])).toEqual([]);
+  });
+
+  it("unfeatures an already public review without changing its approved state", () => {
+    const visible = { ...base, status: "approved" as const, is_featured: true, testimonial_public: "Public wording" };
+    const update = moderationUpdate(visible, { feedbackId: base.id, action: "unfeature" }, "admin", "now");
+    const updated = { ...visible, ...update };
+    expect(updated).toMatchObject({ status: "approved", is_featured: false, testimonial_public: "Public wording" });
+    expect(toPublicTestimonials([updated], [])).toEqual([]);
   });
 
   it("features only approved, consented feedback with positive text", () => {
@@ -93,5 +103,21 @@ describe("public testimonial projection", () => {
   it("never derives public names from email-like values", () => {
     expect(publicStudentName("student@example.com", null)).toBe("PrepDMAT student");
     expect(publicStudentName(null, "Mira Patel")).toBe("Mira");
+  });
+
+  it("uses a safe fallback when profile enrichment is missing", () => {
+    const eligible = { ...base, status: "approved" as const, is_featured: true, testimonial_public: "Public wording" };
+    expect(toPublicTestimonials([eligible], [])[0]?.displayName).toBe("PrepDMAT student");
+  });
+
+  it("returns no more than three eligible reviews", () => {
+    const rows = Array.from({ length: 5 }, (_, index) => ({
+      ...base,
+      id: String(index + 1),
+      status: "approved" as const,
+      is_featured: true,
+      testimonial_public: `Public wording ${index + 1}`,
+    }));
+    expect(toPublicTestimonials(rows, [])).toHaveLength(3);
   });
 });
