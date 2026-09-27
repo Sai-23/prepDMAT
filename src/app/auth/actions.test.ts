@@ -100,6 +100,34 @@ describe("loginAction security regression", () => {
     expect(mocks.redirect).toHaveBeenCalledWith("/dashboard");
   });
 
+  it("returns a successful login to a validated feedback destination", async () => {
+    mocks.createServerClient.mockResolvedValue(authClient({
+      data: { user: { id: "student-id" }, session: { access_token: "not-exposed" } },
+      error: null,
+    }));
+    const formData = credentials();
+    formData.set("next", "/feedback?source=email");
+
+    await loginAction(idle, formData);
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/feedback?source=email");
+    expect(mocks.getPostAuthRoute).not.toHaveBeenCalled();
+  });
+
+  it("uses the existing post-auth route when a return destination is unsafe", async () => {
+    mocks.createServerClient.mockResolvedValue(authClient({
+      data: { user: { id: "student-id" }, session: { access_token: "not-exposed" } },
+      error: null,
+    }));
+    const formData = credentials();
+    formData.set("next", "https://evil.example/steal");
+
+    await loginAction(idle, formData);
+
+    expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("student-id");
+    expect(mocks.redirect).toHaveBeenCalledWith("/dashboard");
+  });
+
   it.each([
     ["wrong password", "invalid_credentials"],
     ["unknown account", "user_not_found"],
@@ -209,9 +237,12 @@ describe("email signup verification", () => {
     mocks.providerAvailability.google = false;
     mocks.providerAvailability.phone = false;
     mocks.enforceRateLimit.mockResolvedValue(undefined);
-    mocks.getAuthCallbackUrl.mockImplementation(
-      (flow: string) => `https://prepdmat.in/auth/callback?flow=${flow}`,
-    );
+    mocks.getAuthCallbackUrl.mockImplementation((flow: string, next?: string | null) => {
+      const url = new URL("/auth/callback", "https://prepdmat.in");
+      url.searchParams.set("flow", flow);
+      if (next) url.searchParams.set("next", next);
+      return url.toString();
+    });
     mocks.getPostAuthRoute.mockResolvedValue("/dashboard");
     mocks.claimPublicDiagnostic.mockResolvedValue(false);
   });
@@ -232,7 +263,7 @@ describe("email signup verification", () => {
     expect(mocks.enforceRateLimit).toHaveBeenCalledWith("auth:signup", {
       account: "student@example.test",
     });
-    expect(mocks.getAuthCallbackUrl).toHaveBeenCalledWith("email_verification");
+    expect(mocks.getAuthCallbackUrl).toHaveBeenCalledWith("email_verification", null);
     expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
       options: expect.objectContaining({
         data: {
@@ -246,6 +277,29 @@ describe("email signup verification", () => {
       status: "success",
       view: "verify_email",
       email: "student@example.test",
+    }));
+  });
+
+  it("preserves feedback through signup and the email verification callback", async () => {
+    const signUp = vi.fn().mockResolvedValue({
+      data: { user: { id: "pending-user" }, session: null },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { signUp } });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("password", "password1");
+    formData.set("confirmPassword", "password1");
+    formData.set("next", "/feedback");
+
+    await registerAction(idle, formData);
+
+    expect(mocks.getAuthCallbackUrl).toHaveBeenCalledWith("email_verification", "/feedback");
+    expect(signUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({
+        emailRedirectTo:
+          "https://prepdmat.in/auth/callback?flow=email_verification&next=%2Ffeedback",
+      }),
     }));
   });
 
@@ -401,6 +455,23 @@ describe("email signup verification", () => {
     expect(mocks.redirect).toHaveBeenCalledWith("/onboarding");
   });
 
+  it("returns a verified signup OTP to the preserved feedback destination", async () => {
+    const verifyOtp = vi.fn().mockResolvedValue({
+      data: { user: { id: "verified-user" }, session: { access_token: "not-exposed" } },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue({ auth: { verifyOtp } });
+    const formData = new FormData();
+    formData.set("email", "student@example.test");
+    formData.set("token", "123456");
+    formData.set("next", "/feedback");
+
+    await verifyRegistrationEmailOtpAction(idle, formData);
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/feedback");
+    expect(mocks.getPostAuthRoute).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid or expired signup OTPs without exposing provider details", async () => {
     mocks.createServerClient.mockResolvedValue({
       auth: {
@@ -474,6 +545,16 @@ describe("optional auth providers", () => {
     await googleSignInAction(idle, new FormData());
 
     expect(mocks.redirect).toHaveBeenCalledWith("/auth/google");
+  });
+
+  it("preserves a validated return destination at the Google entry route", async () => {
+    mocks.providerAvailability.google = true;
+    const formData = new FormData();
+    formData.set("next", "/feedback");
+
+    await googleSignInAction(idle, formData);
+
+    expect(mocks.redirect).toHaveBeenCalledWith("/auth/google?next=%2Ffeedback");
   });
 
   it("normalizes phone input on the server before rate limiting and sending", async () => {

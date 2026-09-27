@@ -14,6 +14,7 @@ describe("email verification OTP server prerender", () => {
       <EmailVerificationOtp
         email="sachin36@gmail.com"
         message="Enter the 6-digit code sent to your email."
+        returnPath="/feedback"
       />,
     );
     const visibleHtml = html.replace(/<input[^>]+type="hidden"[^>]*>/g, "");
@@ -26,6 +27,8 @@ describe("email verification OTP server prerender", () => {
     expect(html).toContain("Verify email");
     expect(html).toContain("disabled");
     expect(html).toContain("sa***36@gmail.com");
+    expect(html.match(/name="next"/g)).toHaveLength(2);
+    expect(html).toContain('value="/feedback"');
     expect(visibleHtml).not.toContain("sachin36@gmail.com");
   });
 });

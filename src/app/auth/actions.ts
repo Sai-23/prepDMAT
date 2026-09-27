@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { getAuthCallbackUrl, getAuthProviderAvailability } from "@/lib/auth/config";
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
+import { getSafeReturnPath, googleAuthPath } from "@/lib/auth/return-path";
 import {
   forgotPasswordSchema,
   emailVerificationOtpSchema,
@@ -110,6 +111,10 @@ async function claimPublicDiagnosticIfPresent(userId: string) {
   }
 }
 
+async function authenticatedDestination(userId: string, value: unknown) {
+  return getSafeReturnPath(value) ?? await getPostAuthRoute(userId);
+}
+
 export async function loginAction(
   _state: AuthActionState,
   formData: FormData,
@@ -143,10 +148,10 @@ export async function loginAction(
     return loginUnavailable("provider", "provider_request_failed");
   }
 
-  let destination: Awaited<ReturnType<typeof getPostAuthRoute>>;
+  let destination: Awaited<ReturnType<typeof authenticatedDestination>>;
   try {
     await claimPublicDiagnosticIfPresent(authenticatedUserId);
-    destination = await getPostAuthRoute(authenticatedUserId);
+    destination = await authenticatedDestination(authenticatedUserId, formData.get("next"));
   } catch {
     return loginUnavailable("post_auth_route", "profile_route_unavailable");
   }
@@ -158,6 +163,7 @@ export async function registerAction(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  const returnPath = getSafeReturnPath(formData.get("next"));
   const result = registerSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -184,7 +190,7 @@ export async function registerAction(
         data: {
           marketing_email_opt_in: result.data.marketingEmailOptIn,
         },
-        emailRedirectTo: getAuthCallbackUrl("email_verification"),
+        emailRedirectTo: getAuthCallbackUrl("email_verification", returnPath),
       },
     });
     data = signupResult.data;
@@ -210,7 +216,7 @@ export async function registerAction(
   if (data.session && data.user) {
     await claimPublicDiagnosticIfPresent(data.user.id);
     revalidatePath("/", "layout");
-    redirect(await getPostAuthRoute(data.user.id));
+    redirect(await authenticatedDestination(data.user.id, returnPath));
   }
 
   // Supabase deliberately makes duplicate signups ambiguous. A password sign-in
@@ -233,7 +239,7 @@ export async function registerAction(
   if (existingUserId) {
     await claimPublicDiagnosticIfPresent(existingUserId);
     revalidatePath("/", "layout");
-    redirect(await getPostAuthRoute(existingUserId));
+    redirect(await authenticatedDestination(existingUserId, returnPath));
   }
 
   return {
@@ -289,7 +295,7 @@ export async function verifyRegistrationEmailOtpAction(
 
   await claimPublicDiagnosticIfPresent(authenticatedUserId);
   revalidatePath("/", "layout");
-  redirect(await getPostAuthRoute(authenticatedUserId));
+  redirect(await authenticatedDestination(authenticatedUserId, formData.get("next")));
 }
 
 export async function resendVerificationAction(
@@ -311,7 +317,12 @@ export async function resendVerificationAction(
     const resendResult = await supabase.auth.resend({
       type: "signup",
       email: result.data.email,
-      options: { emailRedirectTo: getAuthCallbackUrl("email_verification") },
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(
+          "email_verification",
+          getSafeReturnPath(formData.get("next")),
+        ),
+      },
     });
     error = resendResult.error;
   } catch {
@@ -348,14 +359,13 @@ export async function resendVerificationAction(
 
 export async function googleSignInAction(
   _state: AuthActionState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<AuthActionState> {
   void _state;
-  void _formData;
   if (!getAuthProviderAvailability().google) {
     return { status: "error", message: "Google sign-in is not available right now." };
   }
-  redirect("/auth/google");
+  redirect(googleAuthPath(formData.get("next")));
 }
 
 export async function requestPhoneOtpAction(
@@ -475,7 +485,7 @@ export async function verifyPhoneOtpAction(
 
   await claimPublicDiagnosticIfPresent(authenticatedUserId);
   revalidatePath("/", "layout");
-  redirect(await getPostAuthRoute(authenticatedUserId));
+  redirect(await authenticatedDestination(authenticatedUserId, formData.get("next")));
 }
 
 export async function forgotPasswordAction(

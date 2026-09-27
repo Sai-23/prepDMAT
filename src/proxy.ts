@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getApplicationUrl } from "@/lib/auth/config";
+import { getSafeReturnPath } from "@/lib/auth/return-path";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { createContentSecurityPolicy } from "@/lib/security/csp";
 import { updateSupabaseSession } from "@/lib/supabase/proxy";
@@ -29,8 +30,11 @@ function matchesRoute(pathname: string, routes: readonly string[]) {
   );
 }
 
-function withRedirect() {
-  return NextResponse.redirect(getApplicationUrl("/login"));
+function withRedirect(request: NextRequest) {
+  const loginUrl = getApplicationUrl("/login");
+  const returnPath = getSafeReturnPath(`${request.nextUrl.pathname}${request.nextUrl.search}`);
+  if (returnPath) loginUrl.searchParams.set("next", returnPath);
+  return NextResponse.redirect(loginUrl);
 }
 
 function withContentSecurityPolicy(response: NextResponse, policy: string) {
@@ -89,7 +93,7 @@ export async function proxy(request: NextRequest) {
 
   if (!user) {
     return withContentSecurityPolicy(
-      preserveSessionResponse(session.response, withRedirect()),
+      preserveSessionResponse(session.response, withRedirect(request)),
       contentSecurityPolicy,
     );
   }

@@ -24,7 +24,7 @@ function ActionMessage({ state }: { state: AuthActionState }) {
   ) : null;
 }
 
-function GoogleButton() {
+function GoogleButton({ returnPath }: { returnPath?: string | null }) {
   const inFlight = useRef(false);
   const [state, action, pending] = useActionState(async (
     previousState: AuthActionState,
@@ -40,6 +40,7 @@ function GoogleButton() {
   }, initialAuthState);
   return (
     <form action={action} className="space-y-2">
+      {returnPath ? <input name="next" type="hidden" value={returnPath} /> : null}
       <Button className="min-h-11 w-full" disabled={pending} type="submit" variant="outline">
         <GoogleMark />
         {pending ? "Redirecting to Google..." : "Continue with Google"}
@@ -64,14 +65,16 @@ export function AuthProviderOptions({
   availability,
   emailForm,
   compact = false,
+  returnPath,
 }: {
   availability: AuthProviderAvailability;
   emailForm: ReactNode;
   compact?: boolean;
+  returnPath?: string | null;
 }) {
   return (
     <div className={compact ? "space-y-3" : "space-y-5"}>
-      {availability.google ? <GoogleButton /> : null}
+      {availability.google ? <GoogleButton returnPath={returnPath} /> : null}
       {availability.google ? <AuthDivider /> : null}
       {emailForm}
     </div>

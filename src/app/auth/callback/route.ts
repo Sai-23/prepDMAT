@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/config";
 import { parseEmailVerificationOtpType } from "@/lib/auth/email-verification";
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
+import { getSafeReturnPath } from "@/lib/auth/return-path";
 import { claimPublicDiagnosticForUser } from "@/lib/onboarding/public-diagnostic";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -16,17 +17,28 @@ function parseCallbackFlow(value: string | null): AuthCallbackFlow {
   return "authentication";
 }
 
-function loginOutcomeUrl(outcome: "expired" | "session_required" | "unavailable") {
+function retainReturnPath(url: URL, returnPath: string | null) {
+  if (returnPath) url.searchParams.set("next", returnPath);
+  return url;
+}
+
+function loginOutcomeUrl(
+  outcome: "expired" | "session_required" | "unavailable",
+  returnPath: string | null,
+) {
   const url = getApplicationUrl("/login");
   if (outcome === "unavailable") {
     url.searchParams.set("error", "auth_unavailable");
   } else {
     url.searchParams.set("verification", outcome);
   }
-  return url;
+  return retainReturnPath(url, returnPath);
 }
 
-function googleFailureUrl(outcome: "expired" | "failed" | "unavailable") {
+function googleFailureUrl(
+  outcome: "expired" | "failed" | "unavailable",
+  returnPath: string | null,
+) {
   const url = getApplicationUrl("/login");
   url.searchParams.set(
     "error",
@@ -36,10 +48,14 @@ function googleFailureUrl(outcome: "expired" | "failed" | "unavailable") {
         ? "google_unavailable"
         : "oauth_failed",
   );
-  return url;
+  return retainReturnPath(url, returnPath);
 }
 
-function oauthFailureUrl(providerError: string, providerErrorCode: string | null) {
+function oauthFailureUrl(
+  providerError: string,
+  providerErrorCode: string | null,
+  returnPath: string | null,
+) {
   const url = getApplicationUrl("/login");
   const cancelled = providerError === "access_denied" || providerErrorCode === "access_denied";
   const unavailable = providerError === "server_error"
@@ -50,7 +66,7 @@ function oauthFailureUrl(providerError: string, providerErrorCode: string | null
     "error",
     cancelled ? "oauth_cancelled" : unavailable ? "google_unavailable" : "oauth_failed",
   );
-  return url;
+  return retainReturnPath(url, returnPath);
 }
 
 function codeExchangeFailureOutcome(
@@ -72,6 +88,7 @@ function codeExchangeFailureOutcome(
 
 function authenticationCodeExchangeFailure(
   error: { code?: string; status?: number } | null,
+  returnPath: string | null,
 ) {
   if (
     error?.code === "pkce_code_verifier_not_found"
@@ -79,10 +96,10 @@ function authenticationCodeExchangeFailure(
     || error?.code === "flow_state_not_found"
     || error?.code === "flow_state_expired"
   ) {
-    return googleFailureUrl("expired");
+    return googleFailureUrl("expired", returnPath);
   }
-  if (error?.status && error.status >= 500) return googleFailureUrl("unavailable");
-  return googleFailureUrl("failed");
+  if (error?.status && error.status >= 500) return googleFailureUrl("unavailable", returnPath);
+  return googleFailureUrl("failed", returnPath);
 }
 
 async function currentUserId(supabase: CallbackClient) {
@@ -96,7 +113,11 @@ async function currentUserId(supabase: CallbackClient) {
   }
 }
 
-async function authenticatedDestination(flow: AuthCallbackFlow, userId: string) {
+async function authenticatedDestination(
+  flow: AuthCallbackFlow,
+  userId: string,
+  returnPath: string | null,
+) {
   if (flow === "recovery") return getApplicationUrl("/reset-password");
   try {
     await claimPublicDiagnosticForUser(userId);
@@ -105,6 +126,7 @@ async function authenticatedDestination(flow: AuthCallbackFlow, userId: string) 
     // later sign-in can retry the idempotent claim.
     console.error("[auth.public_diagnostic_claim] failed", { stage: "callback" });
   }
+  if (returnPath) return new URL(returnPath, getApplicationUrl("/login"));
   if (flow === "email_verification") return getApplicationUrl("/dashboard");
 
   try {
@@ -123,9 +145,10 @@ export async function GET(request: NextRequest) {
   const flow = parseCallbackFlow(searchParams.get("flow"));
   const providerError = searchParams.get("error");
   const providerErrorCode = searchParams.get("error_code");
+  const returnPath = getSafeReturnPath(searchParams.get("next"));
 
   if ((code && code.length > 4096) || (tokenHash && tokenHash.length > 4096)) {
-    return NextResponse.redirect(loginOutcomeUrl("expired"));
+    return NextResponse.redirect(loginOutcomeUrl("expired", returnPath));
   }
 
   let supabase: CallbackClient;
@@ -133,7 +156,9 @@ export async function GET(request: NextRequest) {
     supabase = await createSupabaseServerClient();
   } catch {
     return NextResponse.redirect(
-      flow === "authentication" ? googleFailureUrl("unavailable") : loginOutcomeUrl("unavailable"),
+      flow === "authentication"
+        ? googleFailureUrl("unavailable", returnPath)
+        : loginOutcomeUrl("unavailable", returnPath),
     );
   }
 
@@ -142,30 +167,30 @@ export async function GET(request: NextRequest) {
   if (flow !== "recovery") {
     const existingUserId = await currentUserId(supabase);
     if (existingUserId) {
-      return NextResponse.redirect(await authenticatedDestination(flow, existingUserId));
+      return NextResponse.redirect(await authenticatedDestination(flow, existingUserId, returnPath));
     }
   }
 
   if (providerError) {
-    return NextResponse.redirect(oauthFailureUrl(providerError, providerErrorCode));
+    return NextResponse.redirect(oauthFailureUrl(providerError, providerErrorCode, returnPath));
   }
 
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      return NextResponse.redirect(await authenticatedDestination(flow, data.user.id));
+      return NextResponse.redirect(await authenticatedDestination(flow, data.user.id, returnPath));
     }
 
     const existingUserId = await currentUserId(supabase);
     if (existingUserId) {
-      return NextResponse.redirect(await authenticatedDestination(flow, existingUserId));
+      return NextResponse.redirect(await authenticatedDestination(flow, existingUserId, returnPath));
     }
 
     // Supabase can confirm the email before a new browser context discovers
     // that it does not have the original PKCE verifier needed for a session.
     return NextResponse.redirect(flow === "authentication"
-      ? authenticationCodeExchangeFailure(error)
-      : loginOutcomeUrl(codeExchangeFailureOutcome(flow, error)));
+      ? authenticationCodeExchangeFailure(error, returnPath)
+      : loginOutcomeUrl(codeExchangeFailureOutcome(flow, error), returnPath));
   }
 
   if (tokenHash && otpType) {
@@ -179,14 +204,14 @@ export async function GET(request: NextRequest) {
       type: otpType,
     });
     if (!error && data.user) {
-      return NextResponse.redirect(await authenticatedDestination(effectiveFlow, data.user.id));
+      return NextResponse.redirect(await authenticatedDestination(effectiveFlow, data.user.id, returnPath));
     }
 
     const existingUserId = await currentUserId(supabase);
     if (existingUserId) {
-      return NextResponse.redirect(await authenticatedDestination(effectiveFlow, existingUserId));
+      return NextResponse.redirect(await authenticatedDestination(effectiveFlow, existingUserId, returnPath));
     }
   }
 
-  return NextResponse.redirect(loginOutcomeUrl("expired"));
+  return NextResponse.redirect(loginOutcomeUrl("expired", returnPath));
 }

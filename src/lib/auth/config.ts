@@ -2,6 +2,7 @@ import "server-only";
 
 import { getEnv } from "@/lib/validators/env";
 import { siteConfig } from "@/lib/site-config";
+import { getSafeReturnPath } from "@/lib/auth/return-path";
 
 export type AuthProviderAvailability = {
   google: boolean;
@@ -28,9 +29,11 @@ export function getTrustedSiteUrl() {
   return siteConfig.url;
 }
 
-export function getAuthCallbackUrl(flow: AuthCallbackFlow = "authentication") {
+export function getAuthCallbackUrl(flow: AuthCallbackFlow = "authentication", next?: unknown) {
   const callbackUrl = new URL("/auth/callback", getTrustedSiteUrl());
   callbackUrl.searchParams.set("flow", flow);
+  const returnPath = getSafeReturnPath(next);
+  if (returnPath) callbackUrl.searchParams.set("next", returnPath);
   return callbackUrl.toString();
 }
 

@@ -7,15 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getAuthProviderAvailability } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
+import { getSafeReturnPath, registerPath } from "@/lib/auth/return-path";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; verification?: string }>;
+  searchParams: Promise<{ error?: string; verification?: string; next?: string }>;
 }) {
   const params = await searchParams;
+  const returnPath = getSafeReturnPath(params.next);
   const user = await getCurrentUser();
-  if (user) redirect(await getPostAuthRoute(user.id));
+  if (user) redirect(returnPath ?? await getPostAuthRoute(user.id));
 
   const availability = getAuthProviderAvailability();
 
@@ -75,16 +77,17 @@ export default async function LoginPage({
               <p className="mt-1 text-sm">Sign in to continue.</p>
             </div>
           ) : null}
-          {params.verification === "expired" ? <VerificationRecovery /> : null}
-          <AuthProviderOptions availability={availability} emailForm={<AuthForm
+          {params.verification === "expired" ? <VerificationRecovery returnPath={returnPath} /> : null}
+          <AuthProviderOptions availability={availability} returnPath={returnPath} emailForm={<AuthForm
             action={loginAction}
             fields={[
               { name: "email", label: "Email", type: "email", autoComplete: "email", placeholder: "you@example.com" },
               { name: "password", label: "Password", type: "password", autoComplete: "current-password" },
             ]}
-            footer={{ text: "Don't have an account?", label: "Create account", href: "/register" }}
+            footer={{ text: "Don't have an account?", label: "Create account", href: registerPath(returnPath) }}
             forgotPassword
             pendingLabel="Signing in..."
+            returnPath={returnPath}
             submitLabel="Sign in with email"
           />} />
         </CardContent>

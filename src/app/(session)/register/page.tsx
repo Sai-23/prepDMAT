@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getAuthProviderAvailability } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { getPostAuthRoute } from "@/lib/auth/post-auth";
+import { getSafeReturnPath, loginPath } from "@/lib/auth/return-path";
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const returnPath = getSafeReturnPath((await searchParams).next);
   const user = await getCurrentUser();
-  if (user) redirect(await getPostAuthRoute(user.id));
+  if (user) redirect(returnPath ?? await getPostAuthRoute(user.id));
 
   const availability = getAuthProviderAvailability();
 
@@ -25,7 +27,7 @@ export default async function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <AuthProviderOptions compact availability={availability} emailForm={<AuthForm
+          <AuthProviderOptions compact availability={availability} returnPath={returnPath} emailForm={<AuthForm
             action={registerAction}
             compact
             fields={[
@@ -35,11 +37,12 @@ export default async function RegisterPage() {
             ]}
             marketingConsent
             pendingLabel="Creating account..."
+            returnPath={returnPath}
             submitLabel="Create account"
           />} />
           <p className="mt-3 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link className="font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" href="/login">
+            <Link className="font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" href={loginPath(returnPath)}>
               Sign in
             </Link>
           </p>

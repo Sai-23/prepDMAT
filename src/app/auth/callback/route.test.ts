@@ -157,6 +157,34 @@ describe("email verification callback", () => {
     expect(mocks.getPostAuthRoute).toHaveBeenCalledWith("new-google-user");
   });
 
+  it("returns a successful OAuth exchange to a validated feedback destination", async () => {
+    const supabase = client();
+    supabase.auth.exchangeCodeForSession.mockResolvedValue({
+      data: { user: { id: "returning-user" }, session: { access_token: "not-exposed" } },
+      error: null,
+    });
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(
+      request("?flow=authentication&code=valid&next=%2Ffeedback%3Fsource%3Demail"),
+    );
+
+    expect(destination(response).toString()).toBe("https://prepdmat.in/feedback?source=email");
+    expect(mocks.getPostAuthRoute).not.toHaveBeenCalled();
+  });
+
+  it("retains a validated feedback destination when OAuth must be retried", async () => {
+    const supabase = client();
+    mocks.createServerClient.mockResolvedValue(supabase);
+
+    const response = await GET(request("?error=access_denied&next=%2Ffeedback"));
+    const url = destination(response);
+
+    expect(url.pathname).toBe("/login");
+    expect(url.searchParams.get("error")).toBe("oauth_cancelled");
+    expect(url.searchParams.get("next")).toBe("/feedback");
+  });
+
   it("maps temporary OAuth provider failures without exposing provider details", async () => {
     const supabase = client();
     mocks.createServerClient.mockResolvedValue(supabase);

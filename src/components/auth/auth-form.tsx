@@ -12,6 +12,7 @@ import {
 } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { maskEmailAddress } from "@/lib/auth/email-verification";
+import { loginPath } from "@/lib/auth/return-path";
 
 type Field = {
   name: string;
@@ -30,6 +31,7 @@ type AuthFormProps = {
   forgotPassword?: boolean;
   marketingConsent?: boolean;
   compact?: boolean;
+  returnPath?: string | null;
 };
 
 const initialAuthState: AuthActionState = { status: "idle" };
@@ -75,10 +77,12 @@ function ResendVerificationForm({
   email,
   initialCooldown = 0,
   onSent,
+  returnPath,
 }: {
   email?: string;
   initialCooldown?: number;
   onSent?: (email: string) => void;
+  returnPath?: string | null;
 }) {
   const [cooldown, setCooldown] = useState(initialCooldown);
   const inFlight = useRef(false);
@@ -112,6 +116,7 @@ function ResendVerificationForm({
   const unavailable = pending || cooldown > 0;
   return (
     <form action={action} className="space-y-3">
+      {returnPath ? <input name="next" type="hidden" value={returnPath} /> : null}
       {email ? (
         <input name="email" type="hidden" value={email} />
       ) : (
@@ -155,10 +160,12 @@ export function EmailVerificationOtp({
   email,
   message,
   onChangeEmail,
+  returnPath,
 }: {
   email: string;
   message?: string;
   onChangeEmail?: () => void;
+  returnPath?: string | null;
 }) {
   const [token, setToken] = useState("");
   const inFlight = useRef(false);
@@ -190,6 +197,7 @@ export function EmailVerificationOtp({
       </div>
       <form action={action} className="space-y-4 text-left" noValidate>
         <input name="email" type="hidden" value={email} />
+        {returnPath ? <input name="next" type="hidden" value={returnPath} /> : null}
         <div className="space-y-2">
           <label className="text-sm font-semibold text-on-surface" htmlFor="email-verification-token">
             Verification code
@@ -226,7 +234,7 @@ export function EmailVerificationOtp({
       </form>
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">Didn&apos;t receive the code?</p>
-        <ResendVerificationForm email={email} initialCooldown={60} />
+        <ResendVerificationForm email={email} initialCooldown={60} returnPath={returnPath} />
       </div>
       <button
         className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -239,10 +247,10 @@ export function EmailVerificationOtp({
   );
 }
 
-export function VerificationRecovery() {
+export function VerificationRecovery({ returnPath }: { returnPath?: string | null }) {
   const [email, setEmail] = useState<string | null>(null);
   if (email) {
-    return <EmailVerificationOtp email={email} message="Enter the verification code we sent to:" />;
+    return <EmailVerificationOtp email={email} message="Enter the verification code we sent to:" returnPath={returnPath} />;
   }
 
   return (
@@ -251,10 +259,10 @@ export function VerificationRecovery() {
         <p className="font-semibold">Verification link expired</p>
         <p className="text-sm">Request a new verification code to continue.</p>
       </div>
-      <ResendVerificationForm onSent={setEmail} />
+      <ResendVerificationForm onSent={setEmail} returnPath={returnPath} />
       <Link
         className="inline-flex min-h-11 w-full items-center justify-center text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        href="/login"
+        href={loginPath(returnPath)}
       >
         Sign in
       </Link>
@@ -271,6 +279,7 @@ function AuthFormState({
   forgotPassword,
   marketingConsent,
   compact = false,
+  returnPath,
   onReset,
 }: AuthFormProps & { onReset: () => void }) {
   const inFlight = useRef(false);
@@ -288,11 +297,12 @@ function AuthFormState({
   }, initialAuthState);
 
   if (state.view === "verify_email" && state.email) {
-    return <EmailVerificationOtp email={state.email} message={state.message} onChangeEmail={onReset} />;
+    return <EmailVerificationOtp email={state.email} message={state.message} onChangeEmail={onReset} returnPath={returnPath} />;
   }
 
   return (
     <form action={formAction} className={compact ? "space-y-3" : "space-y-4"} id="email-sign-in" noValidate>
+      {returnPath ? <input name="next" type="hidden" value={returnPath} /> : null}
       {fields.map((field) => {
         const errorId = `${field.name}-error`;
         const helpId = field.name === "password" && field.autoComplete === "new-password"

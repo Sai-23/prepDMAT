@@ -7,19 +7,19 @@ function source(path: string) {
 }
 
 describe("authentication contracts", () => {
-  it("exchanges callback codes into cookie-backed sessions and uses only centralized routes", () => {
+  it("exchanges callback codes into cookie-backed sessions and validates return destinations centrally", () => {
     const callback = source("src/app/auth/callback/route.ts");
     expect(callback).toContain("exchangeCodeForSession(code)");
     expect(callback).toContain("verifyOtp({");
     expect(callback).toContain("getPostAuthRoute(userId)");
-    expect(callback).not.toContain('searchParams.get("next")');
+    expect(callback).toContain('getSafeReturnPath(searchParams.get("next"))');
     expect(callback).not.toContain("provider_token");
   });
 
   it("uses server-verified registration OTP without polling or auth listeners", () => {
     const actions = source("src/app/auth/actions.ts");
     const form = source("src/components/auth/auth-form.tsx");
-    expect(actions).toContain('getAuthCallbackUrl("email_verification")');
+    expect(actions).toContain('getAuthCallbackUrl("email_verification", returnPath)');
     expect(actions).toContain('type: "signup"');
     expect(actions).toContain('enforceSecurityRateLimit("auth:email-verify"');
     expect(form).toContain("maskEmailAddress(email)");
@@ -27,6 +27,21 @@ describe("authentication contracts", () => {
     expect(form).toContain('inputMode="numeric"');
     expect(form).toContain("pending || !complete");
     expect(form).not.toMatch(/createSupabaseBrowserClient|onAuthStateChange|setInterval\([^)]*8_000/);
+  });
+
+  it("preserves validated return paths across login, signup, verification, and OAuth", () => {
+    const login = source("src/app/(session)/login/page.tsx");
+    const register = source("src/app/(session)/register/page.tsx");
+    const form = source("src/components/auth/auth-form.tsx");
+    const providers = source("src/components/auth/auth-providers.tsx");
+    const actions = source("src/app/auth/actions.ts");
+
+    expect(login).toContain("registerPath(returnPath)");
+    expect(register).toContain("loginPath(returnPath)");
+    expect(form).toContain('name="next"');
+    expect(providers).toContain('name="next"');
+    expect(actions).toContain("authenticatedDestination");
+    expect(actions).toContain('googleAuthPath(formData.get("next"))');
   });
 
   it("shares one server auth interpretation and reconciles header session changes", () => {

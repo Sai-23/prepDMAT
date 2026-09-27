@@ -62,9 +62,27 @@ describe("Proxy session refresh and protected-route redirects", () => {
 
     const response = await proxy(request("/practice"));
 
-    expect(response.headers.get("location")).toBe("https://prepdmat.in/login");
+    expect(response.headers.get("location")).toBe("https://prepdmat.in/login?next=%2Fpractice");
     expect(response.cookies.get("sb-session")?.value).toBe("new-token");
     expect(response.headers.get("Content-Security-Policy")).toContain("script-src");
+  });
+
+  it("preserves the complete feedback destination for a signed-out visitor", async () => {
+    configureClient({ refresh: false, user: null });
+
+    const response = await proxy(request("/feedback?source=email"));
+    const destination = new URL(response.headers.get("location")!);
+
+    expect(destination.pathname).toBe("/login");
+    expect(destination.searchParams.get("next")).toBe("/feedback?source=email");
+  });
+
+  it("allows a signed-in visitor to reach feedback without an auth redirect", async () => {
+    configureClient({ refresh: false, user: { id: "student-1" } });
+
+    const response = await proxy(request("/feedback"));
+
+    expect(response.headers.get("location")).toBeNull();
   });
 
   it("preserves refreshed auth cookies and CSP on an unauthorized admin redirect", async () => {
@@ -106,7 +124,7 @@ describe("Proxy session refresh and protected-route redirects", () => {
 
     const response = await proxy(new NextRequest("https://attacker.example/practice"));
 
-    expect(response.headers.get("location")).toBe("https://prepdmat.in/login");
+    expect(response.headers.get("location")).toBe("https://prepdmat.in/login?next=%2Fpractice");
   });
 
   it("keeps an anonymous public page independent of Auth transport state", async () => {

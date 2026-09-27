@@ -35,6 +35,19 @@ describe("authentication URL configuration", () => {
     expect(getApplicationUrl("/dashboard").toString()).toBe("http://localhost:3000/dashboard");
   });
 
+  it("adds only a validated local return path to auth callbacks", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "public-anon-key");
+    const { getAuthCallbackUrl } = await import("./config");
+
+    expect(new URL(getAuthCallbackUrl("authentication", "/feedback?source=email")).searchParams.get("next"))
+      .toBe("/feedback?source=email");
+    expect(new URL(getAuthCallbackUrl("authentication", "https://evil.example")).searchParams.has("next"))
+      .toBe(false);
+  });
+
   it("uses an explicitly configured trusted preview origin only in preview deployments", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("VERCEL_ENV", "preview");

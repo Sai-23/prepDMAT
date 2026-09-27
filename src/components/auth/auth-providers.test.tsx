@@ -37,4 +37,17 @@ describe("auth provider selector", () => {
     expect(html).not.toContain("Continue with Google");
     expect(html).not.toContain('role="tablist"');
   });
+
+  it("submits the validated return path with Google authentication", () => {
+    const html = renderToStaticMarkup(
+      <AuthProviderOptions
+        availability={{ google: true, phone: false }}
+        emailForm={<form aria-label="Email credentials" />}
+        returnPath="/feedback?source=email"
+      />,
+    );
+
+    expect(html).toContain('name="next"');
+    expect(html).toContain('value="/feedback?source=email"');
+  });
 });
